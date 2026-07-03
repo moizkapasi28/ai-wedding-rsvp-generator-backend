@@ -18,7 +18,7 @@ import {
 } from "../controllers/auth.controller";
 import { asyncHandler } from "../utils/asyncHandler.util";
 
-export const authRouter = Router();
+const authRouter = Router();
 
 authRouter.post("/signup", validate(signUpSchema), asyncHandler(signUp));
 
@@ -47,3 +47,5 @@ authRouter.patch(
   validate(resetPasswordSchema),
   asyncHandler(resetPassword),
 );
+
+export default authRouter;

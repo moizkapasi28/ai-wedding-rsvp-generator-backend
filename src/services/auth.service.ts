@@ -90,6 +90,24 @@ export const signInService = async (
 
   if (!existingUser) throw new ApiError(404, "Invalid email or password");
 
+  if (!existingUser.is_email_verified) {
+    const verifyEmailToken = await generateVerifyEmailTokenService(
+      existingUser.id,
+    );
+
+    await sendEmail(USER_EMAIL_VERIFICATION_TEMPLATE, {
+      email: existingUser.email,
+      first_name: existingUser.first_name,
+      last_name: existingUser.last_name,
+      token: verifyEmailToken,
+    });
+
+    throw new ApiError(
+      403,
+      "Email is not verified. A verification email has been sent to your email address.",
+    );
+  }
+
   const isPasswordValid = await bcrypt.compare(password, existingUser.password);
 
   if (!isPasswordValid) throw new ApiError(404, "Invalid email or password");
