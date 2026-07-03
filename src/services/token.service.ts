@@ -1,9 +1,9 @@
 import moment, { Moment } from "moment";
-import { User } from "../../generated/prisma/client";
+import { Prisma, Token, User } from "../../generated/prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { TOKEN_TYPE } from "../enums/token.enum";
-import { createToken } from "../repositories/token.repository";
+import { createToken, findTokenByJti } from "../repositories/token.repository";
 
 export const generateAuthTokensService = async (user: User) => {
   const tokenExpiryTime = process.env.JWT_ACCESS_EXPIRATION_MINUTES;
@@ -79,15 +79,83 @@ export const saveTokenService = async (
   userId: string,
   tokenType: TOKEN_TYPE,
   expiresAt: moment.Moment,
+  tx?: Prisma.TransactionClient,
 ) => {
-  const token = await createToken({
-    jti,
-    user_id: userId,
-    token_type: tokenType,
-    expires_at: expiresAt.toDate(),
-  });
+  const token = await createToken(
+    {
+      jti,
+      user_id: userId,
+      token_type: tokenType as any,
+      expires_at: expiresAt.toDate(),
+    },
+    tx,
+  );
 
   if (!token) throw new Error("Failed to save token");
+
+  return token;
+};
+
+export const generateVerifyEmailTokenService = async (
+  userId: string,
+  tx?: Prisma.TransactionClient,
+): Promise<string> => {
+  const tokenExpiryTime = process.env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES || 10;
+  const expiresAt = moment().add(tokenExpiryTime, "minutes");
+  const jti = uuidv4();
+
+  const token = generateTokenService(userId, expiresAt, jti);
+
+  await saveTokenService(
+    jti,
+    userId,
+    TOKEN_TYPE.EMAIL_VERIFICATION,
+    expiresAt,
+    tx,
+  );
+
+  return token;
+};
+
+export const verifyTokenService = async (
+  token: string,
+  tokenType: TOKEN_TYPE,
+  tx?: Prisma.TransactionClient,
+): Promise<Token> => {
+  let payload: jwt.JwtPayload;
+  try {
+    payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string,
+    ) as jwt.JwtPayload;
+  } catch (error) {
+    throw new Error("Invalid or expired token");
+  }
+
+  const tokenDoc = await findTokenByJti(payload.jti as string, tx);
+  if (!tokenDoc || tokenDoc.token_type !== tokenType) {
+    throw new Error("Token not found");
+  }
+
+  if (moment().isAfter(moment(tokenDoc.expires_at))) {
+    throw new Error("Token has expired");
+  }
+
+  return tokenDoc;
+};
+
+export const generateResetPasswordTokenService = async (
+  userId: string,
+  tx?: Prisma.TransactionClient,
+): Promise<string> => {
+  const tokenExpiryTime =
+    process.env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES || 10;
+  const expiresAt = moment().add(tokenExpiryTime, "minutes");
+  const jti = uuidv4();
+
+  const token = generateTokenService(userId, expiresAt, jti);
+
+  await saveTokenService(jti, userId, TOKEN_TYPE.RESET_PASSWORD, expiresAt, tx);
 
   return token;
 };

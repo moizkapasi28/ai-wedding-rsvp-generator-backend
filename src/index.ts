@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth.routes";
 import { connectDB } from "./lib/prisma";
 import { errorHandler } from "./middlewares/error.middleware";
+import { requestLogger } from "./middlewares/logger.middleware";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -12,6 +13,7 @@ const PORT = process.env.PORT;
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
+app.use(requestLogger);
 
 app.use("/api/auth", authRouter);
 
