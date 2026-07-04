@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AI Wedding RSVP Generator API",
+    "version": "1.0.0",
+    "description": "API documentation for the AI Wedding RSVP Generator Backend"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development Server"
+    }
+  ],
+  "paths": {
+    "/api/auth/sign-in": {
+      "post": {
+        "summary": "Sign in a user",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        }
+      }
+    }
+  }
+}

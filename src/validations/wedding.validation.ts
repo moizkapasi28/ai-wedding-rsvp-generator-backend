@@ -17,17 +17,17 @@ export const addNewWeddingBodySchema = z.object({
   title: z
     .string()
     .min(3, "Title must be at least 3 characters")
-    .max(256)
+    .max(100)
     .describe("Example: John and Jane's Wedding"),
   bride_name: z
     .string()
     .min(1, "Bride name is required")
-    .max(256)
+    .max(50)
     .describe("Example: Jane Doe"),
   groom_name: z
     .string()
     .min(1, "Groom name is required")
-    .max(256)
+    .max(50)
     .describe("Example: John Smith"),
   date: z
     .string()
@@ -39,8 +39,13 @@ export const addNewWeddingBodySchema = z.object({
   venue: z
     .string()
     .min(1, "Venue is required")
+    .max(200)
     .describe("Example: The Grand Hotel, New York"),
-  city: z.string().min(1, "City is required").describe("Example: New York"),
+  city: z
+    .string()
+    .min(1, "City is required")
+    .max(50)
+    .describe("Example: New York"),
   message: z
     .string()
     .optional()
