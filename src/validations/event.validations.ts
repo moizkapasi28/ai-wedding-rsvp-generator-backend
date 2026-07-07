@@ -1,6 +1,4 @@
-import { time } from "node:console";
 import z from "zod";
-import { id } from "zod/v4/locales";
 
 export const getAllWeddingEventsQuerySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
@@ -39,6 +37,11 @@ export const addNewWeddingEventBodySchema = z.object({
     .min(1, "Venue is required")
     .max(200)
     .describe("Example: The Grand Hotel, New York"),
+  address: z
+    .string()
+    .min(1, "Address is required")
+    .max(200)
+    .describe("Example: 123 Main St, New York"),
   city: z
     .string()
     .min(1, "City is required")

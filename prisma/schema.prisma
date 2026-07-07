@@ -19,6 +19,28 @@ enum TokenType {
   RESET_PASSWORD
 }
 
+enum Side {
+  BRIDE
+  GROOM
+}
+
+enum Status {
+  PENDING
+  ATTENDING
+  DECLINED
+  MAYBE
+}
+
+enum Dietary {
+  VEGAN
+  VEGETARIAN
+  NON_VEGETARAIN
+  EGGETARIAN
+  LACTOSE_FREE
+  GLUTEN_FREE
+  OTHER
+}
+
 model User {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   first_name String @db.VarChar(256)
@@ -37,7 +59,7 @@ model User {
 
 model Wedding {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user User @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id String @db.Uuid
   slug String @db.VarChar(256)
   title String @db.VarChar(256)
@@ -50,6 +72,7 @@ model Wedding {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)  
   events Event[]
+  guests Guest[]
 
   @@index([user_id])
 }
@@ -57,7 +80,7 @@ model Wedding {
 model Token{
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   jti String @db.Uuid
-  user User @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id String @db.Uuid
   token_type TokenType @default(ACCESS)
   expires_at DateTime
@@ -70,14 +93,77 @@ model Token{
 
 model Event{
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  wedding Wedding @relation(fields: [wedding_id], references: [id])
+  wedding Wedding @relation(fields: [wedding_id], references: [id], onDelete: Cascade)
   wedding_id String @db.Uuid
   title String @db.VarChar(256)
   description String @db.VarChar(256)
   date DateTime @db.Date
   time String @db.VarChar(256)
   venue String @db.Text
+  address String @db.Text
   city String @db.VarChar(256)
+  guestEventInvite GuestEventInvite[]
+  guestEventInviteFormat GuestEventInviteFormat[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([wedding_id])
+  @@index([title])
+}
+
+
+model Guest{
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wedding Wedding @relation(fields: [wedding_id], references: [id], onDelete: Cascade)
+  wedding_id String @db.Uuid
+  name String @db.VarChar(256)
+  email String? @db.VarChar(256)
+  mobile_number String? @db.VarChar(256)
+  side Side 
+  guestEventInvite GuestEventInvite[]
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([name])
+  @@index([mobile_number])
+  @@unique([wedding_id, id]) 
+}
+
+model GuestEventInvite {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guest_id String @db.Uuid
+  guest Guest @relation(fields: [guest_id], references: [id], onDelete: Cascade)
+  event_id String @db.Uuid
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  invite_token String @db.Uuid
+  status Status @default(PENDING)
+  plus_ones Int? 
+  dietary Dietary? 
+  song_request String?
+  message String?
+  invite_deadline DateTime?
+  responded_at DateTime? @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([guest_id])
+  @@index([event_id])
+  @@unique([guest_id, event_id])
+}
+
+model GuestEventInviteFormat {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id String @db.Uuid 
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  dietary_preference Boolean @default(false)
+  song_request Boolean @default(false)
+  message Boolean @default(false)
+  plus_ones Boolean @default(false)
+  first_reminder Boolean @default(false)
+  final_reminder Boolean @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([event_id])
+  @@unique([event_id])
 }

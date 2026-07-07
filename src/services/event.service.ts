@@ -3,18 +3,13 @@ import { Event, Prisma } from "../../generated/prisma/client";
 import {
   countWeddingEvents,
   createEvent,
-  getAllWeddingEvents,
-  findEventByIdAndUserId,
-  findEventById,
-  updateWeddingEventById,
   deleteWeddingEventById,
+  findEventById,
+  findEventByIdAndUserId,
+  getAllWeddingEvents,
+  updateWeddingEventById,
 } from "../repositories/event.repository";
 import { ApiError } from "../utils/apiError.util";
-
-import {
-  AddNewWeddingEventDto,
-  EditWeddingEventDto,
-} from "../validations/event.validations";
 
 export const getAllWeddingEventsService = async (
   weddingId: string,
@@ -51,6 +46,7 @@ export const addNewWeddingEventService = async (
     date: new Date(data.date),
     time: data.time,
     venue: data.venue,
+    address: data.address,
     city: data.city,
   });
 
@@ -62,10 +58,12 @@ export const addNewWeddingEventService = async (
 export const verifyWeddingEventOwnershipService = async (
   eventId: string,
   userId: string,
-): Promise<void> => {
+): Promise<Event> => {
   const event = await findEventByIdAndUserId(eventId, userId);
 
   if (!event) throw new ApiError(404, "Event not found");
+
+  return event
 };
 
 export const getWeddingEventService = async (

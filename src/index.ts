@@ -12,6 +12,7 @@ import eventRouter from "./routes/event.routes";
 
 import { apiReference } from "@scalar/express-api-reference";
 import openApiDoc from "./openapi.json";
+import guestsRouter from "./routes/guests.routes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use(requestLogger);
 app.use("/api/auth", authRouter);
 app.use("/api/wedding", weddingRouter);
 app.use("/api/event", eventRouter);
+app.use("/api/guest", guestsRouter);
 
 // API Documentation
 app.use(
@@ -33,7 +35,7 @@ app.use(
     spec: {
       content: openApiDoc,
     },
-  })
+  }),
 );
 
 app.use(errorHandler);
