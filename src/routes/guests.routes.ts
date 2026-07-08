@@ -3,6 +3,7 @@ import { authenticate } from "../middlewares/auth.middleware";
 import validate from "../middlewares/validate.middleware";
 import {
   addNewGuestSchema,
+  editWeddingGuestSchema,
   getAllGuestsSchema,
   getWeddingGuestSchema,
 } from "../validations/guest.validations";
@@ -10,6 +11,7 @@ import { asyncHandler } from "../utils/asyncHandler.util";
 import {
   addNewGuest,
   deleteWeddingGuest,
+  editWeddingGuest,
   getAllGuests,
   getWeddingGuest,
 } from "../controllers/guest.controller";
@@ -35,6 +37,13 @@ guestsRouter.get(
   authenticate,
   validate(getWeddingGuestSchema),
   asyncHandler(getWeddingGuest),
+);
+
+guestsRouter.patch(
+  "/:id",
+  authenticate,
+  validate(editWeddingGuestSchema),
+  asyncHandler(editWeddingGuest),
 );
 
 guestsRouter.delete(

@@ -4,13 +4,21 @@ import {
   createGuest,
   createGuestEventInvite,
   deleteGuest,
+  deleteGuestEventInvitesByEventIds,
   findAllGuests,
   findGuestByMobileNumberAndWeddingId,
+  findGuestEventInvitesByGuestId,
   getWeddingGuest,
+  updateGuest,
 } from "../repositories/guest.repository";
 import { v4 as uuidv4 } from "uuid";
 import { verfiyWeddingOwnershipService } from "./wedding.service";
 import { ApiError } from "../utils/apiError.util";
+import {
+  EditWeddingGuestDto,
+  AddNewGuestDto,
+} from "../validations/guest.validations";
+import { verifyWeddingEventOwnershipService } from "./event.service";
 
 export const getAllGuestsService = async (
   weddingId: string,
@@ -24,39 +32,68 @@ export const getAllGuestsService = async (
 };
 
 export const addNewGuestService = async (
-  payload: Prisma.GuestUncheckedCreateInput,
-  eventId: string,
+  userId: string,
+  body: AddNewGuestDto,
 ) => {
+  // Verify ownership of all provided events
+  const events = await Promise.all(
+    body.eventIds.map((eventId) =>
+      verifyWeddingEventOwnershipService(eventId, userId),
+    ),
+  );
+
+  // A user can own multiple weddings — ensure all events come from the same one
+  // (verifyWeddingEventOwnershipService only checks user → wedding ownership,
+  //  not that every event shares the same wedding_id)
+  const weddingIds = new Set(events.map((e) => e.wedding_id));
+  if (weddingIds.size > 1)
+    throw new ApiError(400, "All events must belong to the same wedding");
+
+  const wedding_id = events[0].wedding_id;
+  const eventIds = events.map((e) => e.id);
+
+  const guestPayload: Prisma.GuestUncheckedCreateInput = {
+    wedding_id,
+    name: body.name,
+    mobile_number: body.mobile_number,
+    email: body.email,
+    side: body.side,
+  };
+
   return prisma.$transaction(async (tx) => {
+    // 3. Reuse existing guest if mobile + wedding already on record
     const existingGuest = await findGuestByMobileNumberAndWeddingId(
-      payload.mobile_number,
-      payload.wedding_id,
+      guestPayload.mobile_number,
+      guestPayload.wedding_id,
       tx,
     );
 
     let guest: Guest;
 
     if (!existingGuest) {
-      guest = await createGuest(payload, tx);
+      guest = await createGuest(guestPayload, tx);
       if (!guest) throw new ApiError(400, "Failed to create guest");
     } else guest = existingGuest;
 
-    const inviteToken = uuidv4();
-    const guestInvitePayload: Prisma.GuestEventInviteUncheckedCreateInput = {
-      event_id: eventId,
-      guest_id: guest.id,
-      invite_token: inviteToken,
-      plus_ones: null,
-      dietary: null,
-      invite_deadline: null,
-      responded_at: null,
-    };
-    const guestEventInvite = await createGuestEventInvite(
-      guestInvitePayload,
-      tx,
+    // 4. Create an event invite for each provided event
+    const guestEventInvites = await Promise.all(
+      eventIds.map((eventId) => {
+        const guestInvitePayload: Prisma.GuestEventInviteUncheckedCreateInput =
+          {
+            event_id: eventId,
+            guest_id: guest.id,
+            invite_token: uuidv4(),
+            plus_ones: null,
+            dietary: null,
+            invite_deadline: null,
+            responded_at: null,
+          };
+        return createGuestEventInvite(guestInvitePayload, tx);
+      }),
     );
 
-    if (!guestEventInvite) throw new ApiError(400, "Failed to create guest");
+    if (guestEventInvites.some((invite) => !invite))
+      throw new ApiError(400, "Failed to create guest");
 
     return guest;
   });
@@ -78,6 +115,86 @@ export const getWeddingGuestService = async (
   if (!isWeddingOwner) throw new ApiError(403, "Guest not found");
 
   return guest;
+};
+
+export const editWeddingGuestService = async (
+  guestId: string,
+  userId: string,
+  payload: EditWeddingGuestDto["body"],
+) => {
+  // Verify the guest belongs to a wedding owned by the current user
+  const guest = await getWeddingGuestService(userId, guestId);
+
+  const newEventIds = payload.eventIds ?? [];
+
+  return prisma.$transaction(async (tx) => {
+    // Fetch the current event invites for this guest
+    const existingInvites = await findGuestEventInvitesByGuestId(guestId, tx);
+    const existingEventIds = new Set(existingInvites.map((i) => i.event_id));
+
+    const newEventIdSet = new Set(newEventIds);
+
+    // Determine which event IDs to add and which to remove
+    const toAdd = newEventIds.filter((id) => !existingEventIds.has(id));
+    const toRemove = [...existingEventIds].filter(
+      (id) => !newEventIdSet.has(id),
+    );
+
+    // Verify ownership of every newly-added event before any writes
+    if (toAdd.length > 0) {
+      const verifiedEvents = await Promise.all(
+        toAdd.map((eventId) =>
+          verifyWeddingEventOwnershipService(eventId, userId),
+        ),
+      );
+
+      // A user can own multiple weddings — ensure all new events belong
+      // to the same wedding the guest is already part of
+      const hasEventFromAnotherWedding = verifiedEvents.some(
+        (event) => event.wedding_id !== guest.wedding_id,
+      );
+      if (hasEventFromAnotherWedding)
+        throw new ApiError(
+          400,
+          "All events must belong to the guest's wedding",
+        );
+    }
+
+    // 4. Delete removed invites
+    if (toRemove.length > 0)
+      await deleteGuestEventInvitesByEventIds(guestId, toRemove, tx);
+
+    // 5. Create new invites
+    if (toAdd.length > 0)
+      await Promise.all(
+        toAdd.map((eventId) =>
+          createGuestEventInvite(
+            {
+              event_id: eventId,
+              guest_id: guestId,
+              invite_token: uuidv4(),
+              plus_ones: null,
+              dietary: null,
+              invite_deadline: null,
+              responded_at: null,
+            },
+            tx,
+          ),
+        ),
+      );
+
+    // 5. Update guest profile fields if any were provided
+    const { eventIds: _eventIds, ...guestFields } = payload;
+    const hasGuestUpdates = Object.keys(guestFields).length > 0;
+
+    const updatedGuest = hasGuestUpdates
+      ? await updateGuest(guestId, guestFields, tx)
+      : await getWeddingGuest(guestId, tx);
+
+    if (!updatedGuest) throw new ApiError(400, "Failed to update guest");
+
+    return updatedGuest;
+  });
 };
 
 export const deleteWeddingGuestService = async (guestId: string) => {

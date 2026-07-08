@@ -1,21 +1,19 @@
 import { type Request, type Response } from "express";
 import {
-  AddNewGuestDto,
-  GetAllGuestsDto,
-  GetWeddingGuestDto,
-} from "../validations/guest.validations";
-import { sendSuccess } from "../utils/response.util";
-import { verifyWeddingEventOwnershipService } from "../services/event.service";
-import {
   addNewGuestService,
   deleteWeddingGuestService,
+  editWeddingGuestService,
   getAllGuestsService,
   getWeddingGuestService,
 } from "../services/guest.service";
+import { getUserWeddingService } from "../services/wedding.service";
+import { sendSuccess } from "../utils/response.util";
 import {
-  getUserWeddingService,
-  verfiyWeddingOwnershipService,
-} from "../services/wedding.service";
+  AddNewGuestDto,
+  EditWeddingGuestDto,
+  GetAllGuestsDto,
+  GetWeddingGuestDto,
+} from "../validations/guest.validations";
 
 export const getAllGuests = async (
   req: Request<{}, {}, {}, GetAllGuestsDto>,
@@ -45,19 +43,7 @@ export const addNewGuest = async (
 ): Promise<Response> => {
   const { user, body } = req;
 
-  //Verify event ownership
-  const event = await verifyWeddingEventOwnershipService(body.eventId, user.id);
-
-  // sanitized guest payload
-  const guestPayload = {
-    wedding_id: event.wedding_id,
-    name: body.name,
-    mobile_number: body.mobile_number,
-    email: body.email,
-    side: body.side,
-  };
-
-  const guest = await addNewGuestService(guestPayload, event.id);
+  const guest = await addNewGuestService(user.id, body);
 
   return sendSuccess(res, "Guest added successfully", guest, 201);
 };
@@ -71,6 +57,17 @@ export const getWeddingGuest = async (
   const guest = await getWeddingGuestService(user.id, params.id);
 
   return sendSuccess(res, "Guest fetched successfully", guest, 200);
+};
+
+export const editWeddingGuest = async (
+  req: Request<EditWeddingGuestDto["params"], {}, EditWeddingGuestDto["body"]>,
+  res: Response,
+) => {
+  const { user, params, body } = req;
+
+  const guest = await editWeddingGuestService(params.id, user.id, body);
+
+  return sendSuccess(res, "Guest updated successfully", guest, 200);
 };
 
 export const deleteWeddingGuest = async (

@@ -98,3 +98,31 @@ export const deleteGuest = async (
   const db = tx || prisma;
   return db.guest.delete({ where: { id: guestId } });
 };
+
+export const updateGuest = async (
+  guestId: string,
+  payload: Prisma.GuestUpdateInput,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guest.update({ where: { id: guestId }, data: payload });
+};
+
+export const findGuestEventInvitesByGuestId = async (
+  guestId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guestEventInvite.findMany({ where: { guest_id: guestId } });
+};
+
+export const deleteGuestEventInvitesByEventIds = async (
+  guestId: string,
+  eventIds: string[],
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guestEventInvite.deleteMany({
+    where: { guest_id: guestId, event_id: { in: eventIds } },
+  });
+};

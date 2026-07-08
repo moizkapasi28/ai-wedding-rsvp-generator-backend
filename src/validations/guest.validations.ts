@@ -17,7 +17,7 @@ export const getAllGuestsSchema = z.object({
 export type GetAllGuestsDto = z.infer<typeof getAllGuestsQuerySchema>;
 
 export const addNewGuestBodySchema = z.object({
-  eventId: z.uuid().describe("Event ID is required"),
+  eventIds: z.array(z.uuid()).min(1, "At least one event must be selected"),
   name: z.string().min(1, "Name is required").max(50),
   mobile_number: z.string().min(1, "Mobile number is required").max(15),
   email: z.string().min(1, "Email is required").max(50),
@@ -39,3 +39,10 @@ export const getWeddingGuestSchema = z.object({
 });
 
 export type GetWeddingGuestDto = z.infer<typeof getWeddingGuestParamsSchema>;
+
+export const editWeddingGuestSchema = z.object({
+  params: getWeddingGuestParamsSchema,
+  body: addNewGuestBodySchema.partial(),
+});
+
+export type EditWeddingGuestDto = z.infer<typeof editWeddingGuestSchema>;
