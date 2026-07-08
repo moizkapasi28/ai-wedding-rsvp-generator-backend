@@ -1,19 +1,18 @@
 import { type Request, type Response } from "express";
 import {
-  getAllUserWeddingsService,
   addNewUserWeddingService,
-  getUserWeddingService,
-  editUserWeddingService,
   deleteWeddingService,
+  editUserWeddingService,
+  getAllUserWeddingsService,
+  getUserWeddingService,
 } from "../services/wedding.service";
 import { sendSuccess } from "../utils/response.util";
 import {
-  GetAllUserWeddingsDto,
   AddNewWeddingDto,
-  GetUserWeddingDto,
   EditWeddingDto,
+  GetAllUserWeddingsDto,
+  GetUserWeddingDto,
 } from "../validations/wedding.validation";
-import { deleteWeddingById } from "../repositories/wedding.repository";
 
 export const getAllUserWeddings = async (
   req: Request<{}, {}, {}, GetAllUserWeddingsDto>,

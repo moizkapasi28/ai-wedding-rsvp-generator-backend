@@ -57,6 +57,8 @@ export const addNewUserWeddingService = async (
     slug,
   });
 
+  if (!newWedding) throw new ApiError(400, "Failed to create wedding");
+
   return newWedding;
 };
 
@@ -100,4 +102,15 @@ export const deleteWeddingService = async (id: string) => {
   const wedding = await deleteWeddingById(id);
 
   if (!wedding) throw new ApiError(404, "Failed to delete wedding");
+};
+
+export const verfiyWeddingOwnershipService = async (
+  userId: string,
+  weddingId: string,
+) => {
+  const wedding = await findWeddingByIdAndUserId(weddingId, userId);
+
+  if (!wedding) return false;
+
+  return true;
 };
