@@ -15,5 +15,5 @@ export const errorHandler = (
     return sendError(res, err.message, err.statusCode);
   }
 
-  return sendError(res, "Something went wrong!", 500);
+  return sendError(res, "Something went wrong! Please try again later", 500);
 };

@@ -1,89 +1,101 @@
-import { TokenType, User } from "../../generated/prisma/browser";
+import bcrypt from "bcrypt";
+import { User } from "../../generated/prisma/browser";
+import { Token } from "../../generated/prisma/client";
+import { TOKEN_TYPE } from "../enums/token.enum";
+import { prisma } from "../lib/prisma";
+import { deleteTokenByJti } from "../repositories/token.repository";
 import {
   createUser,
   findUserByEmail,
   findUserById,
   updateUserById,
 } from "../repositories/user.repository";
-import { deleteTokenByJti } from "../repositories/token.repository";
-import { TOKEN_TYPE } from "../enums/token.enum";
+import { AuthResponseDto } from "../types/auth.type";
 import { ApiError } from "../utils/apiError.util";
+import {
+  USER_EMAIL_VERIFICATION_TEMPLATE,
+  USER_EMAIL_VERIFIED_TEMPLATE,
+  USER_FORGOT_PASSWORD_TEMPLATE,
+} from "../utils/constants/email.constant";
 import {
   ForgotPasswordDto,
   LoginDto,
+  RefreshTokenDto,
   ResendEmailVerificationDto,
   ResetPasswordDto,
   SignUpDto,
   VerifyEmailDto,
 } from "../validations/auth.validation";
-import bcrypt from "bcrypt";
+import { sendEmail } from "./email.service";
 import {
+  deleteTokensByUserIdService,
   generateAuthTokensService,
   generateResetPasswordTokenService,
   generateVerifyEmailTokenService,
   verifyTokenService,
 } from "./token.service";
-import { sendEmail } from "./email.service";
-import {
-  USER_EMAIL_VERIFICATION_TEMPLATE,
-  USER_EMAIL_VERIFIED_TEMPLATE,
-  USER_FORGOT_PASSWORD_TEMPLATE,
-  USER_RESET_PASSWORD_TEMPLATE,
-} from "../utils/constants/email.constant";
-import { prisma } from "../lib/prisma";
-import { Token } from "../../generated/prisma/client";
 
 export const signUpService = async (
   payload: SignUpDto,
 ): Promise<Omit<User, "password">> => {
-  return prisma.$transaction(async (tx) => {
-    const { email, password, first_name, last_name, mobile_number } = payload;
-    const exitingUser = await findUserByEmail(email, tx);
-
-    if (exitingUser) throw new ApiError(409, "User already exists");
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    //Create new user
-    const newUser = await createUser(
-      {
+  const { newUser, verifyEmailToken } = await prisma.$transaction(
+    async (tx) => {
+      const {
         email,
-        password: hashedPassword,
-        first_name,
-        last_name,
-        mobile_number,
-      },
-      tx,
-    );
+        password,
+        firstName: first_name,
+        lastName: last_name,
+        mobileNumber: mobile_number,
+      } = payload;
+      const exitingUser = await findUserByEmail(email, tx);
 
-    //Send email for email verification
-    const verifyEmailToken = await generateVerifyEmailTokenService(
-      newUser.id,
-      tx,
-    );
+      if (exitingUser && exitingUser.is_email_verified)
+        throw new ApiError(
+          409,
+          "User already associated with this email address",
+        );
 
-    await sendEmail(USER_EMAIL_VERIFICATION_TEMPLATE, {
-      email: newUser.email,
-      first_name: newUser.first_name,
-      last_name: newUser.last_name,
-      token: verifyEmailToken,
-    });
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    const { password: _password, ...user } = newUser;
-    return user;
+      //Create new user
+      const newUser = await createUser(
+        {
+          email,
+          password: hashedPassword,
+          first_name,
+          last_name,
+          mobile_number,
+        },
+        tx,
+      );
+
+      const verifyEmailToken = await generateVerifyEmailTokenService(
+        newUser.id,
+        tx,
+      );
+
+      const { password: _password, ...user } = newUser;
+      return {
+        newUser: user,
+        verifyEmailToken,
+      };
+    },
+  );
+
+  //Send email for email verification
+  await sendEmail(USER_EMAIL_VERIFICATION_TEMPLATE, {
+    email: newUser.email,
+    first_name: newUser.first_name,
+    last_name: newUser.last_name,
+    token: verifyEmailToken,
   });
+
+  return newUser;
 };
 
 export const signInService = async (
   payload: LoginDto,
-): Promise<
-  Omit<User, "password"> & {
-    tokens: {
-      access: { token: string; expires_at: Date };
-      refresh: { token: string; expires_at: Date };
-    };
-  }
-> => {
+): Promise<AuthResponseDto> => {
   const { email, password } = payload;
 
   const existingUser = await findUserByEmail(email);
@@ -104,7 +116,7 @@ export const signInService = async (
 
     throw new ApiError(
       403,
-      "Email is not verified. A verification email has been sent to your email address.",
+      "Account verification is pending. A verification email has been sent to your email address.",
     );
   }
 
@@ -117,7 +129,7 @@ export const signInService = async (
   const { password: _password, ...user } = existingUser;
 
   return {
-    ...user,
+    user: user,
     tokens: tokens,
   };
 };
@@ -147,11 +159,11 @@ export const verifyEmailService = async (
     await updateUserById(user.id, { is_email_verified: true }, tx);
     await deleteTokenByJti(tokenDoc.jti, tx);
 
-    await sendEmail(USER_EMAIL_VERIFIED_TEMPLATE, {
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-    });
+    // await sendEmail(USER_EMAIL_VERIFIED_TEMPLATE, {
+    //   email: user.email,
+    //   first_name: user.first_name,
+    //   last_name: user.last_name,
+    // });
 
     return true;
   });
@@ -183,7 +195,7 @@ export const forgotPasswordService = async (
 ): Promise<void> => {
   const { email } = payload;
 
-  return prisma.$transaction(async (tx) => {
+  const { user, resetPasswordToken } = await prisma.$transaction(async (tx) => {
     const user = await findUserByEmail(email, tx);
     if (!user) return;
 
@@ -191,12 +203,18 @@ export const forgotPasswordService = async (
       user.id,
       tx,
     );
-    await sendEmail(USER_FORGOT_PASSWORD_TEMPLATE, {
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      token: resetPasswordToken,
-    });
+
+    return {
+      user,
+      resetPasswordToken,
+    };
+  });
+
+  await sendEmail(USER_FORGOT_PASSWORD_TEMPLATE, {
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    token: resetPasswordToken,
   });
 };
 
@@ -224,4 +242,23 @@ export const resetPasswordService = async (
     );
     await deleteTokenByJti(tokenDoc.jti, tx);
   });
+};
+
+export const refreshTokenService = async (payload: RefreshTokenDto) => {
+  const { refreshToken } = payload;
+
+  const refreshTokenDoc = await verifyTokenService(
+    refreshToken,
+    TOKEN_TYPE.REFRESH,
+  );
+
+  const user = await findUserById(refreshTokenDoc.user_id);
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  await deleteTokensByUserIdService(refreshTokenDoc.user_id);
+
+  const newTokens = await generateAuthTokensService(user);
+
+  return newTokens;
 };

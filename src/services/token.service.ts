@@ -3,7 +3,11 @@ import { Prisma, Token, User } from "../../generated/prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { TOKEN_TYPE } from "../enums/token.enum";
-import { createToken, findTokenByJti } from "../repositories/token.repository";
+import {
+  createToken,
+  deleteTokensByUserId,
+  findTokenByJti,
+} from "../repositories/token.repository";
 
 export const generateAuthTokensService = async (user: User) => {
   const tokenExpiryTime = process.env.JWT_ACCESS_EXPIRATION_MINUTES;
@@ -133,8 +137,9 @@ export const verifyTokenService = async (
   }
 
   const tokenDoc = await findTokenByJti(payload.jti as string, tx);
+
   if (!tokenDoc || tokenDoc.token_type !== tokenType) {
-    throw new Error("Token not found");
+    throw new Error("Token not found please login again");
   }
 
   if (moment().isAfter(moment(tokenDoc.expires_at))) {
@@ -158,4 +163,17 @@ export const generateResetPasswordTokenService = async (
   await saveTokenService(jti, userId, TOKEN_TYPE.RESET_PASSWORD, expiresAt, tx);
 
   return token;
+};
+
+export const deleteTokensByUserIdService = async (
+  userId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const deletedTokens = await deleteTokensByUserId(userId, tx);
+
+  if (!deletedTokens) {
+    throw new Error("Failed to delete tokens");
+  }
+
+  return deletedTokens;
 };

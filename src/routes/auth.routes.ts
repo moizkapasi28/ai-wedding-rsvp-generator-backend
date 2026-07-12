@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import {
   forgotPasswordSchema,
   loginSchema,
+  refreshTokenSchema,
   resendEmailVerificationSchema,
   resetPasswordSchema,
   signUpSchema,
@@ -10,6 +11,7 @@ import {
 import validate from "../middlewares/validate.middleware";
 import {
   forgotPasswordEmail,
+  refreshToken,
   resendVerificationEmail,
   resetPassword,
   signIn,
@@ -24,7 +26,7 @@ authRouter.post("/signup", validate(signUpSchema), asyncHandler(signUp));
 
 authRouter.post("/signin", validate(loginSchema), asyncHandler(signIn));
 
-authRouter.get(
+authRouter.post(
   "/verify-email",
   validate(verifyEmailSchema),
   asyncHandler(verifyEmail),
@@ -46,6 +48,12 @@ authRouter.patch(
   "/reset-password",
   validate(resetPasswordSchema),
   asyncHandler(resetPassword),
+);
+
+authRouter.post(
+  "/access-token",
+  validate(refreshTokenSchema),
+  asyncHandler(refreshToken),
 );
 
 export default authRouter;

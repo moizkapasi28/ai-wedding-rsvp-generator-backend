@@ -2,6 +2,7 @@ import { type Request, type Response } from "express";
 import {
   ForgotPasswordDto,
   LoginDto,
+  RefreshTokenDto,
   ResendEmailVerificationDto,
   ResetPasswordDto,
   SignUpDto,
@@ -9,6 +10,7 @@ import {
 } from "../validations/auth.validation";
 import {
   forgotPasswordService,
+  refreshTokenService,
   resendVerificationEmailService,
   resetPasswordService,
   signInService,
@@ -25,7 +27,12 @@ export const signUp = async (
 
   const user = await signUpService(body);
 
-  return sendSuccess(res, "User created successfully", user, 201);
+  return sendSuccess(
+    res,
+    "Registration successful. Please check your email to verify your account.",
+    user,
+    201,
+  );
 };
 
 export const signIn = async (
@@ -40,12 +47,12 @@ export const signIn = async (
 };
 
 export const verifyEmail = async (
-  req: Request<{}, {}, {}, VerifyEmailDto>,
+  req: Request<VerifyEmailDto>,
   res: Response,
 ): Promise<Response> => {
-  const { query } = req;
+  const { body } = req;
 
-  await verifyEmailService(query);
+  await verifyEmailService(body);
 
   return sendSuccess(res, "Email verified successfully", {}, 200);
 };
@@ -73,7 +80,7 @@ export const forgotPasswordEmail = async (
 };
 
 export const resetPassword = async (
-  req: Request<{}, {}, ResetPasswordDto>,
+  req: Request<ResetPasswordDto>,
   res: Response,
 ) => {
   const { body } = req;
@@ -81,4 +88,15 @@ export const resetPassword = async (
   await resetPasswordService(body);
 
   return sendSuccess(res, "Password reset successfully", {}, 200);
+};
+
+export const refreshToken = async (
+  req: Request<RefreshTokenDto>,
+  res: Response,
+) => {
+  const { body } = req;
+
+  const tokens = await refreshTokenService(body);
+
+  return sendSuccess(res, "Tokens refreshed successfully", tokens, 200);
 };

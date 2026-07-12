@@ -1,20 +1,19 @@
 import { type Request, type Response } from "express";
 import {
+  addNewWeddingEventService,
+  deleteWeddingEventService,
+  editWeddingEventService,
+  getAllWeddingEventsService,
+  getWeddingEventService,
+} from "../services/event.service";
+import { getUserWeddingService } from "../services/wedding.service";
+import { sendSuccess } from "../utils/response.util";
+import {
   AddNewWeddingEventDto,
   EditWeddingEventDto,
   GetAllWeddingEventsDto,
   GetWeddingEventDto,
 } from "../validations/event.validations";
-import { sendSuccess } from "../utils/response.util";
-import {
-  addNewWeddingEventService,
-  getAllWeddingEventsService,
-  verifyWeddingEventOwnershipService,
-  getWeddingEventService,
-  editWeddingEventService,
-  deleteWeddingEventService,
-} from "../services/event.service";
-import { getUserWeddingService } from "../services/wedding.service";
 
 export const getAllWeddingEvents = async (
   req: Request<{}, {}, {}, GetAllWeddingEventsDto>,
@@ -43,6 +42,7 @@ export const addNewWeddingEvent = async (
   const event = await addNewWeddingEventService({
     ...body,
     wedding_id: body.weddingId,
+    event_side: body.eventSide,
   });
 
   return sendSuccess(res, "Event created successfully", event, 201);
@@ -54,9 +54,7 @@ export const getWeddingEvent = async (
 ): Promise<Response> => {
   const { user, params } = req;
 
-  await verifyWeddingEventOwnershipService(params.id, user.id);
-
-  const event = await getWeddingEventService(params.id);
+  const event = await getWeddingEventService(params.id, user.id);
 
   return sendSuccess(res, "Event fetched successfully", event, 200);
 };
@@ -67,9 +65,10 @@ export const editWeddingEvent = async (
 ): Promise<Response> => {
   const { user, params, body } = req;
 
-  await verifyWeddingEventOwnershipService(params.id, user.id);
-
-  const event = await editWeddingEventService(params.id, body);
+  const event = await editWeddingEventService(params.id, user.id, {
+    ...body,
+    event_side: body.eventSide,
+  });
 
   return sendSuccess(res, "Event updated successfully", event, 200);
 };
@@ -80,9 +79,7 @@ export const deleteWeddingEvent = async (
 ) => {
   const { user, params } = req;
 
-  await verifyWeddingEventOwnershipService(params.id, user.id);
-
-  await deleteWeddingEventService(params.id);
+  await deleteWeddingEventService(params.id, user.id);
 
   return sendSuccess(res, "Event deleted successfully", {}, 200);
 };

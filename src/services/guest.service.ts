@@ -19,6 +19,7 @@ import {
   AddNewGuestDto,
 } from "../validations/guest.validations";
 import { verifyWeddingEventOwnershipService } from "./event.service";
+import { findGuestEventInviteFormatByEventId } from "../repositories/eventInviteFormat.repository";
 
 export const getAllGuestsService = async (
   weddingId: string,
@@ -37,13 +38,17 @@ export const addNewGuestService = async (
 ) => {
   // Verify ownership of all provided events
   const events = await Promise.all(
-    body.eventIds.map((eventId) =>
-      verifyWeddingEventOwnershipService(eventId, userId),
-    ),
+    body.eventIds.map(async (eventId) => {
+      const event = await verifyWeddingEventOwnershipService(eventId, userId);
+
+      if (!event) throw new ApiError(400, "Invalid Event or Event Not Found");
+
+      return event;
+    }),
   );
 
   // A user can own multiple weddings — ensure all events come from the same one
-  // (verifyWeddingEventOwnershipService only checks user → wedding ownership,
+  // (verify Wedding Event Ownership Service only checks user → wedding ownership,
   //  not that every event shares the same wedding_id)
   const weddingIds = new Set(events.map((e) => e.wedding_id));
   if (weddingIds.size > 1)
@@ -77,18 +82,25 @@ export const addNewGuestService = async (
 
     // 4. Create an event invite for each provided event
     const guestEventInvites = await Promise.all(
-      eventIds.map((eventId) => {
+      eventIds.map(async (eventId) => {
+        const guestEventInviteFormat =
+          await findGuestEventInviteFormatByEventId(eventId, tx);
+
+        if (!guestEventInviteFormat)
+          throw new Error("Event invite format not found");
+
         const guestInvitePayload: Prisma.GuestEventInviteUncheckedCreateInput =
           {
             event_id: eventId,
             guest_id: guest.id,
+            invite_format_id: guestEventInviteFormat.id,
             invite_token: uuidv4(),
             plus_ones: null,
             dietary: null,
             invite_deadline: null,
             responded_at: null,
           };
-        return createGuestEventInvite(guestInvitePayload, tx);
+        return await createGuestEventInvite(guestInvitePayload, tx);
       }),
     );
 
@@ -143,9 +155,17 @@ export const editWeddingGuestService = async (
     // Verify ownership of every newly-added event before any writes
     if (toAdd.length > 0) {
       const verifiedEvents = await Promise.all(
-        toAdd.map((eventId) =>
-          verifyWeddingEventOwnershipService(eventId, userId),
-        ),
+        toAdd.map(async (eventId) => {
+          const ownershipEvent = await verifyWeddingEventOwnershipService(
+            eventId,
+            userId,
+          );
+
+          if (!ownershipEvent)
+            throw new ApiError(400, "Invalid Event or Event Not Found");
+
+          return ownershipEvent;
+        }),
       );
 
       // A user can own multiple weddings — ensure all new events belong
@@ -167,11 +187,18 @@ export const editWeddingGuestService = async (
     // 5. Create new invites
     if (toAdd.length > 0)
       await Promise.all(
-        toAdd.map((eventId) =>
-          createGuestEventInvite(
+        toAdd.map(async (eventId) => {
+          const guestEventInviteFormat =
+            await findGuestEventInviteFormatByEventId(eventId, tx);
+
+          if (!guestEventInviteFormat)
+            throw new Error("Event invite format not found");
+
+          return await createGuestEventInvite(
             {
               event_id: eventId,
               guest_id: guestId,
+              invite_format_id: guestEventInviteFormat.id,
               invite_token: uuidv4(),
               plus_ones: null,
               dietary: null,
@@ -179,10 +206,9 @@ export const editWeddingGuestService = async (
               responded_at: null,
             },
             tx,
-          ),
-        ),
+          );
+        }),
       );
-
     // 5. Update guest profile fields if any were provided
     const { eventIds: _eventIds, ...guestFields } = payload;
     const hasGuestUpdates = Object.keys(guestFields).length > 0;

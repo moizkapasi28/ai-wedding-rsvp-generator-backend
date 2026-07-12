@@ -24,6 +24,12 @@ enum Side {
   GROOM
 }
 
+enum EventSide {
+  BRIDE
+  GROOM
+  BOTH
+}
+
 enum Status {
   PENDING
   ATTENDING
@@ -102,6 +108,7 @@ model Event{
   venue String @db.Text
   address String @db.Text
   city String @db.VarChar(256)
+  event_side EventSide
   guestEventInvite GuestEventInvite[]
   guestEventInviteFormat GuestEventInviteFormat[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
@@ -135,6 +142,8 @@ model GuestEventInvite {
   guest Guest @relation(fields: [guest_id], references: [id], onDelete: Cascade)
   event_id String @db.Uuid
   event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  invite_format_id String @db.Uuid
+  invite_format GuestEventInviteFormat @relation(fields: [invite_format_id], references: [id], onDelete: Cascade)
   invite_token String @db.Uuid
   status Status @default(PENDING)
   plus_ones Int? 
@@ -155,15 +164,20 @@ model GuestEventInviteFormat {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   event_id String @db.Uuid 
   event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  raw_image String?
+  generated_image String? 
+  illustration_style String?
   dietary_preference Boolean @default(false)
   song_request Boolean @default(false)
   message Boolean @default(false)
   plus_ones Boolean @default(false)
   first_reminder Boolean @default(false)
   final_reminder Boolean @default(false)
+  guestEventInvite GuestEventInvite[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([event_id])
   @@unique([event_id])
+
 }

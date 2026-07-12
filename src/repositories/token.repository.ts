@@ -15,8 +15,20 @@ export const findTokenByJti = (jti: string, tx?: Prisma.TransactionClient) => {
   return db.token.findFirst({ where: { jti } });
 };
 
-export const deleteTokenByJti = (jti: string, tx?: Prisma.TransactionClient) => {
+export const deleteTokenByJti = (
+  jti: string,
+  tx?: Prisma.TransactionClient,
+) => {
   const db = tx || prisma;
 
   return db.token.deleteMany({ where: { jti } });
+};
+
+export const deleteTokensByUserId = async (
+  userId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  return db.token.deleteMany({ where: { user_id: userId } });
 };

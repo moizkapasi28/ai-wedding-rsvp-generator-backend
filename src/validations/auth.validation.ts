@@ -1,8 +1,8 @@
 import { z } from "zod";
 export const signUpBodySchema = z.object({
-  first_name: z.string(),
-  last_name: z.string(),
-  mobile_number: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  mobileNumber: z.string(),
   email: z.string(),
   password: z.string(),
 });
@@ -24,15 +24,18 @@ export const loginSchema = z.object({
 
 export type LoginDto = z.infer<typeof loginBodySchema>;
 
-export const verifyEmailQuerySchema = z.object({
-  token: z.string(),
+export const verifyEmailBodySchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .describe("Email verification to verify email address"),
 });
 
 export const verifyEmailSchema = z.object({
-  query: verifyEmailQuerySchema,
+  body: verifyEmailBodySchema,
 });
 
-export type VerifyEmailDto = z.infer<typeof verifyEmailQuerySchema>;
+export type VerifyEmailDto = z.infer<typeof verifyEmailBodySchema>;
 
 export const resendEmailVerificationBodySchema = z.object({
   email: z.string(),
@@ -66,3 +69,13 @@ export const resetPasswordSchema = z.object({
 });
 
 export type ResetPasswordDto = z.infer<typeof resetPasswordBodySchema>;
+
+export const refreshTokenBodySchema = z.object({
+  refreshToken: z.string(),
+});
+
+export const refreshTokenSchema = z.object({
+  body: refreshTokenBodySchema,
+});
+
+export type RefreshTokenDto = z.infer<typeof refreshTokenBodySchema>;

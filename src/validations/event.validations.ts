@@ -1,4 +1,9 @@
 import z from "zod";
+import { EventSide } from "../../generated/prisma/enums";
+
+export const EventSideSchema = z.enum(
+  Object.values(EventSide) as [EventSide, ...EventSide[]],
+);
 
 export const getAllWeddingEventsQuerySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
@@ -18,6 +23,9 @@ export const addNewWeddingEventBodySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
   title: z.string().min(1, "Title is required").max(100),
   description: z.string().min(1, "Description is required").max(200),
+  eventSide: EventSideSchema.describe(
+    "Side is required (BRIDE or GROOM or BOTH)",
+  ),
   date: z
     .string()
     .regex(

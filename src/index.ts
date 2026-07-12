@@ -13,6 +13,8 @@ import eventRouter from "./routes/event.routes";
 import { apiReference } from "@scalar/express-api-reference";
 import openApiDoc from "./openapi.json";
 import guestsRouter from "./routes/guests.routes";
+import eventInviteFormatRouter from "./routes/eventInviteFormat.route";
+import generalRouter from "./routes/general.routes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,6 +28,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/wedding", weddingRouter);
 app.use("/api/event", eventRouter);
 app.use("/api/guest", guestsRouter);
+app.use("/api/page-setting", eventInviteFormatRouter);
+app.use("/api/general", generalRouter);
 
 // API Documentation
 app.use(
