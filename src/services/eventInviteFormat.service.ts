@@ -94,9 +94,10 @@ export const generateEventInviteFormatImageService = async (
     "image/png",
   );
 
-  await updateEventInviteFormatService(eventId, userId, {
-    generated_image: generatedImageKey,
-  });
+  //! This is currently deprecated not storing directly in DB will be saved after user saves the data
+  // await updateEventInviteFormatService(eventId, userId, {
+  //   generated_image: generatedImageKey,
+  // });
 
   logger.info(
     { eventId, userId, generatedImageKey },
