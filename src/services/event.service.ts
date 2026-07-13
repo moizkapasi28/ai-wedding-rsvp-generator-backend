@@ -53,6 +53,8 @@ export const addNewWeddingEventService = async (
         venue: data.venue,
         address: data.address,
         city: data.city,
+        latitude: data.latitude,
+        longitude: data.longitude,
       },
       tx,
     );

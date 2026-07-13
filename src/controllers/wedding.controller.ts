@@ -21,8 +21,14 @@ export const getAllUserWeddings = async (
   const { user, query } = req;
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
+  const includeStats = req.query.stats === "true";
 
-  const weddingsData = await getAllUserWeddingsService(user.id, page, limit);
+  const weddingsData = await getAllUserWeddingsService(
+    user.id,
+    page,
+    limit,
+    includeStats,
+  );
 
   return sendSuccess(res, "Weddings fetched successfully", weddingsData, 200);
 };

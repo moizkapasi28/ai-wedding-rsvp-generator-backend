@@ -73,6 +73,7 @@ model Wedding {
   groom_name String @db.VarChar(256)
   date DateTime @db.Date
   venue String @db.Text
+  address String @db.Text
   city String @db.VarChar(256)
   message String?
   created_at DateTime @default(now()) @db.Timestamptz(6)
@@ -107,6 +108,8 @@ model Event{
   time String @db.VarChar(256)
   venue String @db.Text
   address String @db.Text
+  latitude String? @db.VarChar(256)
+  longitude String? @db.VarChar(256)
   city String @db.VarChar(256)
   event_side EventSide
   guestEventInvite GuestEventInvite[]

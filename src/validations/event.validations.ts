@@ -55,6 +55,18 @@ export const addNewWeddingEventBodySchema = z.object({
     .min(1, "City is required")
     .max(50)
     .describe("Example: New York"),
+  latitude: z
+    .string()
+    .min(1, "Latitude is required")
+    .max(50)
+    .optional()
+    .describe("Example: 40.7128"),
+  longitude: z
+    .string()
+    .min(1, "Longitude is required")
+    .max(50)
+    .optional()
+    .describe("Example: 40.7128"),
 });
 
 export const addNewWeddingEventSchema = z.object({

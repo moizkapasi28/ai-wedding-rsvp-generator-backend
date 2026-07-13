@@ -8,6 +8,7 @@ import {
   findAllGuests,
   findGuestByMobileNumberAndWeddingId,
   findGuestEventInvitesByGuestId,
+  getGuestsConfirmationStats,
   getWeddingGuest,
   updateGuest,
 } from "../repositories/guest.repository";
@@ -227,4 +228,16 @@ export const deleteWeddingGuestService = async (guestId: string) => {
   const guest = await deleteGuest(guestId);
 
   if (!guest) throw new ApiError(403, "Failed to delete guest");
+};
+
+export const calculateConfirmationOfGuest = async (weddingId: string) => {
+  const [totalInvites, confirmedInvites] =
+    await getGuestsConfirmationStats(weddingId);
+
+  const confirmationRate =
+    totalInvites === 0
+      ? 0
+      : Number(((confirmedInvites / totalInvites) * 100).toFixed(2));
+
+  return confirmationRate;
 };

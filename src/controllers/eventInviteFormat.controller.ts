@@ -12,7 +12,6 @@ import {
   GetEventInviteFormatDto,
   UpdateEventInviteFormatDto,
 } from "../validations/eventInviteFormat.validation";
-import axios from "axios";
 
 export const getEventInviteFormatByEvent = async (
   req: Request<GetEventInviteFormatByEventDto>,

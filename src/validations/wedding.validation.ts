@@ -3,6 +3,7 @@ import z from "zod";
 export const getAllUserWeddingsQuerySchema = z.object({
   page: z.string().optional().default("1"),
   limit: z.string().optional().default("10"),
+  stats: z.string().optional().default("false").describe("True or false"),
 });
 
 export const getAllUserWeddingsSchema = z.object({
@@ -41,6 +42,11 @@ export const addNewWeddingBodySchema = z.object({
     .min(1, "Venue is required")
     .max(200)
     .describe("Example: The Grand Hotel, New York"),
+  address: z
+    .string()
+    .min(1, "Address is required")
+    .max(200)
+    .describe("Example: 123 Main St, New York, NY 10001"),
   city: z
     .string()
     .min(1, "City is required")

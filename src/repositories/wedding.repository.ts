@@ -69,3 +69,27 @@ export const deleteWeddingById = async (
   const db = tx || prisma;
   return db.wedding.delete({ where: { id } });
 };
+
+export const getAllWeddingsWithEventCountAndTotalGuest = async (
+  userId: string,
+  skip: number,
+  take: number,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  return db.wedding.findMany({
+    where: { user_id: userId },
+    skip,
+    take,
+    orderBy: { created_at: "desc" },
+    include: {
+      _count: {
+        select: {
+          events: true,
+          guests: true,
+        },
+      },
+    },
+  });
+};

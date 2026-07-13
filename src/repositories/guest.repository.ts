@@ -126,3 +126,26 @@ export const deleteGuestEventInvitesByEventIds = async (
     where: { guest_id: guestId, event_id: { in: eventIds } },
   });
 };
+
+export const getGuestsConfirmationStats = async (
+  weddingId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  const [totalInvites, confirmedInvites] = await Promise.all([
+    db.guestEventInvite.count({
+      where: {
+        event: { wedding_id: weddingId },
+      },
+    }),
+    db.guestEventInvite.count({
+      where: {
+        event: { wedding_id: weddingId },
+        status: "ATTENDING",
+      },
+    }),
+  ]);
+
+  return [totalInvites, confirmedInvites];
+};

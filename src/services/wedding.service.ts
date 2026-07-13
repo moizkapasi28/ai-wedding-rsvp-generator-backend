@@ -1,11 +1,10 @@
-import { v4 as uuidv4 } from "uuid";
 import {
   countUserWeddings,
   createWedding,
   deleteWeddingById,
-  findWeddingById,
   findWeddingByIdAndUserId,
   getAllUserWeddings,
+  getAllWeddingsWithEventCountAndTotalGuest,
   updateWeddingById,
 } from "../repositories/wedding.repository";
 import {
@@ -14,25 +13,51 @@ import {
 } from "../validations/wedding.validation";
 import { ApiError } from "../utils/apiError.util";
 import { Wedding, Prisma } from "../../generated/prisma/client";
+import { calculateConfirmationOfGuest } from "./guest.service";
 
 export const getAllUserWeddingsService = async (
   userId: string,
   page: number = 1,
   limit: number = 10,
+  includeStats: boolean = false,
 ) => {
   const skip = (page - 1) * limit;
 
-  const [data, totalCount] = await Promise.all([
-    getAllUserWeddings(userId, skip, limit),
-    countUserWeddings(userId),
-  ]);
+  if (includeStats) {
+    const [data, totalCount] = await Promise.all([
+      getAllWeddingsWithEventCountAndTotalGuest(userId, skip, limit),
+      countUserWeddings(userId),
+    ]);
 
-  return {
-    weddings: data,
-    totalCount,
-    totalPages: Math.ceil(totalCount / limit),
-    currentPage: page,
-  };
+    const weddings = await Promise.all(
+      data.map(async ({ _count, id, ...wedding }) => ({
+        id,
+        ...wedding,
+        totalGuests: _count?.guests ?? 0,
+        totalEvents: _count?.events ?? 0,
+        confirmationRate: await calculateConfirmationOfGuest(id),
+      })),
+    );
+
+    return {
+      weddings,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+    };
+  } else {
+    const [data, totalCount] = await Promise.all([
+      getAllUserWeddings(userId, skip, limit),
+      countUserWeddings(userId),
+    ]);
+
+    return {
+      weddings: data,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+    };
+  }
 };
 
 export const addNewUserWeddingService = async (
@@ -52,6 +77,7 @@ export const addNewUserWeddingService = async (
     groom_name: data.groom_name,
     date: new Date(data.date),
     venue: data.venue,
+    address: data.address,
     city: data.city,
     message: data.message,
     slug,
