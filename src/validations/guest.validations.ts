@@ -1,7 +1,8 @@
 import z from "zod";
-import { Side } from "../../generated/prisma/enums";
+import { Group, Side } from "../../generated/prisma/enums";
 
 export const SideSchema = z.enum(Object.values(Side) as [Side, ...Side[]]);
+export const GroupSchema = z.enum(Object.values(Group) as [Group, ...Group[]]);
 
 export const getAllGuestsQuerySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
@@ -22,6 +23,25 @@ export const addNewGuestBodySchema = z.object({
   mobile_number: z.string().min(1, "Mobile number is required").max(15),
   email: z.string().min(1, "Email is required").max(50),
   side: SideSchema.describe("Side is required (BRIDE or GROOM)"),
+  group: GroupSchema.describe(
+    "Group is required (FRIEND or RELATIVE or COLLEAGUE or EMPLOYEE or VIP)",
+  ),
+  accomodation_required: z
+    .boolean()
+    .default(false)
+    .describe("Is accomodation required for guest"),
+  accomodation_address: z
+    .string()
+    .trim()
+    .max(250, "Accomodation Address cannot be longer than 250 characters")
+    .optional()
+    .describe("Accomodation Address for the guest"),
+  note: z
+    .string()
+    .trim()
+    .max(100, "Note cannot be longer than 100 characters")
+    .optional()
+    .describe("Note for the guest"),
 });
 
 export const addNewGuestSchema = z.object({

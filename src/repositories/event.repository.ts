@@ -80,3 +80,19 @@ export const deleteWeddingEventById = async (
   const db = tx || prisma;
   return db.event.delete({ where: { id } });
 };
+
+export const getGuestStatsForEvents = async (
+  eventIds: string[],
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guestEventInvite.groupBy({
+    by: ["event_id", "status"],
+    where: {
+      event_id: { in: eventIds },
+    },
+    _count: {
+      status: true,
+    },
+  });
+};

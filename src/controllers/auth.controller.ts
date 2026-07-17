@@ -2,6 +2,7 @@ import { type Request, type Response } from "express";
 import {
   ForgotPasswordDto,
   LoginDto,
+  LogoutDto,
   RefreshTokenDto,
   ResendEmailVerificationDto,
   ResetPasswordDto,
@@ -10,6 +11,7 @@ import {
 } from "../validations/auth.validation";
 import {
   forgotPasswordService,
+  logoutService,
   refreshTokenService,
   resendVerificationEmailService,
   resetPasswordService,
@@ -80,7 +82,7 @@ export const forgotPasswordEmail = async (
 };
 
 export const resetPassword = async (
-  req: Request<ResetPasswordDto>,
+  req: Request<{}, {}, ResetPasswordDto>,
   res: Response,
 ) => {
   const { body } = req;
@@ -91,7 +93,7 @@ export const resetPassword = async (
 };
 
 export const refreshToken = async (
-  req: Request<RefreshTokenDto>,
+  req: Request<{}, {}, RefreshTokenDto>,
   res: Response,
 ) => {
   const { body } = req;
@@ -99,4 +101,15 @@ export const refreshToken = async (
   const tokens = await refreshTokenService(body);
 
   return sendSuccess(res, "Tokens refreshed successfully", tokens, 200);
+};
+
+export const logout = async (
+  req: Request<{}, {}, LogoutDto>,
+  res: Response,
+) => {
+  const { body } = req;
+
+  await logoutService(body);
+
+  return sendSuccess(res, "User logged out successfully", {}, 200);
 };

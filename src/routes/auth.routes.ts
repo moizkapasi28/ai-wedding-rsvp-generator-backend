@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import {
   forgotPasswordSchema,
   loginSchema,
+  logoutSchema,
   refreshTokenSchema,
   resendEmailVerificationSchema,
   resetPasswordSchema,
@@ -11,6 +12,7 @@ import {
 import validate from "../middlewares/validate.middleware";
 import {
   forgotPasswordEmail,
+  logout,
   refreshToken,
   resendVerificationEmail,
   resetPassword,
@@ -19,6 +21,7 @@ import {
   verifyEmail,
 } from "../controllers/auth.controller";
 import { asyncHandler } from "../utils/asyncHandler.util";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const authRouter = Router();
 
@@ -54,6 +57,13 @@ authRouter.post(
   "/access-token",
   validate(refreshTokenSchema),
   asyncHandler(refreshToken),
+);
+
+authRouter.post(
+  "/logout",
+  authenticate,
+  validate(logoutSchema),
+  asyncHandler(logout),
 );
 
 export default authRouter;

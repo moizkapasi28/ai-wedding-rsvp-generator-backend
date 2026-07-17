@@ -1,0 +1,6 @@
+export enum STATUS {
+    ATTENDING = "ATTENDING",
+    DECLINED = "DECLINED",
+    MAYBE = "MAYBE",
+    PENDING = "PENDING",
+}

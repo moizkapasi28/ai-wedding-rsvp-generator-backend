@@ -8,34 +8,123 @@ import {
   findEventById,
   findEventByIdAndUserId,
   getAllWeddingEvents,
+  getGuestStatsForEvents,
   updateWeddingEventById,
 } from "../repositories/event.repository";
 import { createGuestEventInviteFormat } from "../repositories/eventInviteFormat.repository";
 import { ApiError } from "../utils/apiError.util";
+import {
+  EventStats,
+  EventWithStats,
+  GuestStatQueryGroup,
+} from "../types/event.type";
+import { STATUS } from "../enums/event.enum";
+
+export const mapGuestStatsToEvents = (
+  events: Event[],
+  guestStats: GuestStatQueryGroup[],
+): EventWithStats[] => {
+  const statsMap = new Map<string, Omit<EventStats, "completion" | "progressBar">>();
+
+  for (const stat of guestStats) {
+    if (!statsMap.has(stat.event_id)) {
+      statsMap.set(stat.event_id, {
+        totalGuests: 0,
+        attendingGuests: 0,
+        declinedGuests: 0,
+        maybeGuests: 0,
+        pendingGuests: 0,
+      });
+    }
+
+    const eventStat = statsMap.get(stat.event_id);
+    const count = stat._count.status;
+
+    eventStat.totalGuests += count;
+
+    if (stat.status === STATUS.ATTENDING) eventStat.attendingGuests += count;
+    else if (stat.status === STATUS.DECLINED) eventStat.declinedGuests += count;
+    else if (stat.status === STATUS.MAYBE) eventStat.maybeGuests += count;
+    else if (stat.status === STATUS.PENDING) eventStat.pendingGuests += count;
+  }
+
+  return events.map((event) => {
+    const rawStats = statsMap.get(event.id) || {
+      totalGuests: 0,
+      attendingGuests: 0,
+      declinedGuests: 0,
+      maybeGuests: 0,
+      pendingGuests: 0,
+    };
+
+    const getPercentage = (count: number) =>
+      rawStats.totalGuests === 0 ? 0 : Math.round((count / rawStats.totalGuests) * 100);
+
+    const completion = getPercentage(
+      rawStats.attendingGuests + rawStats.declinedGuests + rawStats.maybeGuests
+    );
+
+    const stats = {
+      ...rawStats,
+      completion,
+      progressBar: {
+        confirmed: getPercentage(rawStats.attendingGuests),
+        maybe: getPercentage(rawStats.maybeGuests),
+        declined: getPercentage(rawStats.declinedGuests),
+        pending: getPercentage(rawStats.pendingGuests),
+      },
+    };
+
+    return {
+      ...event,
+      stats,
+    };
+  });
+};
 
 export const getAllWeddingEventsService = async (
   weddingId: string,
   page: number = 1,
   limit: number = 10,
+  includeStats: boolean = false,
 ): Promise<{
-  events: Event[];
+  events: EventWithStats[];
   totalCount: number;
   totalPages: number;
   currentPage: number;
 }> => {
   const skip = (page - 1) * limit;
 
-  const [data, totalCount] = await Promise.all([
-    getAllWeddingEvents(weddingId, skip, limit),
-    countWeddingEvents(weddingId),
-  ]);
+  if (includeStats) {
+    const [data, totalCount] = await Promise.all([
+      getAllWeddingEvents(weddingId, skip, limit),
+      countWeddingEvents(weddingId),
+    ]);
 
-  return {
-    events: data,
-    totalCount,
-    totalPages: Math.ceil(totalCount / limit),
-    currentPage: page,
-  };
+    const eventIds = data.map((e) => e.id);
+    const guestStats = await getGuestStatsForEvents(eventIds);
+
+    const eventsWithStats = mapGuestStatsToEvents(data, guestStats);
+
+    return {
+      events: eventsWithStats,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+    };
+  } else {
+    const [data, totalCount] = await Promise.all([
+      getAllWeddingEvents(weddingId, skip, limit),
+      countWeddingEvents(weddingId),
+    ]);
+
+    return {
+      events: data,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+    };
+  }
 };
 
 export const addNewWeddingEventService = async (

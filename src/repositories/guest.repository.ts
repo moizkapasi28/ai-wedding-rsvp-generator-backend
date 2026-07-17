@@ -22,10 +22,34 @@ export const findAllGuests = async (
   const [guests, total] = await Promise.all([
     db.guest.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile_number: true,
+        side: true,
+        group: true,
+        accomodation_required: true,
+        accomodation_address: true,
+        note: true,
+        created_at: true,
+        updated_at: true,
         guestEventInvite: {
-          where: eventId ? { event_id: eventId } : undefined,
-          include: { event: true },
+          select: {
+            id: true,
+            status: true,
+            created_at: true,
+            updated_at: true,
+            event: {
+              select: {
+                id: true,
+                title: true,
+                event_side: true,
+                created_at: true,
+                updated_at: true,
+              },
+            },
+          },
         },
       },
       skip,
@@ -35,7 +59,7 @@ export const findAllGuests = async (
     db.guest.count({ where }),
   ]);
 
-  return { guests, total, page, limit };
+  return { guests, total };
 };
 
 export const createGuest = async (

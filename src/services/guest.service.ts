@@ -28,9 +28,19 @@ export const getAllGuestsService = async (
   page: number = 1,
   limit: number = 10,
 ) => {
-  const guests = await findAllGuests(weddingId, eventId, page, limit);
+  const { guests, total } = await findAllGuests(
+    weddingId,
+    eventId,
+    page,
+    limit,
+  );
 
-  return guests;
+  return {
+    guests,
+    totalCount: total,
+    totalPages: Math.ceil(total / limit),
+    currentPage: page,
+  };
 };
 
 export const addNewGuestService = async (
@@ -64,6 +74,10 @@ export const addNewGuestService = async (
     mobile_number: body.mobile_number,
     email: body.email,
     side: body.side,
+    group: body.group,
+    accomodation_required: body.accomodation_required,
+    accomodation_address: body.accomodation_address,
+    note: body.note,
   };
 
   return prisma.$transaction(async (tx) => {

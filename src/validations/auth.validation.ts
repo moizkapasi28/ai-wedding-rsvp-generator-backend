@@ -79,3 +79,9 @@ export const refreshTokenSchema = z.object({
 });
 
 export type RefreshTokenDto = z.infer<typeof refreshTokenBodySchema>;
+
+export const logoutSchema = z.object({
+  body: refreshTokenBodySchema,
+});
+
+export type LogoutDto = z.infer<typeof refreshTokenBodySchema>;

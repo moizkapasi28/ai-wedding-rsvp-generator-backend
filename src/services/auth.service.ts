@@ -20,6 +20,7 @@ import {
 import {
   ForgotPasswordDto,
   LoginDto,
+  LogoutDto,
   RefreshTokenDto,
   ResendEmailVerificationDto,
   ResetPasswordDto,
@@ -124,6 +125,8 @@ export const signInService = async (
 
   if (!isPasswordValid) throw new ApiError(404, "Invalid email or password");
 
+  // await deleteTokensByUserIdService(existingUser.id);
+
   const tokens = await generateAuthTokensService(existingUser);
 
   const { password: _password, ...user } = existingUser;
@@ -158,12 +161,6 @@ export const verifyEmailService = async (
 
     await updateUserById(user.id, { is_email_verified: true }, tx);
     await deleteTokenByJti(tokenDoc.jti, tx);
-
-    // await sendEmail(USER_EMAIL_VERIFIED_TEMPLATE, {
-    //   email: user.email,
-    //   first_name: user.first_name,
-    //   last_name: user.last_name,
-    // });
 
     return true;
   });
@@ -261,4 +258,23 @@ export const refreshTokenService = async (payload: RefreshTokenDto) => {
   const newTokens = await generateAuthTokensService(user);
 
   return newTokens;
+};
+
+export const logoutService = async (payload: LogoutDto) => {
+  const { refreshToken } = payload;
+
+  const refreshTokenDoc = await verifyTokenService(
+    refreshToken,
+    TOKEN_TYPE.REFRESH,
+  );
+
+  const user = await findUserById(refreshTokenDoc.user_id);
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  const deletedTokens = await deleteTokensByUserIdService(
+    refreshTokenDoc.user_id,
+  );
+
+  if (!deletedTokens) throw new ApiError(400, "Failed to logout user");
 };

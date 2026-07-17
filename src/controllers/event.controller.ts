@@ -23,10 +23,16 @@ export const getAllWeddingEvents = async (
 
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
+  const includeStats = req.query.stats === "true";
 
   await getUserWeddingService(user.id, query.weddingId);
 
-  const events = await getAllWeddingEventsService(query.weddingId, page, limit);
+  const events = await getAllWeddingEventsService(
+    query.weddingId,
+    page,
+    limit,
+    includeStats,
+  );
 
   return sendSuccess(res, "Events fetched successfully", events, 200);
 };
@@ -42,7 +48,6 @@ export const addNewWeddingEvent = async (
   const event = await addNewWeddingEventService({
     ...body,
     wedding_id: body.weddingId,
-    event_side: body.eventSide,
   });
 
   return sendSuccess(res, "Event created successfully", event, 201);
@@ -67,7 +72,6 @@ export const editWeddingEvent = async (
 
   const event = await editWeddingEventService(params.id, user.id, {
     ...body,
-    event_side: body.eventSide,
   });
 
   return sendSuccess(res, "Event updated successfully", event, 200);

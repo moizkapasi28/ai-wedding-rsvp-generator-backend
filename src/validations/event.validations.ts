@@ -9,6 +9,7 @@ export const getAllWeddingEventsQuerySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
   page: z.string().optional().default("1"),
   limit: z.string().optional().default("10"),
+  stats: z.string().optional().default("false").describe("True or false"),
 });
 
 export const getAllWeddingEventsSchema = z.object({
@@ -22,8 +23,11 @@ export type GetAllWeddingEventsDto = z.infer<
 export const addNewWeddingEventBodySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
   title: z.string().min(1, "Title is required").max(100),
-  description: z.string().min(1, "Description is required").max(200),
-  eventSide: EventSideSchema.describe(
+  description: z
+    .string()
+    .min(1, "Message is required")
+    .max(250, "Message cannot be longer than 250 characters"),
+  event_side: EventSideSchema.describe(
     "Side is required (BRIDE or GROOM or BOTH)",
   ),
   date: z

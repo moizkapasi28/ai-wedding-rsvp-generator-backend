@@ -22,6 +22,7 @@ enum TokenType {
 enum Side {
   BRIDE
   GROOM
+  BOTH
 }
 
 enum EventSide {
@@ -44,6 +45,16 @@ enum Dietary {
   EGGETARIAN
   LACTOSE_FREE
   GLUTEN_FREE
+  OTHER
+}
+
+enum Group {
+  FAMILY
+  FRIEND
+  RELATIVE
+  COLLEAGUE
+  EMPLOYEE
+  VIP
   OTHER
 }
 
@@ -129,7 +140,11 @@ model Guest{
   name String @db.VarChar(256)
   email String? @db.VarChar(256)
   mobile_number String? @db.VarChar(256)
-  side Side 
+  side Side
+  group Group
+  accomodation_required Boolean @default(false)
+  accomodation_address String? @db.VarChar(256)
+  note String? @db.VarChar(256)
   guestEventInvite GuestEventInvite[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
