@@ -4,6 +4,31 @@ export const getAllUserWeddingsQuerySchema = z.object({
   page: z.string().optional().default("1"),
   limit: z.string().optional().default("10"),
   stats: z.string().optional().default("false").describe("True or false"),
+  search: z.string().optional().default("").describe("search keyword"),
+  filter: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val
+        ?.split(",")
+        .map((f) => f.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.enum(["this_week", "upcoming", "completed"])).optional())
+    .transform((val) => val?.join(","))
+    .describe(
+      "Comma-separated filter options: this_week, upcoming, completed (e.g. 'this_week,upcoming')",
+    ),
+  sortBy: z
+    .enum(["date", "created_at"])
+    .optional()
+    .default("created_at")
+    .describe("Column to sort by (currently only 'date' supported)"),
+  sortOrder: z
+    .enum(["asc", "desc"])
+    .optional()
+    .default("desc")
+    .describe("Sort order: asc or desc"),
 });
 
 export const getAllUserWeddingsSchema = z.object({

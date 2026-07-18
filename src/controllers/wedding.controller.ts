@@ -22,12 +22,20 @@ export const getAllUserWeddings = async (
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
   const includeStats = req.query.stats === "true";
+  const search = req.query.search;
+  const filter = req.query.filter;
+  const sortBy = req.query.sortBy;
+  const sortOrder = req.query.sortOrder;
 
   const weddingsData = await getAllUserWeddingsService(
     user.id,
     page,
     limit,
     includeStats,
+    search,
+    filter,
+    sortBy,
+    sortOrder,
   );
 
   return sendSuccess(res, "Weddings fetched successfully", weddingsData, 200);

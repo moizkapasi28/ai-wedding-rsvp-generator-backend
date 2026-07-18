@@ -65,6 +65,8 @@ export const editWeddingGuest = async (
 ) => {
   const { user, params, body } = req;
 
+  console.log(body);
+
   const guest = await editWeddingGuestService(params.id, user.id, body);
 
   return sendSuccess(res, "Guest updated successfully", guest, 200);

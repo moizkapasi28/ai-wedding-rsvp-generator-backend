@@ -15,24 +15,67 @@ import { ApiError } from "../utils/apiError.util";
 import { Wedding, Prisma } from "../../generated/prisma/client";
 import { calculateConfirmationOfGuest } from "./guest.service";
 
+const getWeddingTag = (weddingDate: Date): string => {
+  const now = new Date();
+
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startOfWedding = new Date(
+    weddingDate.getFullYear(),
+    weddingDate.getMonth(),
+    weddingDate.getDate(),
+  );
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diffDays = Math.round(
+    (startOfWedding.getTime() - startOfToday.getTime()) / msPerDay,
+  );
+
+  if (diffDays < 0) {
+    return "Completed";
+  }
+
+  if (diffDays <= 7) {
+    return "This Week";
+  }
+
+  return `${diffDays} days later`;
+};
+
 export const getAllUserWeddingsService = async (
   userId: string,
   page: number = 1,
   limit: number = 10,
   includeStats: boolean = false,
+  search?: string,
+  filter?: string,
+  sortBy: "date" | "created_at" = "created_at",
+  sortOrder: "asc" | "desc" = "desc",
 ) => {
   const skip = (page - 1) * limit;
 
   if (includeStats) {
     const [data, totalCount] = await Promise.all([
-      getAllWeddingsWithEventCountAndTotalGuest(userId, skip, limit),
-      countUserWeddings(userId),
+      getAllWeddingsWithEventCountAndTotalGuest(
+        userId,
+        skip,
+        limit,
+        search,
+        filter,
+        sortBy,
+        sortOrder,
+      ),
+      countUserWeddings(userId, search, filter),
     ]);
 
     const weddings = await Promise.all(
       data.map(async ({ _count, id, ...wedding }) => ({
         id,
         ...wedding,
+        tag: getWeddingTag(wedding.date),
         totalGuests: _count?.guests ?? 0,
         totalEvents: _count?.events ?? 0,
         confirmationRate: await calculateConfirmationOfGuest(id),
