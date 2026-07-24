@@ -96,3 +96,14 @@ export const getGuestStatsForEvents = async (
     },
   });
 };
+
+export const getAllEventsByWeddingID = async (
+  weddingId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.event.findMany({
+    where: { wedding_id: weddingId },
+    orderBy: { date: "asc" },
+  });
+};

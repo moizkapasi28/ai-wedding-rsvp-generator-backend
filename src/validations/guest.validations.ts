@@ -9,6 +9,46 @@ export const getAllGuestsQuerySchema = z.object({
   eventId: z.uuid().optional().describe("Event Id if need to filter by event"),
   page: z.string().optional().default("1"),
   limit: z.string().optional().default("10"),
+  search: z.string().trim().optional().default("").describe("search keyword"),
+  events: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val
+        ?.split(",")
+        .map((f) => f.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.uuid()).optional())
+    .describe(
+      "Comma-separated filter options: event ids (e.g. 'eventId1,eventId2')",
+    ),
+  sides: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val
+        ?.split(",")
+        .map((f) => f.trim().toUpperCase())
+        .filter(Boolean),
+    )
+    .pipe(z.array(SideSchema).optional())
+    .describe(
+      "Comma-separated filter options: sides (e.g. 'BRIDE,GROOM,BOTH')",
+    ),
+  groups: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val
+        ?.split(",")
+        .map((f) => f.trim().toUpperCase())
+        .filter(Boolean),
+    )
+    .pipe(z.array(GroupSchema).optional())
+    .describe(
+      "Comma-separated filter options: groups (e.g. 'FRIEND,RELATIVE,COLLEAGUE,EMPLOYEE,VIP')",
+    ),
 });
 
 export const getAllGuestsSchema = z.object({
@@ -66,3 +106,23 @@ export const editWeddingGuestSchema = z.object({
 });
 
 export type EditWeddingGuestDto = z.infer<typeof editWeddingGuestSchema>;
+
+export const downloadGuestTemplateParamsSchema = z.object({
+  id: z.uuid().describe("Guest Id is required"),
+});
+
+export const downloadGuestTemplateSchema = z.object({
+  params: downloadGuestTemplateParamsSchema,
+});
+
+export const uploadGuestTemplateSchema = z.object({
+  params: downloadGuestTemplateParamsSchema,
+});
+
+export type DownloadGuestTemplateDto = z.infer<
+  typeof downloadGuestTemplateSchema
+>;
+
+export type UploadGuestTemplateDto = z.infer<
+  typeof uploadGuestTemplateSchema
+>;

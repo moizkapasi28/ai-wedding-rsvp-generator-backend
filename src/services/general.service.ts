@@ -14,8 +14,6 @@ export const generateS3PresignedUploadUrlService = async (
 
   if (!url) throw new Error("Failed to generate upload presigned url");
 
-  console.log(url);
-
   return url;
 };
 

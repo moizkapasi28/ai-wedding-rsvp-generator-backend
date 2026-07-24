@@ -125,7 +125,7 @@ export const signInService = async (
 
   if (!isPasswordValid) throw new ApiError(404, "Invalid email or password");
 
-  // await deleteTokensByUserIdService(existingUser.id);
+  await deleteTokensByUserIdService(existingUser.id);
 
   const tokens = await generateAuthTokensService(existingUser);
 

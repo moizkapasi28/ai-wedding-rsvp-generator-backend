@@ -20,8 +20,6 @@ export const generateS3PresignedUploadUrl = async (
     body.mime_type,
   );
 
-  console.log(url);
-
   return sendSuccess(res, "Presigned url generated successfully", { url }, 200);
 };
 

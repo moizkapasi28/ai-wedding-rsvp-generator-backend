@@ -1,23 +1,97 @@
-import { Prisma } from "../../generated/prisma/client";
+import { Group, Prisma, Side } from "../../generated/prisma/client";
 import { prisma } from "../lib/prisma";
+import { sanitizeSearchTerm } from "../utils/utils";
+
+//* Utility functions for guest repository
+
+const buildGuestWhereInput = (
+  weddingId: string,
+  eventId?: string,
+  search?: string,
+  events?: string[],
+  sides?: Side[],
+  groups?: Group[],
+): Prisma.GuestWhereInput => {
+  const where: Prisma.GuestWhereInput = { wedding_id: weddingId };
+  const andConditions: Prisma.GuestWhereInput[] = [];
+
+  if (eventId) {
+    andConditions.push({
+      guestEventInvite: {
+        some: { event_id: eventId },
+      },
+    });
+  }
+
+  if (search && search.trim()) {
+    const tsQuery = sanitizeSearchTerm(search);
+    const searchOr: Prisma.GuestWhereInput[] = [];
+
+    if (tsQuery) {
+      searchOr.push(
+        { name: { search: tsQuery } },
+        { email: { search: tsQuery } },
+      );
+    }
+
+    const term = search.trim();
+    searchOr.push({ mobile_number: { contains: term, mode: "insensitive" } });
+
+    if (searchOr.length) {
+      andConditions.push({ OR: searchOr });
+    }
+  }
+
+  if (events && events.length) {
+    andConditions.push({
+      guestEventInvite: {
+        some: { event_id: { in: events } },
+      },
+    });
+  }
+
+  if (sides && sides.length) {
+    andConditions.push({
+      side: { in: sides },
+    });
+  }
+
+  if (groups && groups.length) {
+    andConditions.push({
+      group: { in: groups },
+    });
+  }
+
+  if (andConditions.length) {
+    where.AND = andConditions;
+  }
+
+  return where;
+};
+
+//* Repository functions for data fetching
 
 export const findAllGuests = async (
   weddingId: string,
   eventId: string | undefined,
   page: number,
   limit: number,
+  search?: string,
+  events?: string[],
+  sides?: Side[],
+  groups?: Group[],
 ) => {
   const db = prisma;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.GuestWhereInput = {
-    wedding_id: weddingId,
-    ...(eventId && {
-      guestEventInvite: {
-        some: { event_id: eventId },
-      },
-    }),
-  };
+  const where: Prisma.GuestWhereInput = buildGuestWhereInput(
+    weddingId,
+    eventId,
+    search,
+    events,
+    sides,
+    groups,
+  );
 
   const [guests, total] = await Promise.all([
     db.guest.findMany({
