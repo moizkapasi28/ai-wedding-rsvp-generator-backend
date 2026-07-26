@@ -112,6 +112,12 @@ export const findAllGuests = async (
           select: {
             id: true,
             status: true,
+            plus_ones: true,
+            dietary: true,
+            song_request: true,
+            message: true,
+            invite_deadline: true,
+            responded_at: true,
             created_at: true,
             updated_at: true,
             event: {

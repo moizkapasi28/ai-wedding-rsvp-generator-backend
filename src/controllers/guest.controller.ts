@@ -8,6 +8,7 @@ import {
   downloadGuestListTemplateService,
   exportGuestsService,
   importGuestListTemplateService,
+  getGuestImportStatusService,
 } from "../services/guest.service";
 import { guestImportQueue } from "../queues/guest.queue";
 import { getUserWeddingService } from "../services/wedding.service";
@@ -19,6 +20,7 @@ import {
   GetWeddingGuestDto,
   DownloadGuestTemplateDto,
   UploadGuestTemplateDto,
+  GetJobStatusDto,
 } from "../validations/guest.validations";
 
 export const getAllGuests = async (
@@ -38,6 +40,10 @@ export const getAllGuests = async (
     query.eventId,
     page,
     limit,
+    query.search,
+    query.events,
+    query.sides,
+    query.groups,
   );
 
   return sendSuccess(res, "Guests fetched successfully", guests, 200);
@@ -97,30 +103,39 @@ export const downloadGuestListTemplate = async (
   const workbook = await downloadGuestListTemplateService(params.id);
   res.setHeader(
     "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   );
   res.setHeader(
     "Content-Disposition",
-    "attachment; filename=Guest_List_Template.xlsx"
+    "attachment; filename=Guest_List_Template.xlsx",
   );
   await workbook.xlsx.write(res);
   res.end();
 };
 
 export const exportGuests = async (
-  req: Request<DownloadGuestTemplateDto["params"]>,
+  req: Request<{}, {}, {}, GetAllGuestsDto>,
   res: Response,
 ) => {
-  const { params } = req;
-  const buffer = await exportGuestsService(params.id);
+  const { user, query } = req;
+
+  // Verify the wedding belongs to the user
+  await getUserWeddingService(user.id, query.weddingId);
+
+  //Get all wedding guests
+  const buffer = await exportGuestsService(
+    query.weddingId,
+    query.eventId,
+    query.search,
+    query.events,
+    query.sides,
+    query.groups,
+  );
   res.setHeader(
     "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   );
-  res.setHeader(
-    "Content-Disposition",
-    "attachment; filename=Guest_List.xlsx"
-  );
+  res.setHeader("Content-Disposition", "attachment; filename=Guest_List.xlsx");
   res.send(buffer);
 };
 
@@ -129,7 +144,7 @@ export const importGuestListTemplate = async (
   res: Response,
 ) => {
   const { user, params, file } = req;
-  
+
   if (!file) {
     return sendSuccess(res, "File is required", null, 400); // Or throw ApiError
   }
@@ -144,24 +159,12 @@ export const importGuestListTemplate = async (
 };
 
 export const getGuestImportStatus = async (
-  req: Request<{ jobId: string }>,
+  req: Request<GetJobStatusDto>,
   res: Response,
 ) => {
-  const { jobId } = req.params;
-  const job = await guestImportQueue.getJob(jobId);
-  
-  if (!job) {
-    return sendSuccess(res, "Job not found", null, 404);
-  }
+  const { id: jobId } = req.params;
 
-  const state = await job.getState();
-  const result = {
-    id: job.id,
-    state,
-    progress: job.progress,
-    result: job.returnvalue,
-    failedReason: job.failedReason,
-  };
+  const job = await getGuestImportStatusService(jobId);
 
-  return sendSuccess(res, "Job status fetched successfully", result, 200);
+  return sendSuccess(res, "Job status fetched successfully", job, 200);
 };

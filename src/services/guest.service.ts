@@ -30,17 +30,9 @@ import { findWeddingById } from "../repositories/wedding.repository";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
-import { addParseGuestListJob } from "../queues/guest.queue";
+import { addParseGuestListJob, guestImportQueue } from "../queues/guest.queue";
 import readXlsxFile from "read-excel-file/node";
 import { Job } from "bullmq";
-
-const addValidation = (
-  ws: ExcelJS.Worksheet,
-  address: string,
-  validation: ExcelJS.DataValidation,
-) => {
-  ws.getCell(address).dataValidation = validation;
-};
 
 export const getAllGuestsService = async (
   weddingId: string,
@@ -52,6 +44,8 @@ export const getAllGuestsService = async (
   sides?: Side[],
   groups?: Group[],
 ) => {
+  console.log(search, events, sides, groups);
+
   const { guests, total } = await findAllGuests(
     weddingId,
     eventId,
@@ -145,16 +139,16 @@ export const addNewGuestService = async (
           throw new Error("Event invite format not found");
 
         const guestInvitePayload: Prisma.GuestEventInviteUncheckedCreateInput =
-        {
-          event_id: eventId,
-          guest_id: guest.id,
-          invite_format_id: guestEventInviteFormat.id,
-          invite_token: uuidv4(),
-          plus_ones: null,
-          dietary: null,
-          invite_deadline: null,
-          responded_at: null,
-        };
+          {
+            event_id: eventId,
+            guest_id: guest.id,
+            invite_format_id: guestEventInviteFormat.id,
+            invite_token: uuidv4(),
+            plus_ones: null,
+            dietary: null,
+            invite_deadline: null,
+            responded_at: null,
+          };
         return await createGuestEventInvite(guestInvitePayload, tx);
       }),
     );
@@ -623,12 +617,14 @@ export const parseGuestListTemplateJob = async (
     throw new Error(`Template file not found or already deleted: ${filePath}`);
   }
 
-
   let metaRows: any[][];
   try {
-    metaRows = (await readXlsxFile(filePath, { sheet: '_meta' } as any)) as any;
+    metaRows = (await readXlsxFile(filePath, { sheet: "_meta" } as any)) as any;
   } catch (err) {
-    throw new ApiError(400, "Invalid template file. _meta sheet missing or unreadable.");
+    throw new ApiError(
+      400,
+      "Invalid template file. _meta sheet missing or unreadable.",
+    );
   }
 
   let metaWeddingId: string | undefined;
@@ -637,8 +633,15 @@ export const parseGuestListTemplateJob = async (
 
   let actualMetaRows = metaRows;
   // If the library returned an array of sheet objects, extract the data array
-  if (metaRows.length > 0 && metaRows[0] && !Array.isArray(metaRows[0]) && (metaRows[0] as any).data) {
-    const sheetObj = metaRows.find((s: any) => s.sheet === '_meta' || s.name === '_meta') || metaRows[0];
+  if (
+    metaRows.length > 0 &&
+    metaRows[0] &&
+    !Array.isArray(metaRows[0]) &&
+    (metaRows[0] as any).data
+  ) {
+    const sheetObj =
+      metaRows.find((s: any) => s.sheet === "_meta" || s.name === "_meta") ||
+      metaRows[0];
     actualMetaRows = (sheetObj as any).data;
   }
 
@@ -666,7 +669,9 @@ export const parseGuestListTemplateJob = async (
 
   let guestRows: any[][];
   try {
-    guestRows = (await readXlsxFile(filePath, { sheet: 'Guest List' } as any)) as any;
+    guestRows = (await readXlsxFile(filePath, {
+      sheet: "Guest List",
+    } as any)) as any;
   } catch (err) {
     throw new ApiError(400, "Guest List sheet missing or unreadable.");
   }
@@ -690,8 +695,18 @@ export const parseGuestListTemplateJob = async (
   };
 
   let actualGuestRows = guestRows;
-  if (guestRows.length > 0 && guestRows[0] && !Array.isArray(guestRows[0]) && (guestRows[0] as any).data) {
-    const sheetObj = guestRows.find((s: any) => s.sheet === 'Guest List' || s.name === 'Guest List') || guestRows[1] || guestRows[0];
+  if (
+    guestRows.length > 0 &&
+    guestRows[0] &&
+    !Array.isArray(guestRows[0]) &&
+    (guestRows[0] as any).data
+  ) {
+    const sheetObj =
+      guestRows.find(
+        (s: any) => s.sheet === "Guest List" || s.name === "Guest List",
+      ) ||
+      guestRows[1] ||
+      guestRows[0];
     actualGuestRows = (sheetObj as any).data;
   }
 
@@ -702,7 +717,9 @@ export const parseGuestListTemplateJob = async (
     const rowNumber = i + 1; // 1-indexed for logs
 
     const name = row[colToIndex(fieldColMap.name)]?.toString().trim();
-    const mobile = row[colToIndex(fieldColMap.mobile_number)]?.toString().trim();
+    const mobile = row[colToIndex(fieldColMap.mobile_number)]
+      ?.toString()
+      .trim();
 
     if (!name && !mobile) {
       continue;
@@ -728,7 +745,9 @@ export const parseGuestListTemplateJob = async (
         .toUpperCase();
       const accomodation_required = accReqStr === "TRUE";
 
-      let accomodation_address = row[colToIndex(fieldColMap.accommodation_address)]
+      let accomodation_address = row[
+        colToIndex(fieldColMap.accommodation_address)
+      ]
         ?.toString()
         .trim();
 
@@ -835,57 +854,109 @@ export const exportGuestsService = async (
   const weddingEvents = await getAllEventsByWeddingID(weddingId);
 
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Guest List Export");
-
-  const columns: any[] = [
-    { header: "Name", key: "name", width: 25 },
-    { header: "Mobile Number", key: "mobile_number", width: 20 },
-    { header: "Email", key: "email", width: 25 },
-    { header: "Side", key: "side", width: 15 },
-    { header: "Group", key: "group", width: 15 },
-    {
-      header: "Accommodation Required",
-      key: "accomodation_required",
-      width: 25,
-    },
-    { header: "Accommodation Address", key: "accomodation_address", width: 30 },
-    { header: "Note", key: "note", width: 30 },
-  ];
-
-  weddingEvents.forEach((event) => {
-    columns.push({
-      header: `Invite: ${event.title}`,
-      key: `event_${event.id}`,
-      width: 25,
+  
+  if (weddingEvents.length === 0) {
+    const ws = wb.addWorksheet("Guest List");
+    const columns: any[] = [
+      { header: "Name", key: "name", width: 25 },
+      { header: "Mobile Number", key: "mobile_number", width: 20 },
+      { header: "Email", key: "email", width: 25 },
+      { header: "Side", key: "side", width: 15 },
+      { header: "Group", key: "group", width: 15 },
+      { header: "Accommodation Required", key: "accomodation_required", width: 25 },
+      { header: "Accommodation Address", key: "accomodation_address", width: 30 },
+      { header: "Note", key: "note", width: 30 },
+    ];
+    ws.columns = columns;
+    guests.forEach((guest) => {
+      ws.addRow({
+        name: guest.name,
+        mobile_number: guest.mobile_number,
+        email: guest.email,
+        side: guest.side,
+        group: guest.group,
+        accomodation_required: guest.accomodation_required ? "Yes" : "No",
+        accomodation_address: guest.accomodation_address || "",
+        note: guest.note || "",
+      });
     });
-  });
-
-  ws.columns = columns;
-
-  guests.forEach((guest) => {
-    const row: any = {
-      name: guest.name,
-      mobile_number: guest.mobile_number,
-      email: guest.email,
-      side: guest.side,
-      group: guest.group,
-      accomodation_required: guest.accomodation_required ? "Yes" : "No",
-      accomodation_address: guest.accomodation_address || "",
-      note: guest.note || "",
-    };
-
+    ws.getRow(1).font = { bold: true };
+  } else {
+    // Generate a sheet per event
     weddingEvents.forEach((event) => {
-      const invite = guest.guestEventInvite.find(
-        (inv: any) => inv.event.id === event.id,
-      );
-      row[`event_${event.id}`] = invite ? invite.status : "Not Invited";
+      // Excel worksheet names must be <= 31 characters and cannot contain certain characters
+      const sheetName = event.title.substring(0, 31).replace(/[\\/*?:\[\]]/g, "") || "Event";
+      const ws = wb.addWorksheet(sheetName);
+
+      const columns: any[] = [
+        { header: "Name", key: "name", width: 25 },
+        { header: "Mobile Number", key: "mobile_number", width: 20 },
+        { header: "Email", key: "email", width: 25 },
+        { header: "Side", key: "side", width: 15 },
+        { header: "Group", key: "group", width: 15 },
+        { header: "Accommodation Required", key: "accomodation_required", width: 25 },
+        { header: "Accommodation Address", key: "accomodation_address", width: 30 },
+        { header: "Note", key: "note", width: 30 },
+        { header: "Invite Status", key: "status", width: 15 },
+        { header: "Plus Ones", key: "plus_ones", width: 15 },
+        { header: "Dietary", key: "dietary", width: 15 },
+        { header: "Song Request", key: "song_request", width: 25 },
+        { header: "Message", key: "message", width: 30 },
+        { header: "Invite Deadline", key: "invite_deadline", width: 20 },
+        { header: "Responded At", key: "responded_at", width: 20 },
+      ];
+
+      ws.columns = columns;
+
+      guests.forEach((guest) => {
+        const invite = guest.guestEventInvite.find(
+          (inv: any) => inv.event.id === event.id,
+        );
+
+        const row: any = {
+          name: guest.name,
+          mobile_number: guest.mobile_number,
+          email: guest.email,
+          side: guest.side,
+          group: guest.group,
+          accomodation_required: guest.accomodation_required ? "Yes" : "No",
+          accomodation_address: guest.accomodation_address || "",
+          note: guest.note || "",
+          status: invite ? invite.status : "Not Invited",
+          plus_ones: invite?.plus_ones ?? "",
+          dietary: invite?.dietary ?? "",
+          song_request: invite?.song_request ?? "",
+          message: invite?.message ?? "",
+          invite_deadline: invite?.invite_deadline ? new Date(invite.invite_deadline).toLocaleString() : "",
+          responded_at: invite?.responded_at ? new Date(invite.responded_at).toLocaleString() : "",
+        };
+
+        ws.addRow(row);
+      });
+
+      ws.getRow(1).font = { bold: true };
     });
-
-    ws.addRow(row);
-  });
-
-  ws.getRow(1).font = { bold: true };
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   return buffer;
+};
+
+export const getGuestImportStatusService = async (jobId: string) => {
+  const job = await guestImportQueue.getJob(jobId);
+
+  if (!job) {
+    throw new ApiError(404, "Job not found");
+  }
+
+  const state = await job.getState();
+  const result = {
+    id: job.id,
+    state,
+    progress: job.progress,
+    result: job.returnvalue,
+    failedReason: job.failedReason,
+  };
+
+  return result;
 };

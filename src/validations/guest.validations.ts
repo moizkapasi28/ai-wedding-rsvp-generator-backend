@@ -123,6 +123,14 @@ export type DownloadGuestTemplateDto = z.infer<
   typeof downloadGuestTemplateSchema
 >;
 
-export type UploadGuestTemplateDto = z.infer<
-  typeof uploadGuestTemplateSchema
->;
+export type UploadGuestTemplateDto = z.infer<typeof uploadGuestTemplateSchema>;
+
+export const getJobStatusParamsSchema = z.object({
+  id: z.uuid().describe("Guest Id is required"),
+});
+
+export const getJobStatusSchema = z.object({
+  params: getJobStatusParamsSchema,
+});
+
+export type GetJobStatusDto = z.infer<typeof getJobStatusParamsSchema>;

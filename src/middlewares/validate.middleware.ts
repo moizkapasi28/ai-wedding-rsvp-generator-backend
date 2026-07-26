@@ -12,7 +12,12 @@ export const validate =
       });
 
       req.body = parsed.body;
-      req.query = parsed.query as Request["query"];
+      Object.defineProperty(req, "query", {
+        value: parsed.query,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
       req.params = parsed.params as Request["params"];
 
       next();
