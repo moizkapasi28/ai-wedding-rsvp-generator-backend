@@ -4,6 +4,7 @@ import {
   generateEventInviteFormatImage,
   geteventInviteFormat,
   getEventInviteFormatByEvent,
+  getEventInviteFormatsByWedding,
 } from "../controllers/eventInviteFormat.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
@@ -11,11 +12,19 @@ import { asyncHandler } from "../utils/asyncHandler.util";
 import {
   generateEventInviteFormatImageSchema,
   getEventInviteFormatByeventSchema,
+  getEventInviteFormatsByWeddingSchema,
   getEventInviteFormatSchema,
   updateEventInviteFormatSchema,
 } from "../validations/eventInviteFormat.validation";
 
 const eventInviteFormatRouter = Router();
+
+eventInviteFormatRouter.get(
+  "/pages/:weddingId",
+  authenticate,
+  validate(getEventInviteFormatsByWeddingSchema),
+  asyncHandler(getEventInviteFormatsByWedding),
+);
 
 eventInviteFormatRouter.get(
   "/:id",

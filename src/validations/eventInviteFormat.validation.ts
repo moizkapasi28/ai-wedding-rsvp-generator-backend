@@ -1,5 +1,26 @@
 import z from "zod";
 
+export const getEventInviteFormatsByWeddingParamsSchema = z.object({
+  weddingId: z.uuid().describe("Event ID is required"),
+});
+
+export const getEventInviteFormatsByWeddingQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1).optional(),
+});
+
+export type GetEventInviteFormatsByWeddingQueryDto = z.infer<
+  typeof getEventInviteFormatsByWeddingQuerySchema
+>;
+
+export const getEventInviteFormatsByWeddingSchema = z.object({
+  params: getEventInviteFormatsByWeddingParamsSchema,
+  query: getEventInviteFormatsByWeddingQuerySchema,
+});
+
+export type GetEventInviteFormatsByWeddingDto = z.infer<
+  typeof getEventInviteFormatsByWeddingParamsSchema
+>;
+
 export const getEventInviteFormatByEventParamsSchema = z.object({
   eventId: z.uuid().describe("Event ID is required"),
 });
@@ -17,21 +38,63 @@ export const updateEventInviteFormatParamsSchema = z.object({
 });
 
 export const updateEventInviteFormatBodySchema = z.object({
-  dietaryPreference: z
+  dietary_preference: z
     .boolean()
     .default(false)
     .describe("Need to add dietary Preference"),
-  songRequest: z.boolean().default(false).describe("Need to add song request"),
+  song_request: z.boolean().default(false).describe("Need to add song request"),
   message: z.boolean().default(false).describe("Need to add message"),
-  plusOnes: z.boolean().default(false).describe("Need to add plus ones"),
-  firstReminder: z
+  plus_ones: z.boolean().default(false).describe("Need to add plus ones"),
+  first_reminder: z
     .boolean()
     .default(false)
     .describe("Need to add first reminder"),
-  finalReminder: z
+  final_reminder: z
     .boolean()
     .default(false)
     .describe("Need to add final reminder"),
+  raw_image: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Raw image for the RSVP"),
+  generated_image: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Generated image for the RSVP"),
+  illustration_style: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Illustration style for the RSVP"),
+  illustration_theme: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Illustration theme for the RSVP"),
+  photo_type: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Photo type for the RSVP"),
+  bride_attire_style: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Bride attire style for the RSVP"),
+  groom_attire_style: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .describe("Groom attire style for the RSVP"),
 });
 
 export const updateEventInviteFormatSchema = z.object({
@@ -62,22 +125,26 @@ export const generateEventInviteFormatImageBodySchema = z.object({
     .min(1, "Raw image key is required")
     .trim()
     .describe("Raw image key or path of the image for the RSVP thumbnail"),
+  photoType: z
+    .enum(["couple", "bride", "groom"])
+    .describe("Image type (couple, bride, or groom)"),
   illustrationStyle: z
     .string()
-    .min(1, "Illustration style is required")
-    .trim()
-    .default(
-      "Studio Ghibli-inspired anime illustration, soft painterly style, warm pastel color palette, hand-drawn watercolor textures, whimsical and gentle atmosphere, lush detailed backgrounds, soft natural lighting, delicate linework, dreamy nostalgic mood, highly detailed, 2D animation style",
-    )
-    .describe("Illustration style"),
-  negativePrompt: z
+    .min(1, "Style ID is required")
+    .describe("Style ID for the prompt"),
+  attireId: z.string().optional().nullable().describe("Attire ID"),
+  brideAttireId: z.string().optional().nullable().describe("Bride Attire ID"),
+  groomAttireId: z.string().optional().nullable().describe("Groom Attire ID"),
+  customStyleNote: z
     .string()
-    .min(1, "Negative prompt is required")
-    .trim()
-    .default(
-      "photorealistic, 3D render, hyperrealistic, harsh shadows, sharp digital edges, cyberpunk, dark and gritty, low quality, blurry, distorted faces, extra limbs",
-    )
-    .describe("Negative prompt"),
+    .optional()
+    .nullable()
+    .describe("Custom style note"),
+  illustrationTheme: z
+    .string()
+    .optional()
+    .nullable()
+    .describe("Theme for the prompt"),
 });
 
 export const generateEventInviteFormatImageSchema = z.object({

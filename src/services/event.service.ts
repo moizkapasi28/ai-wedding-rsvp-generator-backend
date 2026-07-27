@@ -12,6 +12,7 @@ import {
   updateWeddingEventById,
 } from "../repositories/event.repository";
 import { createGuestEventInviteFormat } from "../repositories/eventInviteFormat.repository";
+import { deleteGuestsWithNoEvents } from "../repositories/guest.repository";
 import { ApiError } from "../utils/apiError.util";
 import {
   EventStats,
@@ -223,7 +224,12 @@ export const deleteWeddingEventService = async (
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Event or Event Not Found");
 
-  const event = await deleteWeddingEventById(eventId);
+  await prisma.$transaction(async (tx) => {
+    const event = await deleteWeddingEventById(eventId, tx);
 
-  if (!event) throw new ApiError(400, "Failed to delete event");
+    if (!event) throw new ApiError(400, "Failed to delete event");
+
+    // Delete any guests that now have no associated events
+    await deleteGuestsWithNoEvents(ownershipEvent.wedding_id, tx);
+  });
 };

@@ -2,6 +2,7 @@ import { type Request, type Response } from "express";
 import {
   generateEventInviteFormatImageService,
   getEventInviteFormatByEventService,
+  getEventInviteFormatsByWeddingService,
   getEventinviteFormatService,
   updateEventInviteFormatService,
 } from "../services/eventInviteFormat.service";
@@ -10,8 +11,36 @@ import {
   GenerateEventInviteFormatImageDto,
   GetEventInviteFormatByEventDto,
   GetEventInviteFormatDto,
+  GetEventInviteFormatsByWeddingDto,
+  GetEventInviteFormatsByWeddingQueryDto,
   UpdateEventInviteFormatDto,
 } from "../validations/eventInviteFormat.validation";
+import { getUserWeddingService } from "../services/wedding.service";
+
+export const getEventInviteFormatsByWedding = async (
+  req: Request<
+    GetEventInviteFormatsByWeddingDto,
+    any,
+    any,
+    GetEventInviteFormatsByWeddingQueryDto
+  >,
+  res: Response,
+) => {
+  const { user, params, query } = req;
+  const page = query.page || 1;
+
+  await getUserWeddingService(user.id, params.weddingId);
+
+  const guestEventInviteFormatsData =
+    await getEventInviteFormatsByWeddingService(params.weddingId, page);
+
+  return sendSuccess(
+    res,
+    "Invite formats fetched successfully",
+    guestEventInviteFormatsData,
+    200,
+  );
+};
 
 export const getEventInviteFormatByEvent = async (
   req: Request<GetEventInviteFormatByEventDto>,
@@ -82,8 +111,15 @@ export const generateEventInviteFormatImage = async (
     body.eventId,
     user.id,
     body.rawImageKey,
-    body.illustrationStyle,
-    body.negativePrompt,
+    {
+      imageType: body.photoType,
+      styleId: body.illustrationStyle,
+      attireId: body.attireId,
+      brideAttireId: body.brideAttireId,
+      groomAttireId: body.groomAttireId,
+      customStyleNote: body.customStyleNote,
+      theme: body.illustrationTheme,
+    },
   );
 
   return sendSuccess(res, "Image generated successfully", { key: result }, 200);

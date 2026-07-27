@@ -20,7 +20,7 @@ export const generateS3PresignedUploadUrl = async (
     body.mime_type,
   );
 
-  return sendSuccess(res, "Presigned url generated successfully", { url }, 200);
+  return sendSuccess(res, "Presigned url generated successfully", url, 200);
 };
 
 export const generateS3PresignedViewURL = async (
@@ -31,5 +31,5 @@ export const generateS3PresignedViewURL = async (
 
   const url = await generateS3PresignedViewUrlService(body.object_key);
 
-  return sendSuccess(res, "Presigned url generated successfully", { url }, 200);
+  return sendSuccess(res, "Presigned url generated successfully", url, 200);
 };

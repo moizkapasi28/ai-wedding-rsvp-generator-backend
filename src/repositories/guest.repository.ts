@@ -253,3 +253,61 @@ export const getGuestsConfirmationStats = async (
 
   return [totalInvites, confirmedInvites];
 };
+
+export const deleteGuestsWithNoEvents = async (
+  weddingId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guest.deleteMany({
+    where: {
+      wedding_id: weddingId,
+      guestEventInvite: {
+        none: {},
+      },
+    },
+  });
+};
+
+export const getEventGuestStats = async (
+  eventIds: string[],
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  const inviteStats = await db.guestEventInvite.groupBy({
+    by: ["event_id", "status"],
+    where: {
+      event_id: { in: eventIds },
+    },
+    _count: {
+      _all: true,
+    },
+  });
+
+  const statsMap: Record<
+    string,
+    { total: number; PENDING: number; ATTENDING: number; DECLINED: number; MAYBE: number }
+  > = {};
+
+  for (const eventId of eventIds) {
+    statsMap[eventId] = {
+      total: 0,
+      PENDING: 0,
+      ATTENDING: 0,
+      DECLINED: 0,
+      MAYBE: 0,
+    };
+  }
+
+  for (const stat of inviteStats) {
+    if (stat.status in statsMap[stat.event_id]) {
+      statsMap[stat.event_id][
+        stat.status as keyof Omit<typeof statsMap[string], "total">
+      ] = stat._count._all;
+      statsMap[stat.event_id].total += stat._count._all;
+    }
+  }
+
+  return statsMap;
+};

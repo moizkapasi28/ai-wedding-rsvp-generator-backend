@@ -14,7 +14,7 @@ export const generateS3PresignedUploadUrlService = async (
 
   if (!url) throw new Error("Failed to generate upload presigned url");
 
-  return url;
+  return { url, object_key };
 };
 
 export const generateS3PresignedViewUrlService = async (object_key: string) => {
@@ -27,5 +27,5 @@ export const generateS3PresignedViewUrlService = async (object_key: string) => {
 
   if (!url) throw new Error("Failed to generate view presigned url");
 
-  return url;
+  return { url, object_key };
 };

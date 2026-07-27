@@ -3,13 +3,41 @@ import { Prisma } from "../../generated/prisma/client";
 import {
   findGuestEventInviteFormatByEventId,
   findGuestEventInviteFormatById,
+  getGuestEventInviteFormatsByWedding,
   updateGuestEventInviteFormat,
 } from "../repositories/eventInviteFormat.repository";
+import { getEventGuestStats } from "../repositories/guest.repository";
 import { ApiError } from "../utils/apiError.util";
 import { getBufferFromS3, uploadBufferToS3 } from "./aws.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
 import { editImageWithGemini } from "../utils/geminiImageEditor.util";
+import { BuildPromptParams } from "../types/eventInviteFormat.type";
 import logger from "../config/logger";
+
+export const getEventInviteFormatsByWeddingService = async (
+  weddingId: string,
+  page: number = 1,
+) => {
+  const limit = 5;
+  const inviteFormatsData = await getGuestEventInviteFormatsByWedding(
+    weddingId,
+    page,
+    limit,
+  );
+
+  if (!inviteFormatsData)
+    throw new ApiError(404, "Event Invite Format Not Found");
+
+  const eventIds = inviteFormatsData.events.map((event) => event.id);
+  const eventStats = await getEventGuestStats(eventIds);
+
+  const eventsWithStats = inviteFormatsData.events.map((event) => ({
+    ...event,
+    stats: eventStats[event.id],
+  }));
+
+  return { ...inviteFormatsData, events: eventsWithStats };
+};
 
 export const getEventInviteFormatByEventService = async (
   eventId: string,
@@ -74,18 +102,16 @@ export const generateEventInviteFormatImageService = async (
   eventId: string,
   userId: string,
   rawImageKey: string,
-  illustrationStyle: string,
-  negativePrompt: string,
+  promptParams: BuildPromptParams,
 ) => {
   const { buffer: rawImageBuffer, contentType } =
     await getBufferFromS3(rawImageKey);
 
   const generatedImageBuffer = await editImageWithGemini({
-    imageBuffer: rawImageBuffer,
     contentType,
-    prompt: illustrationStyle || "make this image look like oil painting style",
-    negativePrompt,
+    imageBuffer: rawImageBuffer,
     aspectRatio: "1:1",
+    promptParams,
   });
 
   const generatedImageKey = await uploadBufferToS3(
@@ -93,11 +119,6 @@ export const generateEventInviteFormatImageService = async (
     "generated-images",
     "image/png",
   );
-
-  //! This is currently deprecated not storing directly in DB will be saved after user saves the data
-  // await updateEventInviteFormatService(eventId, userId, {
-  //   generated_image: generatedImageKey,
-  // });
 
   logger.info(
     { eventId, userId, generatedImageKey },

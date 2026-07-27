@@ -3,38 +3,46 @@ import { validateImageInput } from "./imageValidation.util";
 import logger from "../config/logger";
 import { getGeminiClient } from "../lib/geminiClient";
 import { retryWithBackoff } from "./retry.util";
+import { BuildPromptParams } from "../types/eventInviteFormat.type";
+import { buildPrompt, getDefaultAspectRatio } from "./promptBuilder.util";
 
 export interface GeminiImageEditOptions {
   imageBuffer: Buffer;
   contentType: string | undefined;
-  prompt: string;
-  negativePrompt?: string;
-  aspectRatio?: string; // e.g. "1:1", "16:9"
+  /** Drives the master prompt template (Section 2) — style, attire, image type */
+  promptParams: BuildPromptParams;
+  /** Overrides the style's default aspect ratio if provided, e.g. "1:1", "16:9" */
+  aspectRatio?: string;
 }
 
 export async function editImageWithGemini({
   imageBuffer,
   contentType,
-  prompt,
-  negativePrompt,
-  aspectRatio = "1:1",
+  promptParams,
+  aspectRatio,
 }: GeminiImageEditOptions): Promise<Buffer> {
   const normalizedContentType = await validateImageInput(
     imageBuffer,
     contentType,
   );
 
+  const fullPrompt = buildPrompt(promptParams);
+  const resolvedAspectRatio =
+    aspectRatio ?? getDefaultAspectRatio(promptParams.styleId);
+
   logger.info(
-    { contentType: normalizedContentType, bufferSize: imageBuffer.length },
+    {
+      contentType: normalizedContentType,
+      bufferSize: imageBuffer.length,
+      styleId: promptParams.styleId,
+      imageType: promptParams.imageType,
+      aspectRatio: resolvedAspectRatio,
+    },
     "Starting Gemini image edit",
   );
 
   const ai = getGeminiClient();
   const base64Image = imageBuffer.toString("base64");
-
-  const fullPrompt = `${prompt}. Keep the subject's identity, face, and composition recognizable. Avoid: ${
-    negativePrompt || "blurry, low quality"
-  }.`;
 
   const contents = [
     {
@@ -57,7 +65,7 @@ export async function editImageWithGemini({
       contents,
       config: {
         responseModalities: [Modality.TEXT, Modality.IMAGE],
-        imageConfig: { aspectRatio },
+        imageConfig: { aspectRatio: resolvedAspectRatio },
       },
     }),
   );
@@ -83,7 +91,7 @@ export async function editImageWithGemini({
   }
 
   logger.info(
-    { outputSize: generatedImageBuffer.length },
+    { outputSize: generatedImageBuffer.length, styleId: promptParams.styleId },
     "Gemini image edit succeeded",
   );
 
