@@ -6,7 +6,7 @@ import {
   updateAiInviteCardSchema,
 } from "../validations/aiInviteCard.validation";
 import { asyncHandler } from "../utils/asyncHandler.util";
-import { getAiInviteCardsByWedding } from "../controllers/aiInviteCard.controller";
+import { getAiInviteCardsByWedding, saveInviteCardDraft, generateAIInviteCardImage } from "../controllers/aiInviteCard.controller";
 
 const aiInviteCardRouter = Router();
 
@@ -18,16 +18,16 @@ aiInviteCardRouter.get(
 );
 
 aiInviteCardRouter.patch(
-  "/:id",
+  "/draft/:eventId",
   authenticate,
   validate(updateAiInviteCardSchema),
-  asyncHandler(getAiInviteCardsByWedding),
+  asyncHandler(saveInviteCardDraft),
 );
 
 aiInviteCardRouter.post(
-  "/generate-invite",
+  "/generate/:eventId",
   authenticate,
-  asyncHandler(getAiInviteCardsByWedding),
+  asyncHandler(generateAIInviteCardImage),
 );
 
 export default aiInviteCardRouter;

@@ -7,7 +7,7 @@ import {
 import { getAttire } from "./attireCatelogue.util";
 import { getStyle } from "./styleCatelogue.util";
 
-const SUBJECT_DESCRIPTORS: Record<ImageType, string> = {
+export const SUBJECT_DESCRIPTORS: Record<ImageType, string> = {
   couple: "the bride and groom",
   bride: "the bride",
   groom: "the groom",
@@ -50,7 +50,7 @@ const GLOBAL_POSITIVE_SUFFIX =
   "ethnicity and skin tone exactly as shown in the reference photo. Do not add " +
   "any text, logos, or watermarks to the image.";
 
-function buildIdentityBlock(imageType: ImageType): string {
+export function buildIdentityBlock(imageType: ImageType): string {
   const subject = SUBJECT_DESCRIPTORS[imageType];
   let block =
     `[CRITICAL INSTRUCTION - IDENTITY PRESERVATION]\n` +
@@ -82,7 +82,7 @@ function buildWardrobeInstructionForSubject(
   return `${attireBody}, rendered with ${style.wardrobeRenderQuality}.`;
 }
 
-function buildWardrobeBlock(
+export function buildWardrobeBlock(
   style: StyleConfig,
   params: BuildPromptParams,
 ): string {
@@ -99,7 +99,7 @@ function buildWardrobeBlock(
   return `WARDROBE & SETTING:\n${wardrobe}\n${style.settingInstruction}`;
 }
 
-function sanitizeCustomNote(note: string): string {
+export function sanitizeCustomNote(note: string): string {
   const bannedPatterns = [
     /ignore (all|previous|the) instructions?/i,
     /disregard (all|previous|the) instructions?/i,

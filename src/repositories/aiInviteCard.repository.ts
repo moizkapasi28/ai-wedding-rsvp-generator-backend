@@ -50,6 +50,14 @@ export const findAiEventInviteCardById = async (
   return db.aIEventInviteCard.findUnique({ where: { id } });
 };
 
+export const findAiEventInviteCardByEventId = async (
+  eventId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.aIEventInviteCard.findUnique({ where: { event_id: eventId } });
+};
+
 export const updateAiEventInviteCard = async (
   id: string,
   payload: Prisma.AIEventInviteCardUpdateInput,
@@ -57,4 +65,18 @@ export const updateAiEventInviteCard = async (
 ) => {
   const db = tx || prisma;
   return db.aIEventInviteCard.update({ where: { id }, data: payload });
+};
+
+export const upsertAiEventInviteCard = async (
+  eventId: string,
+  createData: Prisma.AIEventInviteCardUncheckedCreateInput,
+  updateData: Prisma.AIEventInviteCardUpdateInput,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.aIEventInviteCard.upsert({
+    where: { event_id: eventId },
+    create: createData,
+    update: updateData,
+  });
 };
