@@ -20,8 +20,8 @@ import { getUserWeddingService } from "../services/wedding.service";
 export const getEventInviteFormatsByWedding = async (
   req: Request<
     GetEventInviteFormatsByWeddingDto,
-    any,
-    any,
+    {},
+    {},
     GetEventInviteFormatsByWeddingQueryDto
   >,
   res: Response,

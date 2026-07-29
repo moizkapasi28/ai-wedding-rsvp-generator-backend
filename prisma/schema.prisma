@@ -59,6 +59,11 @@ enum Group {
   OTHER
 }
 
+enum GenerationMode {
+  MANUAL
+  EXAMPLE
+}
+
 model User {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   first_name String @db.VarChar(256)
@@ -126,6 +131,7 @@ model Event{
   event_side EventSide
   guestEventInvite GuestEventInvite[]
   guestEventInviteFormat GuestEventInviteFormat[]
+  aiEventInviteCard AIEventInviteCard[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
@@ -203,4 +209,33 @@ model GuestEventInviteFormat {
   @@index([event_id])
   @@unique([event_id])
 
+}
+
+model AIEventInviteCard {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id String @db.Uuid
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  generation_mode GenerationMode @default(EXAMPLE) 
+  design_preset String?
+  texture_emulation String?
+  typography_pairing String?
+  metallic_accents String?
+  negative_space String?
+  monogram_style String?
+  text_alignment String?
+  edge_styling String?
+  additional_details String?
+  custom_message String?
+  reference_image String?
+  generated_image String?
+  bride_image String ?
+  groom_image String ?
+  bride_attire_style String?
+  groom_attire_style String?
+  generated_invite_image_url String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([event_id])
+  @@unique([event_id])
 }

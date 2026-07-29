@@ -1,5 +1,5 @@
-import { GoogleGenAI, Modality } from "@google/genai";
 import { Prisma } from "../../generated/prisma/client";
+import logger from "../config/logger";
 import {
   findGuestEventInviteFormatByEventId,
   findGuestEventInviteFormatById,
@@ -7,12 +7,11 @@ import {
   updateGuestEventInviteFormat,
 } from "../repositories/eventInviteFormat.repository";
 import { getEventGuestStats } from "../repositories/guest.repository";
+import { BuildPromptParams } from "../types/eventInviteFormat.type";
 import { ApiError } from "../utils/apiError.util";
+import { pageSettingEditImageWithGemini } from "../utils/geminiImageEditor.util";
 import { getBufferFromS3, uploadBufferToS3 } from "./aws.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
-import { editImageWithGemini } from "../utils/geminiImageEditor.util";
-import { BuildPromptParams } from "../types/eventInviteFormat.type";
-import logger from "../config/logger";
 
 export const getEventInviteFormatsByWeddingService = async (
   weddingId: string,
@@ -107,7 +106,7 @@ export const generateEventInviteFormatImageService = async (
   const { buffer: rawImageBuffer, contentType } =
     await getBufferFromS3(rawImageKey);
 
-  const generatedImageBuffer = await editImageWithGemini({
+  const generatedImageBuffer = await pageSettingEditImageWithGemini({
     contentType,
     imageBuffer: rawImageBuffer,
     aspectRatio: "1:1",

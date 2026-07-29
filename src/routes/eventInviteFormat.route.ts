@@ -32,6 +32,7 @@ eventInviteFormatRouter.get(
   asyncHandler(geteventInviteFormat),
 );
 
+//!! Currenlty this endpoint is not getting used on client side
 eventInviteFormatRouter.get(
   "/event/:eventId",
   authenticate,

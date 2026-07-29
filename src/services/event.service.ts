@@ -20,12 +20,16 @@ import {
   GuestStatQueryGroup,
 } from "../types/event.type";
 import { STATUS } from "../enums/event.enum";
+import { createAiEventInviteCard } from "../repositories/aiInviteCard.repository";
 
 export const mapGuestStatsToEvents = (
   events: Event[],
   guestStats: GuestStatQueryGroup[],
 ): EventWithStats[] => {
-  const statsMap = new Map<string, Omit<EventStats, "completion" | "progressBar">>();
+  const statsMap = new Map<
+    string,
+    Omit<EventStats, "completion" | "progressBar">
+  >();
 
   for (const stat of guestStats) {
     if (!statsMap.has(stat.event_id)) {
@@ -59,10 +63,12 @@ export const mapGuestStatsToEvents = (
     };
 
     const getPercentage = (count: number) =>
-      rawStats.totalGuests === 0 ? 0 : Math.round((count / rawStats.totalGuests) * 100);
+      rawStats.totalGuests === 0
+        ? 0
+        : Math.round((count / rawStats.totalGuests) * 100);
 
     const completion = getPercentage(
-      rawStats.attendingGuests + rawStats.declinedGuests + rawStats.maybeGuests
+      rawStats.attendingGuests + rawStats.declinedGuests + rawStats.maybeGuests,
     );
 
     const stats = {
@@ -158,6 +164,14 @@ export const addNewWeddingEventService = async (
 
     if (!eventInviteFormat)
       throw new ApiError(400, "Failed to create event invite format");
+
+    const aiInviteCard = await createAiEventInviteCard(
+      { event_id: event.id },
+      tx,
+    );
+
+    if (!aiInviteCard)
+      throw new ApiError(400, "Failed to create AI invite card");
 
     return event;
   });
