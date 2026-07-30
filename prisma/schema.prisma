@@ -228,11 +228,12 @@ model AIEventInviteCard {
   custom_message String?
   reference_image String?
   generated_image String?
-  bride_image String ?
-  groom_image String ?
+  photo_type String?
+  couple_raw_image_key String?
   bride_attire_style String?
   groom_attire_style String?
   generated_invite_image_url String?
+  invite_design_image_url String?
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 

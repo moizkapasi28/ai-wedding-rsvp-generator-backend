@@ -1,11 +1,13 @@
 import { type Request, type Response } from "express";
 import {
+  GenerateAIInviteCardImageDto,
   GetAiInviteCardsByWeddingParamsDto,
   GetAiInviteCardsByWeddingQueryDto,
   UpdateAiInviteCardDto,
 } from "../validations/aiInviteCard.validation";
 import { getUserWeddingService } from "../services/wedding.service";
 import {
+  generateAIInviteCardService,
   getAiInviteCardsByWeddingService,
   updateAiInviteCardService,
 } from "../services/aiInviteCard.service";
@@ -63,8 +65,12 @@ export const updateAiInviteCard = async (
 };
 
 export const generateAIInviteCardImage = async (
-  req: Request,
+  req: Request<{}, {}, GenerateAIInviteCardImageDto>,
   res: Response,
 ) => {
-  return sendSuccess(res, "AI invite card generated successfully", null, 200);
+  const { user, body } = req;
+
+  const result = await generateAIInviteCardService(body.eventId, user.id, body);
+
+  return sendSuccess(res, "AI invite card generated successfully", result, 200);
 };

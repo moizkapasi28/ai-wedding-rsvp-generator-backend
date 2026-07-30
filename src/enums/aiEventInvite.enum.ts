@@ -1,0 +1,4 @@
+export enum GENERATION_MODE {
+  EXAMPLE = "EXAMPLE",
+  MANUAL = "MANUAL",
+}

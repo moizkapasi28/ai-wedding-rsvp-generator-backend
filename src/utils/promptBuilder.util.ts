@@ -7,7 +7,7 @@ import {
 import { getAttire } from "./attireCatelogue.util";
 import { getStyle } from "./styleCatelogue.util";
 
-const SUBJECT_DESCRIPTORS: Record<ImageType, string> = {
+export const SUBJECT_DESCRIPTORS: Record<ImageType, string> = {
   couple: "the bride and groom",
   bride: "the bride",
   groom: "the groom",
@@ -24,7 +24,6 @@ const THEME_DESCRIPTIONS: Record<string, string> = {
     "A royal heritage wedding theme, conveying majestic grandeur, palatial backdrops, opulent details, rich jewel tones, and a regal, historic, and luxurious ambiance.",
 };
 
-// Section 3.13, Principle 1 — never let a style silently default to one culture.
 const NEUTRAL_DEFAULT_ATTIRE_PROMPT =
   "elegant, well-tailored formal wedding attire suited to this artistic style — a " +
   "structured jacket/suit for the groom, a flowing gown or fitted ensemble for the " +
@@ -34,15 +33,15 @@ const NEUTRAL_DEFAULT_ATTIRE_PROMPT =
 
 const COUPLE_GUARD_CLAUSE =
   "\nThere are two distinct people in the reference photo — a bride and a groom. " +
-  "Preserve both faces independently and do not merge, swap, or blend their " +
-  "features with each other.";
+  "You must perfectly clone BOTH faces independently. Do not merge, swap, or blend their " +
+  "features with each other. Each face must be a 100% exact photorealistic match to its respective counterpart in the source image.";
 
-const COUPLE_FACE_FUSION_CLAUSE =
-  "Render each person as a separate, individually recognizable figure standing " +
-  "side by side or in the same pose as the reference photo. Never merge or " +
-  "hybridize their two faces into a single face.";
+export const COUPLE_FACE_FUSION_CLAUSE =
+  "Render each person as a separate, individually recognizable figure. " +
+  "Never merge or hybridize their two faces into a single face. " +
+  "Both faces MUST be identical to the original couple. Do not stylize the faces.";
 
-const GLOBAL_POSITIVE_SUFFIX =
+export const GLOBAL_POSITIVE_SUFFIX =
   "Render anatomy naturally and correctly — hands with five clearly separated " +
   "fingers, symmetrical and correctly aligned eyes, a single coherent face per " +
   "person. Keep clothing fully modest and wedding-appropriate, matching the " +
@@ -50,15 +49,15 @@ const GLOBAL_POSITIVE_SUFFIX =
   "ethnicity and skin tone exactly as shown in the reference photo. Do not add " +
   "any text, logos, or watermarks to the image.";
 
-function buildIdentityBlock(imageType: ImageType): string {
+export function buildIdentityBlock(imageType: ImageType): string {
   const subject = SUBJECT_DESCRIPTORS[imageType];
   let block =
-    `[CRITICAL INSTRUCTION - IDENTITY PRESERVATION]\n` +
-    `You MUST perfectly preserve the EXACT facial identity of ${subject} from the reference photo. ` +
-    `This is the highest priority. Do not generate a new face. ` +
-    `Maintain identical facial structure, eye shape, nose shape, jawline, skin tone, hair color, and distinguishing marks. ` +
-    `Do NOT apply any beautification filters, do NOT average the face, and do NOT alter the original ethnicity, age, or likeness. ` +
-    `The generated face MUST be completely recognizable as the exact same individual from the reference photo.`;
+    `[CRITICAL, NON-NEGOTIABLE INSTRUCTION - ABSOLUTE IDENTITY CLONING]\n` +
+    `You MUST perfectly clone and preserve the EXACT, 100% IDENTICAL facial identity of ${subject} from the provided reference photo. ` +
+    `This is your highest priority above all style and thematic instructions. Do not generate a new face. ` +
+    `You must act as a precise face-swapper. Maintain the identical facial structure, exact eye shape and color, precise nose shape, exact jawline, native skin tone, hair color, and all distinguishing marks, blemishes, or asymmetry exactly as they appear in the source image. ` +
+    `Do NOT apply any beautification filters, do NOT average the face, do NOT stylize the face to match the theme, and do NOT alter the original ethnicity, age, or likeness in any way. ` +
+    `The face MUST be an identical, photorealistic copy of the reference photo, seamlessly integrated into the requested style.`;
 
   if (imageType === "couple") {
     block += COUPLE_GUARD_CLAUSE;
@@ -66,7 +65,7 @@ function buildIdentityBlock(imageType: ImageType): string {
   return block;
 }
 
-const SCOPE_BLOCK =
+export const SCOPE_BLOCK =
   "SCOPE OF WHAT TO KEEP VS. GENERATE:\n" +
   "Only the facial identity above is preserved from the reference photo. The " +
   "reference photo's clothing, pose, body position, and background are NOT to be " +
@@ -82,7 +81,7 @@ function buildWardrobeInstructionForSubject(
   return `${attireBody}, rendered with ${style.wardrobeRenderQuality}.`;
 }
 
-function buildWardrobeBlock(
+export function buildWardrobeBlock(
   style: StyleConfig,
   params: BuildPromptParams,
 ): string {
@@ -99,18 +98,18 @@ function buildWardrobeBlock(
   return `WARDROBE & SETTING:\n${wardrobe}\n${style.settingInstruction}`;
 }
 
-function sanitizeCustomNote(note: string): string {
+export function sanitizeCustomNote(note: string): string {
   const bannedPatterns = [
     /ignore (all|previous|the) instructions?/i,
     /disregard (all|previous|the) instructions?/i,
     /system prompt/i,
-    /make (it|them|her|him) look like/i, // celebrity-likeness attempts
+    /make (it|them|her|him) look like/i,
   ];
   let cleaned = note;
   for (const pattern of bannedPatterns) {
     cleaned = cleaned.replace(pattern, "");
   }
-  return cleaned.trim().slice(0, 300); // hard length cap
+  return cleaned.trim().slice(0, 300);
 }
 
 export function buildPrompt(params: BuildPromptParams): string {

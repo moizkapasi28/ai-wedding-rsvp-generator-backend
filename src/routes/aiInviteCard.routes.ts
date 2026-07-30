@@ -2,11 +2,15 @@ import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
 import validate from "../middlewares/validate.middleware";
 import {
+  generateAIInviteCardImageSchema,
   getAiInvitecardsByWeddingSchema,
   updateAiInviteCardSchema,
 } from "../validations/aiInviteCard.validation";
 import { asyncHandler } from "../utils/asyncHandler.util";
-import { getAiInviteCardsByWedding } from "../controllers/aiInviteCard.controller";
+import {
+  generateAIInviteCardImage,
+  getAiInviteCardsByWedding,
+} from "../controllers/aiInviteCard.controller";
 
 const aiInviteCardRouter = Router();
 
@@ -27,7 +31,8 @@ aiInviteCardRouter.patch(
 aiInviteCardRouter.post(
   "/generate-invite",
   authenticate,
-  asyncHandler(getAiInviteCardsByWedding),
+  validate(generateAIInviteCardImageSchema),
+  asyncHandler(generateAIInviteCardImage),
 );
 
 export default aiInviteCardRouter;

@@ -107,19 +107,21 @@ export const generateEventInviteFormatImage = async (
 ) => {
   const { user, body } = req;
 
+  const promptParams = {
+    imageType: body.photoType,
+    styleId: body.illustrationStyle,
+    attireId: body.attireId,
+    brideAttireId: body.brideAttireId,
+    groomAttireId: body.groomAttireId,
+    customStyleNote: body.customStyleNote,
+    theme: body.illustrationTheme,
+  };
+
   const result = await generateEventInviteFormatImageService(
     body.eventId,
     user.id,
     body.rawImageKey,
-    {
-      imageType: body.photoType,
-      styleId: body.illustrationStyle,
-      attireId: body.attireId,
-      brideAttireId: body.brideAttireId,
-      groomAttireId: body.groomAttireId,
-      customStyleNote: body.customStyleNote,
-      theme: body.illustrationTheme,
-    },
+    promptParams,
   );
 
   return sendSuccess(res, "Image generated successfully", { key: result }, 200);

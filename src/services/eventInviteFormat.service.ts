@@ -103,6 +103,14 @@ export const generateEventInviteFormatImageService = async (
   rawImageKey: string,
   promptParams: BuildPromptParams,
 ) => {
+  const ownershipEvent = await verifyWeddingEventOwnershipService(
+    eventId,
+    userId,
+  );
+
+  if (!ownershipEvent)
+    throw new ApiError(400, "Invalid Invite Format or Invite Format Not Found");
+
   const { buffer: rawImageBuffer, contentType } =
     await getBufferFromS3(rawImageKey);
 
@@ -115,7 +123,7 @@ export const generateEventInviteFormatImageService = async (
 
   const generatedImageKey = await uploadBufferToS3(
     generatedImageBuffer,
-    "generated-images",
+    "generated-images/rsvp-generated-images",
     "image/png",
   );
 

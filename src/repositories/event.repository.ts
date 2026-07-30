@@ -45,7 +45,7 @@ export const findEventByIdAndUserId = async (
       wedding: {
         user_id: userId,
       },
-    },
+    }
   });
 };
 
