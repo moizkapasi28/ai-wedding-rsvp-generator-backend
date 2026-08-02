@@ -137,6 +137,11 @@ export const generateAIInviteCardImageBodySchema = z
       .optional()
       .nullable()
       .describe("Generated image"),
+    illustration_style: z
+      .string()
+      .optional()
+      .nullable()
+      .describe("Illustration style for generating AI couple photo"),
     couple_raw_image_key: z
       .string()
       .min(1, "Couple Raw image key is required")
@@ -171,6 +176,29 @@ export const generateAIInviteCardImageBodySchema = z
         message: "Reference image is required when generation_mode is EXAMPLE",
         path: ["reference_image"],
       });
+    }
+
+    if (data.generation_mode === "MANUAL") {
+      const requiredManualFields = [
+        "design_preset",
+        "texture_emulation",
+        "typography_pairing",
+        "metallic_accents",
+        "negative_space",
+        "monogram_style",
+        "text_alignment",
+        "edge_styling",
+      ] as const;
+
+      for (const field of requiredManualFields) {
+        if (!data[field] || data[field]?.trim() === "") {
+          ctx.addIssue({
+            code: "custom",
+            message: `${field} is required when generation_mode is MANUAL`,
+            path: [field],
+          });
+        }
+      }
     }
   });
 

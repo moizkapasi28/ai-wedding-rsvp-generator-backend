@@ -8,7 +8,10 @@ import {
 } from "../repositories/aiInviteCard.repository";
 import { ApiError } from "../utils/apiError.util";
 import { GenerateAIInviteCardImageDto } from "../validations/aiInviteCard.validation";
-import { aiInviteCardExampleGenerationService } from "./aiInviteCardGeneration.service";
+import {
+  aiInviteCardExampleGenerationService,
+  aiInviteCardManualGenerationService,
+} from "./aiInviteCardGeneration.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
 
 export const getAiInviteCardsByWeddingService = async (
@@ -72,5 +75,7 @@ export const generateAIInviteCardService = async (
 
   if (generation_mode === GENERATION_MODE.EXAMPLE) {
     await aiInviteCardExampleGenerationService({ ...aiInviteCard, ...body }, ownershipEvent);
+  } else if (generation_mode === GENERATION_MODE.MANUAL) {
+    await aiInviteCardManualGenerationService({ ...aiInviteCard, ...body }, ownershipEvent);
   }
 };

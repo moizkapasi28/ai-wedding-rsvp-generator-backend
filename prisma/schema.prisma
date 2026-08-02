@@ -228,6 +228,7 @@ model AIEventInviteCard {
   custom_message String?
   reference_image String?
   generated_image String?
+  illustration_style String?
   photo_type String?
   couple_raw_image_key String?
   bride_attire_style String?
