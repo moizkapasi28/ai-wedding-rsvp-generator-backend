@@ -22,6 +22,7 @@ import {
   UploadGuestTemplateDto,
   GetJobStatusDto,
 } from "../validations/guest.validations";
+import { ApiError } from "../utils/apiError.util";
 
 export const getAllGuests = async (
   req: Request<{}, {}, {}, GetAllGuestsDto>,
@@ -146,7 +147,7 @@ export const importGuestListTemplate = async (
   const { user, params, file } = req;
 
   if (!file) {
-    return sendSuccess(res, "File is required", null, 400); // Or throw ApiError
+    throw new ApiError(400, "File is required");
   }
 
   const result = await importGuestListTemplateService(

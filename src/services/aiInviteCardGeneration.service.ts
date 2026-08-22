@@ -168,7 +168,7 @@ export const aiInviteCardManualGenerationService = async (
   );
 
   const result = await genai.models.generateContent({
-    model: "gemini-3.1-flash-image",
+    model: "gemini-3-pro-image",
     contents: [{ role: "user", parts }],
     config: {
       responseModalities: [Modality.TEXT, Modality.IMAGE],

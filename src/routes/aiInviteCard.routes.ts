@@ -12,6 +12,8 @@ import {
   getAiInviteCardsByWedding,
 } from "../controllers/aiInviteCard.controller";
 
+import { imageGenerationLimiter } from "../middlewares/rateLimiter.middleware";
+
 const aiInviteCardRouter = Router();
 
 aiInviteCardRouter.get(
@@ -31,6 +33,7 @@ aiInviteCardRouter.patch(
 aiInviteCardRouter.post(
   "/generate-invite",
   authenticate,
+  imageGenerationLimiter,
   validate(generateAIInviteCardImageSchema),
   asyncHandler(generateAIInviteCardImage),
 );

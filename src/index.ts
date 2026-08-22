@@ -18,17 +18,31 @@ import generalRouter from "./routes/general.routes";
 import aiInviteCardRouter from "./routes/aiInviteCard.routes";
 
 const app = express();
+
+// Trust proxy if we are behind a reverse proxy (Nginx, Heroku, AWS ELB, etc.)
+// This ensures req.ip gets the real client IP instead of the proxy IP
+app.set("trust proxy", 1);
+
 const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "https://your-frontend.pages.dev",
     credentials: true,
   }),
 );
 app.use(cookieParser());
 app.use(express.json());
 app.use(requestLogger);
+
+import { globalLimiter } from "./middlewares/rateLimiter.middleware";
+
+// Health check endpoint (placed before rate limiter for load balancers)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.use("/api", globalLimiter);
 
 app.use("/api/auth", authRouter);
 app.use("/api/wedding", weddingRouter);

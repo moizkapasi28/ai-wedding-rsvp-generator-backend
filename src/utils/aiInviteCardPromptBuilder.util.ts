@@ -374,6 +374,8 @@ function buildCouplePhotoBlock(record: AIEventInviteCard, isExampleMode: boolean
     `.trim();
 }
 
+import { getDesignPreset, getTextureEmulation, getMetallicAccents, getNegativeSpace, getMonogramStyle, getEdgeStyling } from "./manualDesignCatalogue.util";
+
 export async function buildStage1ManualPrompt(
   record: Partial<AIEventInviteCard>,
 ): Promise<string> {
@@ -390,13 +392,26 @@ export async function buildStage1ManualPrompt(
       `If you generate characters, their faces must be an identical match to the provided reference photo.\n`
     : "";
 
-  const designPreset = record.design_preset || "Classic Elegant Wedding";
-  const texture = record.texture_emulation ? `Texture: ${record.texture_emulation}` : "";
-  const metallics = record.metallic_accents ? `Metallic Accents: ${record.metallic_accents}` : "";
-  const negativeSpace = record.negative_space ? `Negative Space Strategy: ${record.negative_space}` : "";
-  const monogram = record.monogram_style ? `Monogram/Crest Style: ${record.monogram_style}` : "";
+  const designPresetRaw = record.design_preset || "Classic Elegant Wedding";
+  const designPreset = getDesignPreset(designPresetRaw);
+  
+  const textureValue = record.texture_emulation ? getTextureEmulation(record.texture_emulation) : "";
+  const texture = textureValue ? `Texture: ${textureValue}` : "";
+  
+  const metallicValue = record.metallic_accents ? getMetallicAccents(record.metallic_accents) : "";
+  const metallics = metallicValue ? `Metallic Accents: ${metallicValue}` : "";
+  
+  const negativeSpaceValue = record.negative_space ? getNegativeSpace(record.negative_space) : "";
+  const negativeSpace = negativeSpaceValue ? `Negative Space Strategy: ${negativeSpaceValue}` : "";
+  
+  const monogramValue = record.monogram_style ? getMonogramStyle(record.monogram_style) : "";
+  const monogram = monogramValue ? `Monogram/Crest Style: ${monogramValue}` : "";
+  
+  // Note: text_alignment is just passed as-is if present
   const alignment = record.text_alignment ? `Text Alignment: ${record.text_alignment}` : "";
-  const edge = record.edge_styling ? `Edge Styling: ${record.edge_styling}` : "";
+  
+  const edgeValue = record.edge_styling ? getEdgeStyling(record.edge_styling) : "";
+  const edge = edgeValue ? `Edge Styling: ${edgeValue}` : "";
 
   return `
   [MANUAL DESIGN GENERATION — BACKGROUND ARTWORK ONLY, ZERO TEXT]
