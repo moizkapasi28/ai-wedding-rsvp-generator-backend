@@ -22,7 +22,7 @@ COPY start.sh ./
 RUN chmod +x start.sh
 
 # Adjust permissions so the node user can write to Redis and App directories
-RUN mkdir -p /var/log/redis /var/lib/redis /run/redis /etc/redis && \
+RUN mkdir -p /var/log/redis /var/lib/redis /run/redis /etc/redis /app/logs && \
     chown -R node:node /app /var/log/redis /var/lib/redis /run/redis /etc/redis
 
 # Switch to the non-root 'node' user
