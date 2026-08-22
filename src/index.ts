@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 
 import { connectDB } from "./lib/prisma";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -19,6 +20,9 @@ import aiInviteCardRouter from "./routes/aiInviteCard.routes";
 
 const app = express();
 
+// Security headers (applied globally before other middlewares)
+app.use(helmet());
+
 // Trust proxy if we are behind a reverse proxy (Nginx, Heroku, AWS ELB, etc.)
 // This ensures req.ip gets the real client IP instead of the proxy IP
 app.set("trust proxy", 1);
@@ -35,7 +39,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(requestLogger);
 
-import { globalLimiter } from "./middlewares/rateLimiter.middleware";
+import { globalLimiter, authLimiter } from "./middlewares/rateLimiter.middleware";
 
 // Health check endpoint (placed before rate limiter for load balancers)
 app.get("/health", (req, res) => {
@@ -44,7 +48,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api", globalLimiter);
 
-app.use("/api/auth", authRouter);
+app.use("/api/auth", authLimiter, authRouter);
 app.use("/api/wedding", weddingRouter);
 app.use("/api/event", eventRouter);
 app.use("/api/guest", guestsRouter);

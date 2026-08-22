@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-# Start Redis in the background
-redis-server --daemonize yes
+# Start Redis in the background with explicit paths to avoid permission issues for non-root user
+redis-server --daemonize yes --dir /var/lib/redis --pidfile /run/redis/redis.pid --logfile /var/log/redis/redis.log
 
 # Start the worker in the background and capture PID
 node dist/workers/guest.worker.js &
