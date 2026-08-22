@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y redis-server && rm -rf /var/lib/apt/lis
 
 COPY . .
 
+RUN npx prisma generate
+
 # Build the project
 RUN npm run build
 
