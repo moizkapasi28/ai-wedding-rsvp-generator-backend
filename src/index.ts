@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://your-frontend.pages.dev",
+    origin: process.env.WEB_APP_URL,
     credentials: true,
   }),
 );
