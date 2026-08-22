@@ -4,11 +4,11 @@
 redis-server --daemonize yes --dir /var/lib/redis --pidfile /run/redis/redis.pid --logfile /var/log/redis/redis.log
 
 # Start the worker in the background and capture PID
-node dist/workers/guest.worker.js &
+node dist/src/workers/guest.worker.js &
 WORKER_PID=$!
 
 # Start the main server in the background and capture PID
-node dist/index.js &
+node dist/src/index.js &
 SERVER_PID=$!
 
 # Trap termination signals to shut down both processes gracefully
