@@ -27,11 +27,11 @@ app.use(helmet());
 // This ensures req.ip gets the real client IP instead of the proxy IP
 app.set("trust proxy", 1);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: process.env.WEB_APP_URL,
+    origin: process.env.WEB_APP_URL || "http://localhost:5173",
     credentials: true,
   }),
 );

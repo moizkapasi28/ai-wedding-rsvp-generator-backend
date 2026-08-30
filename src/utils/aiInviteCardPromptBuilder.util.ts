@@ -11,7 +11,7 @@ import {
   SCOPE_BLOCK,
 } from "./promptBuilder.util";
 
-async function fetchImageAsGeminiPart(
+export async function fetchImageAsGeminiPart(
   s3Key: string | null | undefined,
   mimeType: string = "image/jpeg",
 ): Promise<{ inlineData: { mimeType: string; data: string } } | null> {
@@ -495,7 +495,8 @@ export async function buildStage1ExamplePrompt(
 export function buildStage2TextPrompt(
   record: Partial<AIEventInviteCard>,
   event: Event,
-  wedding: Wedding
+  wedding: Wedding,
+  isExampleMode: boolean = false
 ): string {
   const bride = wedding.bride_name;
   const groom = wedding.groom_name;
@@ -542,28 +543,29 @@ export function buildStage2TextPrompt(
   convention — render values as invitation copy, not as a form.
 
   [2] TYPOGRAPHY & COMPOSITION
-  1. Place this exact text only in the designated negative-space regions of the
+  ${isExampleMode ? `1. You have been provided with TWO images: the original REFERENCE IMAGE (which contains text) and the text-less BASE DESIGN.
+  2. Your job is to typeset the text onto the text-less BASE DESIGN.
+  3. You MUST match the EXACT font family, font style, font weights, font colors, text alignment, spacing, and typography hierarchy seen in the original REFERENCE IMAGE.
+  4. If the reference image used a specific calligraphy or serif font for names, use that exact style.` : `1. Place this exact text only in the designated negative-space regions of the
     provided artwork — do not shrink, crop, or reflow the existing illustrations
     to make room; text must fit within the space the design already allocates.
   2. Use a single elegant, highly legible font family (e.g. serif or modern script)
     consistent with the mood of the design. Do not mix more than two font
-    families/weights across the card.
-  3. "${bride} & ${groom}" must be the single most visually prominent text element
+    families/weights across the card.`}
+  5. "${bride} & ${groom}" must be the single most visually prominent text element
     on the card — largest size and/or highest visual weight of all text.
-  4. All other text (event, date, time, location, address, custom message) must be
+  6. All other text (event, date, time, location, address, custom message) must be
     clearly legible at normal viewing size — no font so small, thin, or ornate
     that characters become ambiguous or illegible.
-  5. Text color must be drawn from the artwork's existing palette (e.g. a dominant
+  7. Text color must be drawn from the artwork's existing palette (e.g. a dominant
     accent like gold, deep green, or navy) so it reads as native to the design —
     never pure default black or white unless that color is already part of the
     palette. The chosen color must maintain strong contrast against its immediate
-    background for legibility; if the underlying artwork varies in tone across the
-    text area (e.g. a busy or gradient background), prioritize legibility over
-    exact palette match in that specific region.
-  6. Do NOT alter, redraw, recolor, resize, or reposition the underlying artwork,
+    background for legibility.
+  8. Do NOT alter, redraw, recolor, resize, or reposition the underlying artwork,
     illustrations, borders, or motifs from the base image in any way — this pass
     only adds text on top of the existing design.
-  7. Do NOT introduce any new watermark, logo, or attribution mark.
+  9. Do NOT introduce any new watermark, logo, or attribution mark.
 
   [3] COMPOSITION
   Final output must remain in a strict 9:16 vertical aspect ratio (1080 x 1920px),

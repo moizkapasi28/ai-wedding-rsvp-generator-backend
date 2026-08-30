@@ -1,5 +1,6 @@
 import { Modality } from "@google/genai";
 import { AIEventInviteCard, Event } from "../../generated/prisma/client";
+import logger from "../config/logger";
 import { getGeminiClient } from "../lib/geminiClient";
 import { updateAiEventInviteCard } from "../repositories/aiInviteCard.repository";
 import { findWeddingById } from "../repositories/wedding.repository";
@@ -8,6 +9,7 @@ import {
   buildStage1ExamplePrompt,
   buildStage1ManualPrompt,
   buildStage2TextPrompt,
+  fetchImageAsGeminiPart,
 } from "../utils/aiInviteCardPromptBuilder.util";
 import { uploadBufferToS3 } from "./aws.service";
 import { GENERATION_MODE } from "../enums/aiEventInvite.enum";
@@ -38,7 +40,7 @@ export const aiInviteCardExampleGenerationService = async (
     },
   });
 
-  console.log("Gemini generation completed.");
+  logger.info("Gemini generation completed.");
 
   // Extract base64 image from the result
   let base64Data: string | undefined;
@@ -60,7 +62,7 @@ export const aiInviteCardExampleGenerationService = async (
     // --- STAGE 1.5: Programmatic Face Swap ---
     //!!Function is deprecated for now as its not giving desired results
     if (aiInviteCard.couple_raw_image_key) {
-      console.log("Starting programmatic face swap...");
+      logger.info("Starting programmatic face swap...");
       try {
         const swappedBuffer = await performProgrammaticFaceSwap({
           targetImageBuffer: buffer,
@@ -69,9 +71,9 @@ export const aiInviteCardExampleGenerationService = async (
         buffer = Buffer.from(swappedBuffer);
         base64Data = buffer.toString("base64");
       } catch (err) {
-        console.error(
+        logger.error(
+          { err },
           "Face swap failed, continuing with un-swapped image.",
-          err,
         );
       }
     }
@@ -86,25 +88,35 @@ export const aiInviteCardExampleGenerationService = async (
       invite_design_image_url: s3Key,
     });
 
-    console.log(`Saved Stage 1 generated design to S3 key: ${s3Key}`);
+    logger.info({ s3Key }, "Saved Stage 1 generated design to S3");
 
     // --- STAGE 2: Typesetting ---
-    console.log("Starting Stage 2: Typesetting text onto design...");
+    logger.info("Starting Stage 2: Typesetting text onto design...");
 
     const wedding = await findWeddingById(event.wedding_id);
 
     if (wedding) {
-      const stage2Prompt = buildStage2TextPrompt(aiInviteCard, event, wedding);
+      const stage2Prompt = buildStage2TextPrompt(aiInviteCard, event, wedding, true);
 
-      const stage2Parts = [
-        { text: stage2Prompt },
-        {
-          inlineData: {
-            mimeType: mimeType,
-            data: base64Data,
-          },
-        },
+      const stage2Parts: any[] = [
+        { text: stage2Prompt }
       ];
+
+      if (aiInviteCard.reference_image) {
+        const referencePart = await fetchImageAsGeminiPart(aiInviteCard.reference_image);
+        if (referencePart) {
+          stage2Parts.push({ text: "[REFERENCE IMAGE — use for exact typography, font style, and color matching]" });
+          stage2Parts.push(referencePart);
+        }
+      }
+
+      stage2Parts.push({ text: "[BASE DESIGN — apply the text onto this text-less image]" });
+      stage2Parts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data,
+        },
+      });
 
       const stage2Result = await genai.models.generateContent({
         model: "gemini-3-pro-image",
@@ -141,16 +153,20 @@ export const aiInviteCardExampleGenerationService = async (
           generated_invite_image_url: stage2S3Key,
         });
 
-        console.log(
-          `Saved Stage 2 final invite image to S3 key: ${stage2S3Key}`,
+        logger.info(
+          { stage2S3Key },
+          "Saved Stage 2 final invite image to S3",
         );
+        return stage2S3Key;
       }
     } else {
-      console.warn("Wedding details not found, skipping Stage 2.");
+      logger.warn("Wedding details not found, skipping Stage 2.");
     }
+    
+    return s3Key;
   }
 
-  return result;
+  return null;
 };
 
 export const aiInviteCardManualGenerationService = async (
@@ -178,7 +194,7 @@ export const aiInviteCardManualGenerationService = async (
     },
   });
 
-  console.log("Gemini manual generation completed.");
+  logger.info("Gemini manual generation completed.");
 
   // Extract base64 image from the result
   let base64Data: string | undefined;
@@ -207,9 +223,9 @@ export const aiInviteCardManualGenerationService = async (
       invite_design_image_url: s3Key,
     });
 
-    console.log(`Saved Stage 1 manual generated design to S3 key: ${s3Key}`);
+    logger.info({ s3Key }, "Saved Stage 1 manual generated design to S3");
 
-    console.log("Starting Stage 2: Typesetting text onto design...");
+    logger.info("Starting Stage 2: Typesetting text onto design...");
 
     const wedding = await findWeddingById(event.wedding_id);
 
@@ -261,14 +277,18 @@ export const aiInviteCardManualGenerationService = async (
           generated_invite_image_url: stage2S3Key,
         });
 
-        console.log(
-          `Saved Stage 2 manual final invite image to S3 key: ${stage2S3Key}`,
+        logger.info(
+          { stage2S3Key },
+          "Saved Stage 2 manual final invite image to S3",
         );
+        return stage2S3Key;
       }
     } else {
-      console.warn("Wedding details not found, skipping Stage 2.");
+      logger.warn("Wedding details not found, skipping Stage 2.");
     }
+    
+    return s3Key;
   }
 
-  return result;
+  return null;
 };

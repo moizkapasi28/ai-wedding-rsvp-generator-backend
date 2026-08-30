@@ -74,8 +74,8 @@ export const generateAIInviteCardService = async (
     throw new ApiError(400, "Invalid Invite card or Invite card Not Found");
 
   if (generation_mode === GENERATION_MODE.EXAMPLE) {
-    await aiInviteCardExampleGenerationService({ ...aiInviteCard, ...body }, ownershipEvent);
+    return await aiInviteCardExampleGenerationService({ ...aiInviteCard, ...body }, ownershipEvent);
   } else if (generation_mode === GENERATION_MODE.MANUAL) {
-    await aiInviteCardManualGenerationService({ ...aiInviteCard, ...body }, ownershipEvent);
+    return await aiInviteCardManualGenerationService({ ...aiInviteCard, ...body }, ownershipEvent);
   }
 };

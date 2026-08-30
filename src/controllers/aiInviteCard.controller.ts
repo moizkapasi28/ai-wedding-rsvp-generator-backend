@@ -72,5 +72,5 @@ export const generateAIInviteCardImage = async (
 
   const result = await generateAIInviteCardService(body.eventId, user.id, body);
 
-  return sendSuccess(res, "AI invite card generated successfully", result, 200);
+  return sendSuccess(res, "AI invite card generated successfully", { key: result }, 200);
 };
