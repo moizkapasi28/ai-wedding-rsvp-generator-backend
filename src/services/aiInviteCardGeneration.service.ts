@@ -12,6 +12,7 @@ import {
   fetchImageAsGeminiPart,
 } from "../utils/aiInviteCardPromptBuilder.util";
 import { uploadBufferToS3 } from "./aws.service";
+import { generateContentWithRetry } from "../utils/geminiRetry.util";
 import { GENERATION_MODE } from "../enums/aiEventInvite.enum";
 import { performProgrammaticFaceSwap } from "./faceSwap.service";
 
@@ -29,7 +30,7 @@ export const aiInviteCardExampleGenerationService = async (
     aiInviteCard.generation_mode === GENERATION_MODE.EXAMPLE,
   );
 
-  const result = await genai.models.generateContent({
+  const result = await generateContentWithRetry(genai, {
     model: "gemini-3-pro-image",
     contents: [{ role: "user", parts }],
     config: {
@@ -80,7 +81,7 @@ export const aiInviteCardExampleGenerationService = async (
 
     const s3Key = await uploadBufferToS3(
       buffer,
-      "ai-invite-cards/invitation-design",
+      "ai-invite-cards/generated-images/invitation-design",
       mimeType,
     );
 
@@ -118,7 +119,7 @@ export const aiInviteCardExampleGenerationService = async (
         },
       });
 
-      const stage2Result = await genai.models.generateContent({
+      const stage2Result = await generateContentWithRetry(genai, {
         model: "gemini-3-pro-image",
         contents: [{ role: "user", parts: stage2Parts }],
         config: {
@@ -145,7 +146,7 @@ export const aiInviteCardExampleGenerationService = async (
         const stage2Buffer = Buffer.from(stage2Base64Data, "base64");
         const stage2S3Key = await uploadBufferToS3(
           stage2Buffer,
-          "ai-invite-cards/final-invitation",
+          "ai-invite-cards/generated-images/final-invitation",
           stage2MimeType,
         );
 
@@ -162,7 +163,7 @@ export const aiInviteCardExampleGenerationService = async (
     } else {
       logger.warn("Wedding details not found, skipping Stage 2.");
     }
-    
+
     return s3Key;
   }
 
@@ -183,7 +184,7 @@ export const aiInviteCardManualGenerationService = async (
     aiInviteCard.generation_mode === GENERATION_MODE.MANUAL,
   );
 
-  const result = await genai.models.generateContent({
+  const result = await generateContentWithRetry(genai, {
     model: "gemini-3-pro-image",
     contents: [{ role: "user", parts }],
     config: {
@@ -215,7 +216,7 @@ export const aiInviteCardManualGenerationService = async (
 
     const s3Key = await uploadBufferToS3(
       buffer,
-      "ai-invite-cards/invitation-design",
+      "ai-invite-cards/generated-images/invitation-design",
       mimeType,
     );
 
@@ -242,7 +243,7 @@ export const aiInviteCardManualGenerationService = async (
         },
       ];
 
-      const stage2Result = await genai.models.generateContent({
+      const stage2Result = await generateContentWithRetry(genai, {
         model: "gemini-3-pro-image",
         contents: [{ role: "user", parts: stage2Parts }],
         config: {
@@ -286,7 +287,7 @@ export const aiInviteCardManualGenerationService = async (
     } else {
       logger.warn("Wedding details not found, skipping Stage 2.");
     }
-    
+
     return s3Key;
   }
 
