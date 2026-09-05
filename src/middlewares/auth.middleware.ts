@@ -28,6 +28,11 @@ export const authenticate = asyncHandler(
         throw new ApiError(401, "Please authenticate");
       }
 
+      if (user && 'password' in user) {
+        // @ts-ignore
+        delete user.password;
+      }
+
       // Attach user to request object
       req.user = user;
 

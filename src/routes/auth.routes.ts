@@ -19,6 +19,7 @@ import {
   signIn,
   signUp,
   verifyEmail,
+  myProfile,
 } from "../controllers/auth.controller";
 import { asyncHandler } from "../utils/asyncHandler.util";
 import { authenticate } from "../middlewares/auth.middleware";
@@ -64,6 +65,12 @@ authRouter.post(
   authenticate,
   validate(logoutSchema),
   asyncHandler(logout),
+);
+
+authRouter.get(
+  "/me",
+  authenticate,
+  asyncHandler(myProfile),
 );
 
 export default authRouter;

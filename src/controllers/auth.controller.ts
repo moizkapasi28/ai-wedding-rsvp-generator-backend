@@ -17,6 +17,7 @@ import {
   resetPasswordService,
   signInService,
   signUpService,
+  userProfileService,
   verifyEmailService,
 } from "../services/auth.service";
 import { sendSuccess } from "../utils/response.util";
@@ -112,4 +113,12 @@ export const logout = async (
   await logoutService(body);
 
   return sendSuccess(res, "User logged out successfully", {}, 200);
+};
+
+export const myProfile = async (req: Request, res: Response) => {
+  const { id } = req.user;
+
+  const user = await userProfileService(id);
+
+  return sendSuccess(res, "Profile fetched successfully", user, 200);
 };

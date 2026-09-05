@@ -72,6 +72,7 @@ model User {
   is_email_verified Boolean @default(false)
   mobile_number String @db.VarChar(256)
   password String @db.VarChar(256)
+  profile_picture String?
   weddings Wedding[]
   tokens Token[]
   created_at DateTime @default(now()) @db.Timestamptz(6)

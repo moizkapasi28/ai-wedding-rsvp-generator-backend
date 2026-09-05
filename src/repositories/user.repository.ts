@@ -39,3 +39,21 @@ export const updateUserById = async (
     data: payload,
   });
 };
+
+export const findUserProfileById = async (userId: string, tx?: Prisma.TransactionClient): Promise<Omit<User, "password"> | null> => {
+  const db = tx || prisma;
+  return db.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      first_name: true,
+      last_name: true,
+      mobile_number: true,
+      profile_picture: true,
+      created_at: true,
+      updated_at: true,
+      is_email_verified: true,
+    },
+  });
+}
