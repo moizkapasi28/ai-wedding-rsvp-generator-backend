@@ -287,3 +287,23 @@ export const userProfileService = async (userId: string) => {
 
   return user;
 };
+
+export const updateProfileService = async (
+  userId: string,
+  payload: {
+    first_name?: string;
+    last_name?: string;
+    mobile_number?: string;
+    profile_picture?: string | null;
+  }
+) => {
+  const user = await findUserById(userId);
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  console.log(payload)
+
+  const updatedUser = await updateUserById(userId, payload);
+
+  return updatedUser;
+};

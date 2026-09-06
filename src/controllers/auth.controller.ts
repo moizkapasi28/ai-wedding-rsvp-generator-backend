@@ -8,6 +8,7 @@ import {
   ResetPasswordDto,
   SignUpDto,
   VerifyEmailDto,
+  UpdateProfileDto,
 } from "../validations/auth.validation";
 import {
   forgotPasswordService,
@@ -19,6 +20,7 @@ import {
   signUpService,
   userProfileService,
   verifyEmailService,
+  updateProfileService,
 } from "../services/auth.service";
 import { sendSuccess } from "../utils/response.util";
 
@@ -121,4 +123,25 @@ export const myProfile = async (req: Request, res: Response) => {
   const user = await userProfileService(id);
 
   return sendSuccess(res, "Profile fetched successfully", user, 200);
+};
+
+export const updateProfile = async (
+  req: Request<{}, {}, UpdateProfileDto>,
+  res: Response,
+) => {
+  const { id } = req.user;
+  const { body } = req;
+
+  console.log(body)
+
+  const payload = {
+    first_name: body.firstName,
+    last_name: body.lastName,
+    mobile_number: body.mobileNumber,
+    profile_picture: body.profilePicture,
+  };
+
+  const updatedUser = await updateProfileService(id, payload);
+
+  return sendSuccess(res, "Profile updated successfully", updatedUser, 200);
 };

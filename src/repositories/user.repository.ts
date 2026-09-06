@@ -34,6 +34,7 @@ export const updateUserById = async (
   tx?: Prisma.TransactionClient
 ): Promise<User> => {
   const db = tx || prisma;
+
   return db.user.update({
     where: { id: userId },
     data: payload,

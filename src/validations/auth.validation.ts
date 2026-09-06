@@ -85,3 +85,16 @@ export const logoutSchema = z.object({
 });
 
 export type LogoutDto = z.infer<typeof refreshTokenBodySchema>;
+
+export const updateProfileBodySchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  mobileNumber: z.string().optional(),
+  profilePicture: z.string().nullable().optional(),
+});
+
+export const updateProfileSchema = z.object({
+  body: updateProfileBodySchema,
+});
+
+export type UpdateProfileDto = z.infer<typeof updateProfileBodySchema>;

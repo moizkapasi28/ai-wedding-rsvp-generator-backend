@@ -44,8 +44,6 @@ export const getAllGuestsService = async (
   sides?: Side[],
   groups?: Group[],
 ) => {
-  console.log(search, events, sides, groups);
-
   const { guests, total } = await findAllGuests(
     weddingId,
     eventId,
@@ -139,16 +137,16 @@ export const addNewGuestService = async (
           throw new Error("Event invite format not found");
 
         const guestInvitePayload: Prisma.GuestEventInviteUncheckedCreateInput =
-          {
-            event_id: eventId,
-            guest_id: guest.id,
-            invite_format_id: guestEventInviteFormat.id,
-            invite_token: uuidv4(),
-            plus_ones: null,
-            dietary: null,
-            invite_deadline: null,
-            responded_at: null,
-          };
+        {
+          event_id: eventId,
+          guest_id: guest.id,
+          invite_format_id: guestEventInviteFormat.id,
+          invite_token: uuidv4(),
+          plus_ones: null,
+          dietary: null,
+          invite_deadline: null,
+          responded_at: null,
+        };
         return await createGuestEventInvite(guestInvitePayload, tx);
       }),
     );
@@ -854,7 +852,7 @@ export const exportGuestsService = async (
   const weddingEvents = await getAllEventsByWeddingID(weddingId);
 
   const wb = new ExcelJS.Workbook();
-  
+
   if (weddingEvents.length === 0) {
     const ws = wb.addWorksheet("Guest List");
     const columns: any[] = [

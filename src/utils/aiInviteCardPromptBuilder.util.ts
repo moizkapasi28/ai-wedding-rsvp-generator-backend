@@ -1,5 +1,6 @@
 import { AIEventInviteCard, Event, Wedding } from "../../generated/prisma/client";
 import { getBufferFromS3 } from "../services/aws.service";
+import logger from "../config/logger";
 import { getAttire, NEUTRAL_DEFAULT_ATTIRE_PROMPT } from "./attireCatelogue.util";
 import { getStyle } from "./styleCatelogue.util";
 import {
@@ -207,7 +208,7 @@ export async function buildGeminiParts(
       parts.push({ text: "[REFERENCE IMAGE — illustrated card design, existing character(s) if any]" });
       parts.push(referencePart);
     } else {
-      console.warn("Reference image fetch failed:", record.reference_image);
+      logger.warn(`Reference image fetch failed: ${record.reference_image}`);
     }
   }
 
@@ -217,7 +218,7 @@ export async function buildGeminiParts(
       parts.push({ text: "[SUBJECT PHOTO — real face(s) to swap in]" });
       parts.push(subjectPart);
     } else {
-      console.warn("Subject photo fetch failed:", record.couple_raw_image_key);
+      logger.warn(`Subject photo fetch failed: ${record.couple_raw_image_key}`);
     }
   }
 
@@ -252,14 +253,14 @@ function buildCouplePhotoBlock(record: AIEventInviteCard, isExampleMode: boolean
   if (includeBrideAttire) {
     const brideAttire = record.bride_attire_style ? getAttire(record.bride_attire_style) : null;
     if (record.bride_attire_style && !brideAttire) {
-      console.warn(`Unknown bride_attire_style: ${record.bride_attire_style}`);
+      logger.warn(`Unknown bride_attire_style: ${record.bride_attire_style}`);
     }
     wardrobeLines.push(`Bride: ${brideAttire?.promptBody || NEUTRAL_DEFAULT_ATTIRE_PROMPT}`);
   }
   if (includeGroomAttire) {
     const groomAttire = record.groom_attire_style ? getAttire(record.groom_attire_style) : null;
     if (record.groom_attire_style && !groomAttire) {
-      console.warn(`Unknown groom_attire_style: ${record.groom_attire_style}`);
+      logger.warn(`Unknown groom_attire_style: ${record.groom_attire_style}`);
     }
     wardrobeLines.push(`Groom: ${groomAttire?.promptBody || NEUTRAL_DEFAULT_ATTIRE_PROMPT}`);
   }

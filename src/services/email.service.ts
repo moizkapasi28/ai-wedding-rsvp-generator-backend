@@ -19,7 +19,7 @@ const sesClient = new SESClient({
 
 /* istanbul ignore next */
 if (process.env.NODE_ENV !== "test") {
-  console.log("🚀 Email service initialized");
+  logger.info("🚀 Email service initialized");
 }
 
 const readHTMLFile = function (

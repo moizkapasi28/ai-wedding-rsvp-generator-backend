@@ -8,6 +8,7 @@ import {
   resetPasswordSchema,
   signUpSchema,
   verifyEmailSchema,
+  updateProfileSchema,
 } from "../validations/auth.validation";
 import validate from "../middlewares/validate.middleware";
 import {
@@ -20,6 +21,7 @@ import {
   signUp,
   verifyEmail,
   myProfile,
+  updateProfile,
 } from "../controllers/auth.controller";
 import { asyncHandler } from "../utils/asyncHandler.util";
 import { authenticate } from "../middlewares/auth.middleware";
@@ -71,6 +73,13 @@ authRouter.get(
   "/me",
   authenticate,
   asyncHandler(myProfile),
+);
+
+authRouter.patch(
+  "/me",
+  authenticate,
+  validate(updateProfileSchema),
+  asyncHandler(updateProfile),
 );
 
 export default authRouter;

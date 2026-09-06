@@ -7,6 +7,7 @@ import helmet from "helmet";
 import { connectDB } from "./lib/prisma";
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
+import logger from "./config/logger";
 import authRouter from "./routes/auth.routes";
 import weddingRouter from "./routes/wedding.routes";
 import eventRouter from "./routes/event.routes";
@@ -73,7 +74,7 @@ async function startServer() {
   await connectDB();
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on PORT: ${PORT}`);
+    logger.info(`🚀 Server running on PORT: ${PORT}`);
   });
 }
 

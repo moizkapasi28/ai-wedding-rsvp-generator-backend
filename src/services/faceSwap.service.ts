@@ -1,6 +1,7 @@
 import { getGeminiClient } from "../lib/geminiClient";
 import { getBufferFromS3 } from "./aws.service";
 import { Modality } from "@google/genai";
+import logger from "../config/logger";
 
 /**
  * Interface for face swap requests
@@ -35,7 +36,7 @@ export const performProgrammaticFaceSwap = async (
     const sourceFaceBase64 = sourceFaceBuffer.toString("base64");
     const sourceMimeType = contentType || "image/jpeg";
 
-    console.log("Calling Gemini API for Face Swap...");
+    logger.info("Calling Gemini API for Face Swap...");
 
     // 3. Call Gemini model
     const parts = [
@@ -78,16 +79,16 @@ export const performProgrammaticFaceSwap = async (
     if (generatedParts && generatedParts.length > 0) {
       const imagePart = generatedParts.find((p) => p.inlineData);
       if (imagePart?.inlineData) {
-        console.log("Gemini Face Swap succeeded.");
+        logger.info("Gemini Face Swap succeeded.");
         return Buffer.from(imagePart.inlineData.data, "base64");
       }
     }
 
     throw new Error("Gemini returned empty output or no image data");
   } catch (error) {
-    console.error(
-      "Error during programmatic face swap. Falling back to un-swapped image.",
+    logger.error(
       error,
+      "Error during programmatic face swap. Falling back to un-swapped image.",
     );
     return Buffer.from(request.targetImageBuffer); // Return original if swap fails
   }

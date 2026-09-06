@@ -6,6 +6,7 @@ import { connection as redisClient } from "../lib/redis";
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 10, // Limit each IP to 10 requests per window
+  skip: () => process.env.NODE_ENV === "local",
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
@@ -23,6 +24,7 @@ export const authLimiter = rateLimit({
 export const imageGenerationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 5, // Limit each IP to 5 requests per window
+  skip: () => process.env.NODE_ENV === "local",
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
@@ -40,6 +42,7 @@ export const imageGenerationLimiter = rateLimit({
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 100, // Limit each IP to 100 requests per window
+  skip: () => process.env.NODE_ENV === "local",
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
