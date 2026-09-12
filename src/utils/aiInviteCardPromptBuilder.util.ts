@@ -486,7 +486,7 @@ export async function buildStage1ExamplePrompt(
   - Any anatomical error here constitutes a complete failure.
 
   COMPOSITION:
-  Generate the artwork in a strict 9:16 vertical aspect ratio (1080 x 1920px, portrait orientation). The full canvas must be filled edge-to-edge at this ratio. Match the reference image's overall layout structure and negative-space regions exactly within this 9:16 canvas.
+  the design of the card the artwork in a strict 9:16 vertical aspect ratio (1080 x 1920px, portrait orientation). The full canvas must be filled edge-to-edge at this ratio. Match the reference image's overall layout structure and negative-space regions exactly within this 9:16 canvas.
 
   FAILURE CONDITION:
   Success = a viewer would say "this is an exact copy of the reference design, just with the text removed." If the output fails to copy the reference content, renders any text/fake text, or contains anatomical errors, it is a failure.
