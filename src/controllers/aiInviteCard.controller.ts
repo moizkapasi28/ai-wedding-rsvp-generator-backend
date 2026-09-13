@@ -1,6 +1,7 @@
 import { type Request, type Response } from "express";
 import {
   GenerateAIInviteCardImageDto,
+  GetAiInviteCardGenerationStatusParamsDto,
   GetAiInviteCardsByWeddingParamsDto,
   GetAiInviteCardsByWeddingQueryDto,
   UpdateAiInviteCardDto,
@@ -8,6 +9,7 @@ import {
 import { getUserWeddingService } from "../services/wedding.service";
 import {
   generateAIInviteCardService,
+  getAiInviteCardGenerationStatusService,
   getAiInviteCardsByWeddingService,
   updateAiInviteCardService,
 } from "../services/aiInviteCard.service";
@@ -24,12 +26,14 @@ export const getAiInviteCardsByWedding = async (
 ) => {
   const { user, params, query } = req;
   const page = query.page || 1;
+  const limit = query.limit || 5;
 
   await getUserWeddingService(user.id, params.weddingId);
 
   const aiInviteCards = await getAiInviteCardsByWeddingService(
     params.weddingId,
     page,
+    limit,
   );
 
   return sendSuccess(
@@ -72,5 +76,20 @@ export const generateAIInviteCardImage = async (
 
   const result = await generateAIInviteCardService(body.eventId, user.id, body);
 
-  return sendSuccess(res, "AI invite card generated successfully", { key: result }, 200);
+  // 202: the design is produced by the worker, so the request only reports that it was queued
+  return sendSuccess(res, "AI invite card generation started", result, 202);
+};
+
+export const getAiInviteCardGenerationStatus = async (
+  req: Request<GetAiInviteCardGenerationStatusParamsDto>,
+  res: Response,
+) => {
+  const { user, params } = req;
+
+  const status = await getAiInviteCardGenerationStatusService(
+    params.id,
+    user.id,
+  );
+
+  return sendSuccess(res, "Generation status fetched successfully", status, 200);
 };

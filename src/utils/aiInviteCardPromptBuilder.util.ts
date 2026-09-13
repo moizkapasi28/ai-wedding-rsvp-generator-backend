@@ -1,6 +1,7 @@
 import { AIEventInviteCard, Event, Wedding } from "../../generated/prisma/client";
 import { getBufferFromS3 } from "../services/aws.service";
 import logger from "../config/logger";
+import { PHOTO_PLACEMENT } from "../enums/aiEventInvite.enum";
 import { getAttire, NEUTRAL_DEFAULT_ATTIRE_PROMPT } from "./attireCatelogue.util";
 import { getStyle } from "./styleCatelogue.util";
 import {
@@ -200,7 +201,9 @@ export async function buildGeminiParts(
 ): Promise<any[]> {
   const parts: any[] = [];
   const hasReferenceImage = isExample && !!record.reference_image;
-  const hasSubjectPhoto = !isExample && !!record.photo_type && !!record.couple_raw_image_key;
+  // The couple photo belongs in both modes: reference mode needs it to swap faces onto
+  // the example's figures, or to build the framed portrait inset.
+  const hasSubjectPhoto = !!record.photo_type && !!record.couple_raw_image_key;
 
   if (hasReferenceImage) {
     const referencePart = await fetchImageAsGeminiPart(record.reference_image!);
@@ -317,7 +320,7 @@ function buildCouplePhotoBlock(record: AIEventInviteCard, isExampleMode: boolean
 
   // ---- Branch B: swap-in-place onto existing illustrated characters ----
   const swapInPlaceBlock = `
-  [2] IF THE REFERENCE ALREADY CONTAINS CHARACTER(S)
+  [FACE SWAP ONTO THE REFERENCE'S EXISTING CHARACTER(S)]
   Do NOT create a new framed photo inset. Do NOT generate new attire, new poses, or a
   new background. This is a face-swap-in-place task, not a new composition task.
   Instead:
@@ -348,8 +351,10 @@ function buildCouplePhotoBlock(record: AIEventInviteCard, isExampleMode: boolean
   ${styleInstruction ? `\nNote: apply the requested illustration style only insofar as it's already reflected in the reference's existing medium — do not introduce a different style than what's already there.\n` : ""}
   ${extraHandling}`;
 
-  const exampleModeWrapper = isExampleMode
-    ? `
+  // The user tells us how their photo should be used, so the model no longer has to
+  // guess whether the reference contains figures. Cards saved before that choice
+  // existed fall back to the original detect-then-branch prompt.
+  const legacyDetectionWrapper = `
   [CRITICAL CHARACTER HANDLING FOR REFERENCE IMAGES — EXAMPLE MODE]
 
   [1] DETECTION
@@ -359,13 +364,26 @@ function buildCouplePhotoBlock(record: AIEventInviteCard, isExampleMode: boolean
   photorealistic ones — a cartoon, painted, or vector-style couple still counts as
   "containing characters."
 
+  [2] IF THE REFERENCE ALREADY CONTAINS CHARACTER(S)
   ${swapInPlaceBlock}
 
   [3] IF THE REFERENCE DOES NOT CONTAIN ANY CHARACTERS
   Use the following instructions instead of [2] above:
   ${freshCompositionBlock}
-  `
-    : freshCompositionBlock;
+  `;
+
+  let exampleModeWrapper: string;
+
+  if (!isExampleMode) {
+    // Describe mode always composes a fresh portrait — there is no reference to swap onto
+    exampleModeWrapper = freshCompositionBlock;
+  } else if (record.photo_placement === PHOTO_PLACEMENT.SWAP_IN_PLACE) {
+    exampleModeWrapper = swapInPlaceBlock;
+  } else if (record.photo_placement === PHOTO_PLACEMENT.FRAMED_INSET) {
+    exampleModeWrapper = freshCompositionBlock;
+  } else {
+    exampleModeWrapper = legacyDetectionWrapper;
+  }
 
   return `
   ${exampleModeWrapper}

@@ -23,8 +23,14 @@ export const validate =
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        const [firstIssue] = error.issues;
+
         return res.status(400).json({
           success: false,
+          // Clients read `message`; without it a validation failure shows up as a bare HTTP 400
+          message: firstIssue
+            ? `${firstIssue.path.join(".")}: ${firstIssue.message}`
+            : "Invalid request",
           errors: error.issues,
         });
       }

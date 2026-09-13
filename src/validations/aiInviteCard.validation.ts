@@ -1,8 +1,12 @@
 import z from "zod";
-import { GenerationMode } from "../../generated/prisma/enums";
+import { GenerationMode, PhotoPlacement } from "../../generated/prisma/enums";
 
 export const GenerationModeSchema = z.enum(
   Object.values(GenerationMode) as [GenerationMode, ...GenerationMode[]],
+);
+
+export const PhotoPlacementSchema = z.enum(
+  Object.values(PhotoPlacement) as [PhotoPlacement, ...PhotoPlacement[]],
 );
 
 export const getAiInviteCardsByWeddingParamsSchema = z.object({
@@ -11,6 +15,7 @@ export const getAiInviteCardsByWeddingParamsSchema = z.object({
 
 export const getAiInviteCardsByWeddingQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1).optional(),
+  limit: z.coerce.number().min(1).max(50).default(5).optional(),
 });
 
 export type GetAiInviteCardsByWeddingQueryDto = z.infer<
@@ -30,12 +35,26 @@ export const updateAiInviteCardParamsSchema = z.object({
   id: z.uuid().describe("AI invite card ID is required"),
 });
 
+export const aiInviteCardGenerationStatusParamsSchema = z.object({
+  id: z.uuid().describe("AI invite card ID is required"),
+});
+
+export const getAiInviteCardGenerationStatusSchema = z.object({
+  params: aiInviteCardGenerationStatusParamsSchema,
+});
+
+export type GetAiInviteCardGenerationStatusParamsDto = z.infer<
+  typeof aiInviteCardGenerationStatusParamsSchema
+>;
+
 export const updateEventInviteFormatBodySchema = z.object({
-  generation_mode: GenerationModeSchema.optional()
-    .default("EXAMPLE")
-    .describe("Generation mode of AI invite card"),
-  photoType: z
+  generation_mode: GenerationModeSchema.optional().describe(
+    "Generation mode of AI invite card",
+  ),
+  photo_type: z
     .enum(["couple", "bride", "groom"])
+    .optional()
+    .nullable()
     .describe("Image type (couple, bride, or groom)"),
   design_preset: z.string().optional().nullable().describe("Design preset"),
   texture_emulation: z
@@ -65,8 +84,19 @@ export const updateEventInviteFormatBodySchema = z.object({
   custom_message: z.string().optional().nullable().describe("Custom message"),
   reference_image: z.string().optional().nullable().describe("Reference image"),
   generated_image: z.string().optional().nullable().describe("Generated image"),
-  bride_image: z.string().optional().nullable().describe("Bride image"),
-  groom_image: z.string().optional().nullable().describe("Groom image"),
+  illustration_style: z
+    .string()
+    .optional()
+    .nullable()
+    .describe("Illustration style for generating AI couple photo"),
+  couple_raw_image_key: z
+    .string()
+    .optional()
+    .nullable()
+    .describe("Couple raw image key for the AI invite card"),
+  photo_placement: PhotoPlacementSchema.optional()
+    .nullable()
+    .describe("How the couple photo should be used in the design"),
   bride_attire_style: z
     .string()
     .optional()
@@ -147,9 +177,13 @@ export const generateAIInviteCardImageBodySchema = z
       .min(1, "Couple Raw image key is required")
       .trim()
       .optional()
+      .nullable()
       .describe(
         "couple Raw image key or path of the image for the AI invite card",
       ),
+    photo_placement: PhotoPlacementSchema.optional()
+      .nullable()
+      .describe("How the couple photo should be used in the design"),
     bride_attire_style: z
       .string()
       .optional()
@@ -175,6 +209,21 @@ export const generateAIInviteCardImageBodySchema = z
         code: "custom",
         message: "Reference image is required when generation_mode is EXAMPLE",
         path: ["reference_image"],
+      });
+    }
+
+    // In EXAMPLE mode the photo can either be swapped onto the reference's figures or
+    // added as a portrait inset — the two produce very different cards, so ask.
+    if (
+      data.generation_mode === "EXAMPLE" &&
+      data.couple_raw_image_key &&
+      !data.photo_placement
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Choose how the couple photo should be used when generation_mode is EXAMPLE",
+        path: ["photo_placement"],
       });
     }
 

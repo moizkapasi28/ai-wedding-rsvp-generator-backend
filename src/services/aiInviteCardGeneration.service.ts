@@ -13,12 +13,12 @@ import {
 } from "../utils/aiInviteCardPromptBuilder.util";
 import { uploadBufferToS3 } from "./aws.service";
 import { generateContentWithRetry } from "../utils/geminiRetry.util";
-import { GENERATION_MODE } from "../enums/aiEventInvite.enum";
-import { performProgrammaticFaceSwap } from "./faceSwap.service";
+import { GENERATION_MODE, GENERATION_STAGE } from "../enums/aiEventInvite.enum";
 
 export const aiInviteCardExampleGenerationService = async (
   aiInviteCard: Partial<AIEventInviteCard>,
   event: Event,
+  onStage?: (stage: GENERATION_STAGE) => Promise<void> | void,
 ) => {
   const stage1Prompt = await buildStage1ExamplePrompt(aiInviteCard);
 
@@ -58,27 +58,10 @@ export const aiInviteCardExampleGenerationService = async (
 
   // Save the generated image to S3 and update the DB
   if (base64Data && aiInviteCard.id) {
-    let buffer = Buffer.from(base64Data, "base64");
+    const buffer = Buffer.from(base64Data, "base64");
 
-    // --- STAGE 1.5: Programmatic Face Swap ---
-    //!!Function is deprecated for now as its not giving desired results
-    if (aiInviteCard.couple_raw_image_key) {
-      logger.info("Starting programmatic face swap...");
-      try {
-        const swappedBuffer = await performProgrammaticFaceSwap({
-          targetImageBuffer: buffer,
-          sourceFaceS3Key: aiInviteCard.couple_raw_image_key,
-        });
-        buffer = Buffer.from(swappedBuffer);
-        base64Data = buffer.toString("base64");
-      } catch (err) {
-        logger.error(
-          { err },
-          "Face swap failed, continuing with un-swapped image.",
-        );
-      }
-    }
-
+    // The couple photo now goes to the model with the reference image, so the
+    // programmatic face swap that used to run here is no longer needed.
     const s3Key = await uploadBufferToS3(
       buffer,
       "ai-invite-cards/generated-images/invitation-design",
@@ -92,6 +75,7 @@ export const aiInviteCardExampleGenerationService = async (
     logger.info({ s3Key }, "Saved Stage 1 generated design to S3");
 
     // --- STAGE 2: Typesetting ---
+    await onStage?.(GENERATION_STAGE.TYPESETTING);
     logger.info("Starting Stage 2: Typesetting text onto design...");
 
     const wedding = await findWeddingById(event.wedding_id);
@@ -173,6 +157,7 @@ export const aiInviteCardExampleGenerationService = async (
 export const aiInviteCardManualGenerationService = async (
   aiInviteCard: Partial<AIEventInviteCard>,
   event: Event,
+  onStage?: (stage: GENERATION_STAGE) => Promise<void> | void,
 ) => {
   const stage1Prompt = await buildStage1ManualPrompt(aiInviteCard);
 
@@ -226,6 +211,7 @@ export const aiInviteCardManualGenerationService = async (
 
     logger.info({ s3Key }, "Saved Stage 1 manual generated design to S3");
 
+    await onStage?.(GENERATION_STAGE.TYPESETTING);
     logger.info("Starting Stage 2: Typesetting text onto design...");
 
     const wedding = await findWeddingById(event.wedding_id);
@@ -270,7 +256,7 @@ export const aiInviteCardManualGenerationService = async (
         const stage2Buffer = Buffer.from(stage2Base64Data, "base64");
         const stage2S3Key = await uploadBufferToS3(
           stage2Buffer,
-          "ai-invite-cards/final-invitation",
+          "ai-invite-cards/generated-images/final-invitation",
           stage2MimeType,
         );
 

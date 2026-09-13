@@ -9,7 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
-    "worker": "tsx watch src/workers/guest.worker.ts",
+    "worker": "tsx watch src/workers/index.ts",
     "build": "tsc && copyfiles -u 1 \"src/public/**/*\" dist/src"
   },
   "dependencies": {

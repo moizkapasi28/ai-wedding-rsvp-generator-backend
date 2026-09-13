@@ -64,5 +64,8 @@ export const updateAiEventInviteCard = async (
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  return db.aIEventInviteCard.update({ where: { id }, data: payload });
+  return db.aIEventInviteCard.update({
+    where: { id },
+    data: { ...payload, updated_at: new Date() },
+  });
 };
