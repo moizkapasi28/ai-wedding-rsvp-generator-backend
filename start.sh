@@ -3,8 +3,8 @@
 # Start Redis in the background with explicit paths to avoid permission issues for non-root user
 redis-server --daemonize yes --dir /var/lib/redis --pidfile /run/redis/redis.pid --logfile /var/log/redis/redis.log
 
-# Start the worker in the background and capture PID
-node dist/src/workers/guest.worker.js &
+# Start all background workers (guest import + AI invite card) in one process and capture PID
+node dist/src/workers/index.js &
 WORKER_PID=$!
 
 # Start the main server in the background and capture PID
