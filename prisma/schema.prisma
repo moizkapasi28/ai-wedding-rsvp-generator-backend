@@ -192,6 +192,8 @@ model GuestEventInvite {
   invite_deadline DateTime?
   responded_at DateTime? @db.Timestamptz(6)
   invite_sent_at DateTime? @db.Timestamptz(6)
+  first_reminder_sent_at DateTime? @db.Timestamptz(6)
+  final_reminder_sent_at DateTime? @db.Timestamptz(6)
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
@@ -217,6 +219,7 @@ model GuestEventInviteFormat {
   plus_ones Boolean @default(false)
   first_reminder Boolean @default(false)
   final_reminder Boolean @default(false)
+  rsvp_deadline DateTime? @db.Timestamptz(6)
   guestEventInvite GuestEventInvite[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)

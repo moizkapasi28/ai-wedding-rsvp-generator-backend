@@ -28,6 +28,7 @@ eventInviteFormatRouter.get(
 
 eventInviteFormatRouter.get(
   "/:id",
+  authenticate,
   validate(getEventInviteFormatSchema),
   asyncHandler(geteventInviteFormat),
 );

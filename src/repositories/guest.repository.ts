@@ -11,6 +11,7 @@ const buildGuestWhereInput = (
   events?: string[],
   sides?: Side[],
   groups?: Group[],
+  inviteSent?: "sent" | "not_sent",
 ): Prisma.GuestWhereInput => {
   const where: Prisma.GuestWhereInput = { wedding_id: weddingId };
   const andConditions: Prisma.GuestWhereInput[] = [];
@@ -42,12 +43,14 @@ const buildGuestWhereInput = (
     }
   }
 
-  if (events && events.length) {
-    andConditions.push({
-      guestEventInvite: {
-        some: { event_id: { in: events } },
-      },
-    });
+  // Event and invite-sent filters must match the same invite
+  const inviteWhere: Prisma.GuestEventInviteWhereInput = {};
+  if (events && events.length) inviteWhere.event_id = { in: events };
+  if (inviteSent)
+    inviteWhere.invite_sent_at = inviteSent === "sent" ? { not: null } : null;
+
+  if (Object.keys(inviteWhere).length) {
+    andConditions.push({ guestEventInvite: { some: inviteWhere } });
   }
 
   if (sides && sides.length) {
@@ -80,6 +83,7 @@ export const findAllGuests = async (
   events?: string[],
   sides?: Side[],
   groups?: Group[],
+  inviteSent?: "sent" | "not_sent",
 ) => {
   const db = prisma;
   const skip = (page - 1) * limit;
@@ -91,6 +95,7 @@ export const findAllGuests = async (
     events,
     sides,
     groups,
+    inviteSent,
   );
 
   const [guests, total] = await Promise.all([
@@ -118,6 +123,7 @@ export const findAllGuests = async (
             message: true,
             invite_deadline: true,
             responded_at: true,
+            invite_sent_at: true,
             created_at: true,
             updated_at: true,
             event: {
@@ -325,6 +331,7 @@ const inviteToSendInclude = {
       wedding: { select: { bride_name: true, groom_name: true, slug: true } },
     },
   },
+  invite_format: { select: { first_reminder: true, final_reminder: true } },
 } satisfies Prisma.GuestEventInviteInclude;
 
 export const findGuestEventInviteForUser = async (
@@ -360,5 +367,21 @@ export const markGuestEventInviteSent = async (
   return db.guestEventInvite.update({
     where: { id },
     data: { invite_sent_at: now, updated_at: now },
+  });
+};
+
+export const markGuestEventInviteReminded = async (
+  id: string,
+  reminder: "FIRST" | "FINAL",
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  const now = new Date();
+  return db.guestEventInvite.update({
+    where: { id },
+    data:
+      reminder === "FIRST"
+        ? { first_reminder_sent_at: now, updated_at: now }
+        : { final_reminder_sent_at: now, updated_at: now },
   });
 };

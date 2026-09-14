@@ -9,8 +9,10 @@ import {
   exportGuestsService,
   importGuestListTemplateService,
   getGuestImportStatusService,
+  getDueRemindersService,
   getWhatsAppInvitesService,
   markInviteSentService,
+  markReminderSentService,
 } from "../services/guest.service";
 import { guestImportQueue } from "../queues/guest.queue";
 import { getUserWeddingService } from "../services/wedding.service";
@@ -23,8 +25,10 @@ import {
   DownloadGuestTemplateDto,
   UploadGuestTemplateDto,
   GetJobStatusDto,
+  GetDueRemindersDto,
   GetWhatsAppInvitesDto,
   InviteParamsDto,
+  MarkReminderSentDto,
 } from "../validations/guest.validations";
 import { ApiError } from "../utils/apiError.util";
 
@@ -49,6 +53,7 @@ export const getAllGuests = async (
     query.events,
     query.sides,
     query.groups,
+    query.inviteSent,
   );
 
   return sendSuccess(res, "Guests fetched successfully", guests, 200);
@@ -139,6 +144,7 @@ export const exportGuests = async (
     query.events,
     query.sides,
     query.groups,
+    query.inviteSent,
   );
   res.setHeader(
     "Content-Type",
@@ -198,4 +204,30 @@ export const markInviteSent = async (
   const invite = await markInviteSentService(user.id, params.inviteId);
 
   return sendSuccess(res, "Invite marked as sent", invite, 200);
+};
+
+export const getDueReminders = async (
+  req: Request<{}, {}, {}, GetDueRemindersDto>,
+  res: Response,
+) => {
+  const { user, query } = req;
+
+  const reminders = await getDueRemindersService(user.id, query.eventId);
+
+  return sendSuccess(res, "Due reminders fetched successfully", reminders, 200);
+};
+
+export const markReminderSent = async (
+  req: Request<MarkReminderSentDto["params"], {}, MarkReminderSentDto["body"]>,
+  res: Response,
+) => {
+  const { user, params, body } = req;
+
+  const invite = await markReminderSentService(
+    user.id,
+    params.inviteId,
+    body.reminder,
+  );
+
+  return sendSuccess(res, "Reminder marked as sent", invite, 200);
 };

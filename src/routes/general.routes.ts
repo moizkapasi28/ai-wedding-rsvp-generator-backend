@@ -22,6 +22,7 @@ generalRouter.post(
 
 generalRouter.post(
   "/generate-view-url",
+  authenticate,
   validate(generateS3PresignedViewURLSchema),
   asyncHandler(generateS3PresignedViewURL),
 );

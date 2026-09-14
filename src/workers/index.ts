@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+// Must run before anything reads process.env
+import "../config/env";
+
 import logger from "../config/logger";
 import { aiInviteCardWorker } from "./aiInviteCard.worker";
 import { guestWorker } from "./guest.worker";

@@ -8,8 +8,10 @@ import {
   getAllGuestsSchema,
   getJobStatusSchema,
   getWeddingGuestSchema,
+  getDueRemindersSchema,
   getWhatsAppInvitesSchema,
   markInviteSentSchema,
+  markReminderSentSchema,
   uploadGuestTemplateSchema,
 } from "../validations/guest.validations";
 import { asyncHandler } from "../utils/asyncHandler.util";
@@ -24,8 +26,10 @@ import {
   getWeddingGuest,
   importGuestListTemplate,
   getGuestImportStatus,
+  getDueReminders,
   getWhatsAppInvites,
   markInviteSent,
+  markReminderSent,
 } from "../controllers/guest.controller";
 
 const guestsRouter = Router();
@@ -106,6 +110,20 @@ guestsRouter.post(
   authenticate,
   validate(markInviteSentSchema),
   asyncHandler(markInviteSent),
+);
+
+guestsRouter.get(
+  "/invites/reminders",
+  authenticate,
+  validate(getDueRemindersSchema),
+  asyncHandler(getDueReminders),
+);
+
+guestsRouter.post(
+  "/invites/:inviteId/mark-reminded",
+  authenticate,
+  validate(markReminderSentSchema),
+  asyncHandler(markReminderSent),
 );
 
 export default guestsRouter;

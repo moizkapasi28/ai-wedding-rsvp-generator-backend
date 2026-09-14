@@ -1,4 +1,6 @@
 import "dotenv/config";
+// Must run before anything reads process.env
+import "./config/env";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";

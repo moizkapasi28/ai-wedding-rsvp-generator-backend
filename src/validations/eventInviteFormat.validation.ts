@@ -53,6 +53,13 @@ export const updateEventInviteFormatBodySchema = z.object({
     .boolean()
     .default(false)
     .describe("Need to add final reminder"),
+  // End of the chosen day in the host's timezone, as an ISO timestamp; null clears the deadline
+  rsvp_deadline: z.iso
+    .datetime()
+    .nullable()
+    .optional()
+    .transform((value) => (value == null ? value : new Date(value)))
+    .describe("RSVP deadline for this event's invites"),
   raw_image: z
     .string()
     .trim()

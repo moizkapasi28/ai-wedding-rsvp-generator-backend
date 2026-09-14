@@ -1,106 +1,78 @@
 # AI Wedding RSVP Generator Backend
 
-This is the backend for the AI Wedding RSVP Generator, a robust web service built with Node.js, Express, and TypeScript. It utilizes Prisma for database ORM and Zod for robust data validation.
+The API behind the AI Wedding RSVP Generator: couples manage weddings, events and guests, design AI invitation cards, send RSVP links over WhatsApp, and track replies live. Built with Node.js, Express, TypeScript, Prisma and Zod.
+
+The frontend lives in the sibling repository `ai-wedding-rsvp-generator-frontend` (production: https://ai-wedding-rsvp-generator.pages.dev).
 
 ## Features
 
-- **Authentication & Authorization**: Secure user authentication using JWT and bcrypt.
-- **Wedding Management**: Full CRUD capabilities for weddings, tightly scoped to the authenticated user.
-- **Validation**: Strict runtime validation of all incoming API requests using Zod, guaranteeing data integrity.
-- **Logging**: Integrated `pino` logger for high-performance and readable logs.
-- **Email Delivery**: Powered by AWS SES for reliable email delivery (e.g., verification, notifications).
+- **Accounts**: sign up, email verification, password reset (JWT access and refresh tokens).
+- **Weddings, events and guests**: CRUD scoped to the signed-in user, guest filters, Excel import (background job) and export.
+- **RSVP pages**: a public page per guest and event, reached through a link with the wedding slug and a per-invite token. Per-event settings choose which questions to ask and set an RSVP deadline.
+- **WhatsApp invites and reminders**: `wa.me` click-to-chat links with the message pre-filled, sent from the couple's own WhatsApp. First reminder 7 days after the invite, final reminder in the 3 days before the deadline.
+- **Host RSVP updates**: hosts can set a guest's reply from the portal.
+- **AI invite cards**: two-stage image generation with Google Gemini, run in a background worker, stored in S3.
+- **Live dashboard**: RSVP stats plus a server-sent events stream of new replies (Redis pub/sub, so it works across processes).
 
-## Tech Stack
+## Tech stack
 
-- **Runtime**: Node.js
-- **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL
-- **ORM**: Prisma Client
-- **Validation**: Zod
-- **Security**: JWT (jsonwebtoken), bcrypt, CORS, Cookie Parser
-- **Email Services**: AWS SDK (`@aws-sdk/client-ses`) & Handlebars (for email templates)
-- **Dev Tools**: `tsx` (TypeScript Execution)
+- Node.js 22, Express 5, TypeScript
+- PostgreSQL with Prisma 7
+- Redis with BullMQ (job queues), rate limiting and live RSVP pub/sub
+- Zod (request validation, env validation, OpenAPI generation)
+- AWS S3 (files) and SES with Handlebars templates (email)
+- Google Gemini (AI invite cards)
+- pino (logging)
 
 ## Prerequisites
 
-- Node.js (v16+)
-- PostgreSQL Database
-- AWS SES Credentials (if using email features)
+- Node.js 22+
+- PostgreSQL
+- Redis 6.2+ (BullMQ warns on older versions)
+- AWS credentials for S3 and SES, and a Gemini API key for AI invite cards
 
-## Installation
-
-1. **Clone the repository and install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-2. **Environment Variables**:
-   Create a `.env` file in the root directory based on `.env.example` or required settings:
-
-   ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/wedding_db?schema=public"
-   JWT_SECRET="your_jwt_secret"
-   # Add AWS SES and other required environment variables here
-   ```
-
-3. **Database Setup**:
-   Run Prisma migrations to sync your schema with the PostgreSQL database.
-
-   ```bash
-   npx prisma migrate dev
-   ```
-
-4. **Generate Prisma Client**:
-   ```bash
-   npx prisma generate
-   ```
-
-## Running the Application
-
-To start the server in development mode (with hot-reloading via `tsx`):
+## Setup
 
 ```bash
-npm run dev
+npm install
+cp .env.example .env        # then fill in the values
+npx prisma migrate dev
+npx prisma generate
 ```
 
-The server will start listening for requests.
+Environment variables are validated at startup (`src/config/env.ts`); the process exits with a list of anything missing or malformed.
 
-## Project Structure
+## Running
 
-- `src/controllers/` - Handles incoming HTTP requests and responses.
-- `src/services/` - Contains core business logic (e.g., `wedding.service.ts`).
-- `src/repositories/` - Data access layer wrapping Prisma DB operations.
-- `src/routes/` - Express route definitions.
-- `src/validations/` - Zod schema definitions for API payloads.
-- `src/middlewares/` - Express middlewares (Auth, Error handling, Validation).
-- `prisma/` - Prisma schema and database configuration.
+The API and the background worker are separate processes; run both:
 
-## New Features
+```bash
+npm run dev      # API on PORT (default 3000)
+npm run worker   # guest imports and AI invite card generation
+```
 
-### Event Invite Format Image Generation
+API reference: http://localhost:3000/reference. The spec (`src/openapi.json`) is generated from the route table in `scripts/generate-openapi.ts` and the routes' Zod schemas; regenerate it after changing routes:
 
-- Added a new feature to generate event invite format images using a deep learning model.
-- The feature takes in a raw image, illustration style, negative prompt, and strength as parameters.
-- The generated image is stored in an S3 bucket.
+```bash
+npm run docs:openapi
+```
 
-### Event Invite Format Updating
+## Project structure
 
-- Updated the `updateGuestEventInviteFormatService` function to include the ability to update the event invite format.
-- The function now takes in a payload object with the updated fields.
-- The updated event invite format is returned if the update is successful.
+- `src/routes/` Express routes (`authenticate`, `validate(schema)`, controller)
+- `src/controllers/` request/response handling
+- `src/services/` business logic, including ownership checks
+- `src/repositories/` Prisma queries
+- `src/validations/` Zod request schemas
+- `src/queues/`, `src/workers/` BullMQ queues and the worker process
+- `src/lib/` clients and helpers (Prisma, Redis, Gemini, WhatsApp links, live RSVP events)
+- `src/config/` logger and env validation
+- `prisma/` schema and migrations
+- `scripts/` OpenAPI generator
 
-### Event Invite Format Retrieval
+## Deployment
 
-- Added a new function `getEventInviteFormatService` to retrieve a specific event invite format by its ID.
-- The function returns the event invite format if it exists, or throws an error if it doesn't.
-
-### Deep Learning Model Integration
-
-- Integrated a deep learning model called "black-forest-labs/FLUX.2-dev" for image-to-image conversion.
-- The model is used in the `generateEventInviteFormatImageService` function to generate the event invite format images.
-- The model takes in the raw image, illustration style, negative prompt, and strength as parameters.
-- The generated image is returned as a buffer.
+The Docker image (`dockerfile`) builds the app, and `start.sh` runs Redis, the worker and the API in one container. Set the production environment variables there, including `WEB_APP_URL=https://ai-wedding-rsvp-generator.pages.dev`, and apply migrations with `npx prisma migrate deploy`.
 
 ## License
 

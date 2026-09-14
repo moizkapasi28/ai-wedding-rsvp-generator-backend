@@ -32,6 +32,8 @@ export const getGuestEventInviteFormatsByWedding = async (
       include: {
         guestEventInviteFormat: true,
         wedding: true,
+        // S3 key of the event's AI invitation card (one per event), shown on Guest Preview
+        aiEventInviteCard: { select: { generated_invite_image_url: true } },
       },
       skip,
       take: limit,
@@ -70,5 +72,18 @@ export const updateGuestEventInviteFormat = async (
   return db.guestEventInviteFormat.update({
     where: { id },
     data: { ...payload, updated_at: new Date() },
+  });
+};
+
+// Invites keep their own copy of the deadline (checked on the RSVP link, shown to hosts)
+export const setInviteDeadlineForFormat = (
+  formatId: string,
+  deadline: Date | null,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guestEventInvite.updateMany({
+    where: { invite_format_id: formatId },
+    data: { invite_deadline: deadline },
   });
 };

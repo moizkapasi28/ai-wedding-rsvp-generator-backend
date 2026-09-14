@@ -1,4 +1,4 @@
-import { Group, Guest, Prisma, Side } from "../../generated/prisma/client";
+import { Group, Guest, Prisma, Side, Status } from "../../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import {
   createGuest,
@@ -12,9 +12,11 @@ import {
   findGuestEventInvitesByGuestId,
   getGuestsConfirmationStats,
   getWeddingGuest,
+  markGuestEventInviteReminded,
   markGuestEventInviteSent,
   updateGuest,
 } from "../repositories/guest.repository";
+import { getDueReminder, type ReminderKind } from "../utils/reminder.util";
 import { buildWhatsAppLink, normalizePhone } from "../lib/whatsapp";
 import { v4 as uuidv4 } from "uuid";
 import { verfiyWeddingOwnershipService } from "./wedding.service";
@@ -47,6 +49,7 @@ export const getAllGuestsService = async (
   events?: string[],
   sides?: Side[],
   groups?: Group[],
+  inviteSent?: "sent" | "not_sent",
 ) => {
   const { guests, total } = await findAllGuests(
     weddingId,
@@ -57,6 +60,7 @@ export const getAllGuestsService = async (
     events,
     sides,
     groups,
+    inviteSent,
   );
 
   return {
@@ -148,7 +152,8 @@ export const addNewGuestService = async (
           invite_token: uuidv4(),
           plus_ones: null,
           dietary: null,
-          invite_deadline: null,
+          // New invites inherit the event's RSVP deadline
+          invite_deadline: guestEventInviteFormat.rsvp_deadline,
           responded_at: null,
         };
         return await createGuestEventInvite(guestInvitePayload, tx);
@@ -253,7 +258,8 @@ export const editWeddingGuestService = async (
               invite_token: uuidv4(),
               plus_ones: null,
               dietary: null,
-              invite_deadline: null,
+              // New invites inherit the event's RSVP deadline
+              invite_deadline: guestEventInviteFormat.rsvp_deadline,
               responded_at: null,
             },
             tx,
@@ -838,6 +844,7 @@ export const exportGuestsService = async (
   events?: string[],
   sides?: Side[],
   groups?: Group[],
+  inviteSent?: "sent" | "not_sent",
 ) => {
   const wedding = await findWeddingById(weddingId);
   if (!wedding) throw new ApiError(404, "Wedding not found");
@@ -851,6 +858,7 @@ export const exportGuestsService = async (
     events,
     sides,
     groups,
+    inviteSent,
   );
 
   const weddingEvents = await getAllEventsByWeddingID(weddingId);
@@ -977,13 +985,19 @@ const buildRsvpUrl = (invite: InviteToSend) =>
   // WEB_APP_URL doubles as the CORS origin, so it has no trailing slash
   `${process.env.WEB_APP_URL?.replace(/\/$/, "")}/rsvp/${invite.event.wedding.slug || "invite"}/${invite.invite_token}`;
 
-const formatInviteMessage = (invite: InviteToSend, rsvpUrl: string) => {
-  const { guest, event } = invite;
-  const date = event.date.toLocaleDateString("en-GB", {
+// Event dates are stored as calendar dates, so format in UTC to keep the stored day.
+// ponytail: deadlines are end-of-day in the host's timezone; far-west hosts may see the next day — format in the wedding's timezone if that matters
+const formatMessageDate = (date: Date) =>
+  date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
+
+const formatInviteMessage = (invite: InviteToSend, rsvpUrl: string) => {
+  const { guest, event } = invite;
+  const date = formatMessageDate(event.date);
 
   return [
     `Hi ${guest.name},`,
@@ -1033,4 +1047,71 @@ export const markInviteSentService = async (userId: string, inviteId: string) =>
   }
 
   return markGuestEventInviteSent(invite.id);
+};
+
+const formatReminderMessage = (
+  invite: InviteToSend,
+  rsvpUrl: string,
+  reminder: ReminderKind,
+) => {
+  const { guest, event } = invite;
+  const couple = `${event.wedding.bride_name} & ${event.wedding.groom_name}`;
+  const eventDate = formatMessageDate(event.date);
+  const deadline = invite.invite_deadline
+    ? formatMessageDate(invite.invite_deadline)
+    : null;
+
+  const ask =
+    reminder === "FINAL"
+      ? `This is a last reminder: RSVPs for ${couple}'s ${event.title} on ${eventDate} close on ${deadline}. Please let them know if you can make it.`
+      : `Just a gentle reminder that ${couple} would love to know if you can join them for their ${event.title} on ${eventDate}${deadline ? `. Please reply by ${deadline}` : ""}.`;
+
+  return [`Hi ${guest.name},`, "", ask, "", `RSVP here: ${rsvpUrl}`].join("\n");
+};
+
+// Reminders due right now for an event; the host sends each one from their own WhatsApp
+export const getDueRemindersService = async (userId: string, eventId: string) => {
+  const now = new Date();
+  const invites = await findInvitesToSend({
+    event_id: eventId,
+    status: Status.PENDING,
+    event: { wedding: { user_id: userId } },
+  });
+
+  return invites.flatMap((invite) => {
+    const reminder = getDueReminder(invite, invite.invite_format, now);
+    if (!reminder) return [];
+
+    const phone = normalizePhone(invite.guest.mobile_number);
+    const rsvpUrl = buildRsvpUrl(invite);
+    return [
+      {
+        id: invite.id,
+        guest_id: invite.guest_id,
+        guest_name: invite.guest.name,
+        event_id: invite.event_id,
+        event_title: invite.event.title,
+        reminder,
+        invite_deadline: invite.invite_deadline,
+        rsvp_url: rsvpUrl,
+        whatsapp_url: phone
+          ? buildWhatsAppLink(phone, formatReminderMessage(invite, rsvpUrl, reminder))
+          : null,
+      },
+    ];
+  });
+};
+
+export const markReminderSentService = async (
+  userId: string,
+  inviteId: string,
+  reminder: ReminderKind,
+) => {
+  const invite = await findGuestEventInviteForUser(inviteId, userId);
+
+  if (!invite) {
+    throw new ApiError(404, "Invite not found");
+  }
+
+  return markGuestEventInviteReminded(invite.id, reminder);
 };

@@ -4,8 +4,10 @@ import {
   findGuestEventInviteFormatByEventId,
   findGuestEventInviteFormatById,
   getGuestEventInviteFormatsByWedding,
+  setInviteDeadlineForFormat,
   updateGuestEventInviteFormat,
 } from "../repositories/eventInviteFormat.repository";
+import { prisma } from "../lib/prisma";
 import { getEventGuestStats } from "../repositories/guest.repository";
 import { BuildPromptParams } from "../types/eventInviteFormat.type";
 import { ApiError } from "../utils/apiError.util";
@@ -77,10 +79,19 @@ export const updateEventInviteFormatService = async (
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Invite Format or Invite Format Not Found");
 
-  const updatedEventInviteFormat = await updateGuestEventInviteFormat(
-    eventInviteFormat.id,
-    payload,
-  );
+  const updatedEventInviteFormat = await prisma.$transaction(async (tx) => {
+    const format = await updateGuestEventInviteFormat(
+      eventInviteFormat.id,
+      payload,
+      tx,
+    );
+
+    // Keep every invite's deadline in step with the event's setting
+    if (payload.rsvp_deadline !== undefined)
+      await setInviteDeadlineForFormat(format.id, format.rsvp_deadline, tx);
+
+    return format;
+  });
 
   if (!updatedEventInviteFormat)
     throw new ApiError(400, "Failed to update event invite format");

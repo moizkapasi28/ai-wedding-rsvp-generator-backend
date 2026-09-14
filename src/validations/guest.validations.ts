@@ -1,5 +1,6 @@
 import z from "zod";
 import { Group, Side } from "../../generated/prisma/enums";
+import { normalizePhone } from "../lib/whatsapp";
 
 export const SideSchema = z.enum(Object.values(Side) as [Side, ...Side[]]);
 export const GroupSchema = z.enum(Object.values(Group) as [Group, ...Group[]]);
@@ -49,6 +50,12 @@ export const getAllGuestsQuerySchema = z.object({
     .describe(
       "Comma-separated filter options: groups (e.g. 'FRIEND,RELATIVE,COLLEAGUE,EMPLOYEE,VIP')",
     ),
+  inviteSent: z
+    .enum(["sent", "not_sent"])
+    .optional()
+    .describe(
+      "Only guests with an invite that was / wasn't sent (for the filtered events, if any)",
+    ),
 });
 
 export const getAllGuestsSchema = z.object({
@@ -60,7 +67,14 @@ export type GetAllGuestsDto = z.infer<typeof getAllGuestsQuerySchema>;
 export const addNewGuestBodySchema = z.object({
   eventIds: z.array(z.uuid()).min(1, "At least one event must be selected"),
   name: z.string().min(1, "Name is required").max(50),
-  mobile_number: z.string().min(1, "Mobile number is required").max(15),
+  mobile_number: z
+    .string()
+    .min(1, "Mobile number is required")
+    .max(15)
+    // Same rule the WhatsApp links use, so every saved guest can be messaged
+    .refine((value) => normalizePhone(value) !== null, {
+      message: "Enter a valid mobile number (at least 8 digits)",
+    }),
   email: z.string().min(1, "Email is required").max(50),
   side: SideSchema.describe("Side is required (BRIDE or GROOM)"),
   group: GroupSchema.describe(
@@ -160,3 +174,22 @@ export const getWhatsAppInvitesSchema = z.object({
 });
 
 export type GetWhatsAppInvitesDto = z.infer<typeof getWhatsAppInvitesQuerySchema>;
+
+const getDueRemindersQuerySchema = z.object({
+  eventId: z.uuid().describe("Event Id is required"),
+});
+
+export const getDueRemindersSchema = z.object({
+  query: getDueRemindersQuerySchema,
+});
+
+export type GetDueRemindersDto = z.infer<typeof getDueRemindersQuerySchema>;
+
+export const markReminderSentSchema = z.object({
+  params: inviteParamsSchema,
+  body: z.object({
+    reminder: z.enum(["FIRST", "FINAL"]).describe("Which reminder was sent"),
+  }),
+});
+
+export type MarkReminderSentDto = z.infer<typeof markReminderSentSchema>;
