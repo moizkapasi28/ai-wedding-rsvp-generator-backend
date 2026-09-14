@@ -5,8 +5,16 @@ import {
   findWeddingByIdAndUserId,
   getAllUserWeddings,
   getAllWeddingsWithEventCountAndTotalGuest,
+  getRecentRsvps,
+  getWeddingDashboardCounts,
   updateWeddingById,
 } from "../repositories/wedding.repository";
+import { toLiveRsvp } from "../lib/rsvpEvents";
+import {
+  getAllEventsByWeddingID,
+  getGuestStatsForEvents,
+} from "../repositories/event.repository";
+import { mapGuestStatsToEvents } from "./event.service";
 import {
   AddNewWeddingDto,
   EditWeddingDto,
@@ -182,4 +190,76 @@ export const verfiyWeddingOwnershipService = async (
   if (!wedding) return false;
 
   return true;
+};
+
+// Local YYYY-MM-DD so response buckets line up with calendar days
+const toDayKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+export const getWeddingDashboardService = async (weddingId: string) => {
+  const now = new Date();
+  // ponytail: 7-day window uses the server's timezone, accept a client tz offset if users span timezones
+  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+
+  const [
+    events,
+    [
+      totalGuests,
+      guestsThisWeek,
+      accommodationRequired,
+      sides,
+      dietary,
+      recentResponses,
+    ],
+    latestRsvps,
+  ] = await Promise.all([
+    getAllEventsByWeddingID(weddingId),
+    getWeddingDashboardCounts(weddingId, since),
+    getRecentRsvps(weddingId, 10),
+  ]);
+
+  const eventsWithStats = mapGuestStatsToEvents(
+    events,
+    await getGuestStatsForEvents(events.map((event) => event.id)),
+  );
+
+  let totalInvites = 0;
+  let attending = 0;
+  let pending = 0;
+  for (const { stats } of eventsWithStats) {
+    totalInvites += stats.totalGuests;
+    attending += stats.attendingGuests;
+    pending += stats.pendingGuests;
+  }
+
+  const dailyResponses = Array.from({ length: 7 }, (_, i) => ({
+    date: toDayKey(
+      new Date(since.getFullYear(), since.getMonth(), since.getDate() + i),
+    ),
+    count: 0,
+  }));
+  for (const { responded_at } of recentResponses) {
+    const bucket = dailyResponses.find(
+      (day) => day.date === toDayKey(responded_at),
+    );
+    if (bucket) bucket.count++;
+  }
+
+  return {
+    stats: {
+      totalGuests,
+      guestsThisWeek,
+      accommodationRequired,
+      attending,
+      pending,
+      confirmationRate:
+        totalInvites === 0 ? 0 : Math.round((attending / totalInvites) * 100),
+      responsesThisWeek: recentResponses.length,
+    },
+    events: eventsWithStats,
+    dietary: dietary.map((d) => ({ dietary: d.dietary, count: d._count._all })),
+    sides: sides.map((s) => ({ side: s.side, count: s._count._all })),
+    dailyResponses,
+    recentRsvps: latestRsvps.map(toLiveRsvp),
+  };
 };

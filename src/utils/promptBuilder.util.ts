@@ -90,10 +90,11 @@ export const COUPLE_FACE_FUSION_CLAUSE =
 
 export const GLOBAL_POSITIVE_SUFFIX =
   "[CRITICAL ANATOMY & PROPORTION RULES]\n" +
-  "Render all anatomy with photorealistic, correct human proportions — this overrides any stylistic or artistic instruction elsewhere in this prompt.\n\n" +
+  "Render all anatomy correctly and consistently: real human structure — correct counts, placement, and proportion of features and limbs — rendered in the chosen art style.\n" +
+  "These anatomy rules override stylistic instructions only where the two genuinely conflict; they do NOT require a photorealistic finish. A watercolor, line-art, anime, or painterly card must stay in that medium — it must simply depict anatomy that is correct within it. Deliberate, style-intrinsic stylisation (e.g. the simplified features of line art) is expected and correct; malformed anatomy is not.\n\n" +
 
   "[1] HEAD & BODY SCALE\n" +
-  "Head-to-body ratio must match realistic adult proportions (roughly 1:7 to 1:8 head-heights per body, adjusted for the subject's apparent age). No oversized, undersized, or 'bobblehead' proportions. " +
+  "Head-to-body ratio must match realistic adult proportions (roughly 1:7 to 1:8 head-heights per body, adjusted for the subject's apparent age), or the consistent stylised ratio the chosen art style calls for — applied to every figure alike, never varying between people in the same image. No accidental 'bobblehead' proportions. " +
   "Neck, shoulder width, torso length, and limb length must all be consistent with the head size and with each other — no single body part scaled independently of the rest.\n\n" +
 
   "[2] HANDS & LIMBS (high-failure-rate zone — apply extra scrutiny)\n" +
@@ -121,11 +122,23 @@ export const GLOBAL_POSITIVE_SUFFIX =
   "[8] FAILURE CONDITION\n" +
   "Any anatomical error (wrong finger count, mismatched proportions, merged faces/limbs between people, asymmetric eyes) constitutes a complete failure of the generation, regardless of overall image quality or composition.";
 
-export function buildIdentityBlock(imageType: ImageType): string {
+export function buildIdentityBlock(
+  imageType: ImageType,
+  // A stylised transfer still clones the identity, but expects it drawn in the chosen
+  // medium rather than photographically — asking for pores in a line-art card fails both.
+  options: { stylised?: boolean } = {},
+): string {
   const subject = SUBJECT_DESCRIPTORS[imageType];
+  const stylised = options.stylised ?? false;
+
+  const header = stylised
+    ? `[CRITICAL: STYLIZED IDENTITY TRANSFER]\n` +
+      `ROLE: You are an elite portrait illustrator. Reproduce the exact facial geometry of ${subject} from the reference photo, rendered in the requested art style. The medium changes; the person does not.\n\n`
+    : `[CRITICAL: STRICT FACE PRESERVATION & IDENTITY CLONING]\n` +
+      `ROLE: You are a zero-shot face swap / identity transfer engine, not a creative reinterpretation tool. Your sole job is to graft the exact facial identity of ${subject} from the reference photo onto the target scene.\n\n`;
+
   let block =
-    `[CRITICAL: STRICT FACE PRESERVATION & IDENTITY CLONING]\n` +
-    `ROLE: You are a zero-shot face swap / identity transfer engine, not a creative reinterpretation tool. Your sole job is to graft the exact facial identity of ${subject} from the reference photo onto the target scene.\n\n` +
+    header +
 
     `[1] IDENTITY IS NON-NEGOTIABLE (highest priority, overrides all other instructions)\n` +
     `- Preserve exact: eye shape/spacing/color, nose bridge & tip geometry, lip shape & volume, jawline & chin structure, cheekbone structure, ear shape (if visible), skin tone (base undertone, not just lighting-adjusted value), hair color/texture/hairline.\n` +
@@ -139,7 +152,9 @@ export function buildIdentityBlock(imageType: ImageType): string {
 
     `[3] NO BEAUTIFICATION OR "AI-FACE" DRIFT\n` +
     `Do not smooth skin, symmetrize features, enlarge eyes, slim the nose/jaw, or apply any generic "attractiveness" prior. This is the single most common failure mode of face-swap models — actively resist it.\n` +
-    `Retain natural skin texture: pores, blemishes, fine lines, natural asymmetry between left/right sides of the face. A slightly imperfect but accurate face is correct. A smoothed, symmetrical, "improved" face is a failure, even if it looks more polished.\n\n` +
+    (stylised
+      ? `Keep every identifying detail the medium can carry: distinctive marks, the natural asymmetry between the left and right sides of the face, and the true proportions between features. The art style may simplify texture and shading — it may NOT idealise, symmetrise, or "prettify" the face. An accurate illustrated likeness is correct; a beautiful generic one is a failure.\n\n`
+      : `Retain natural skin texture: pores, blemishes, fine lines, natural asymmetry between left/right sides of the face. A slightly imperfect but accurate face is correct. A smoothed, symmetrical, "improved" face is a failure, even if it looks more polished.\n\n`) +
 
     `[4] SEAMLESS INTEGRATION (secondary priority — only after identity is locked)\n` +
     `Adapt lighting direction, shadow falloff, color temperature, and grain/noise on the face to match the generated environment, so the face does not look pasted or composited.\n` +
@@ -196,11 +211,19 @@ export const SCOPE_BLOCK =
   "new scene is also a failure. Both are equally unacceptable — this is not a spectrum " +
   "where one can be sacrificed for the other.";
 
+// Catalogue entries describe a pairing ("a lehenga for the bride and a sherwani for the
+// groom"), so each subject must be given only their own half — otherwise the bride is
+// told to wear both outfits.
 function buildWardrobeInstructionForSubject(
   style: StyleConfig,
   attire: AttireConfig | null,
+  subject: ImageType,
 ): string {
-  const attireBody = attire ? attire.promptBody : NEUTRAL_DEFAULT_ATTIRE_PROMPT;
+  const attireBody = attire
+    ? (subject === "groom" ? attire.groomPromptBody : attire.bridePromptBody) ??
+      attire.promptBody
+    : NEUTRAL_DEFAULT_ATTIRE_PROMPT;
+
   return `${attireBody}, rendered with ${style.wardrobeRenderQuality}.`;
 }
 
@@ -211,14 +234,18 @@ export function buildWardrobeBlock(
   if (params.imageType === "couple") {
     const brideAttire = getAttire(params.brideAttireId ?? params.attireId);
     const groomAttire = getAttire(params.groomAttireId ?? params.attireId);
-    const brideLine = `Bride: ${buildWardrobeInstructionForSubject(style, brideAttire)}`;
-    const groomLine = `Groom: ${buildWardrobeInstructionForSubject(style, groomAttire)}`;
+    const brideLine = `Bride wears: ${buildWardrobeInstructionForSubject(style, brideAttire, "bride")}`;
+    const groomLine = `Groom wears: ${buildWardrobeInstructionForSubject(style, groomAttire, "groom")}`;
     return `WARDROBE & SETTING:\n${brideLine}\n${groomLine}\n${style.settingInstruction}`;
   }
 
   const attire = getAttire(params.attireId);
-  const wardrobe = buildWardrobeInstructionForSubject(style, attire);
-  return `WARDROBE & SETTING:\n${wardrobe}\n${style.settingInstruction}`;
+  const wardrobe = buildWardrobeInstructionForSubject(
+    style,
+    attire,
+    params.imageType,
+  );
+  return `WARDROBE & SETTING:\n${SUBJECT_DESCRIPTORS[params.imageType]} wears: ${wardrobe}\n${style.settingInstruction}`;
 }
 
 export function sanitizeCustomNote(note: string): string {

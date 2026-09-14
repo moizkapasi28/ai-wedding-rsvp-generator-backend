@@ -46,7 +46,18 @@ export const EDGE_STYLING_CATALOGUE: Record<string, string> = {
   floral_bleed: "Have large, oversized floral elements spilling aggressively over the edges of the canvas, partially cropped out of the frame.",
 };
 
+export const TEXT_ALIGNMENT_CATALOGUE: Record<string, string> = {
+  strict:
+    "Classic strict center alignment. Every line of text is centered on a single vertical axis, stacked with even, generous line spacing and consistent left/right margins.",
+  cascading:
+    "Cascading center alignment. Lines remain centered but vary in width and scale, flowing from a large focal line down through progressively smaller supporting lines for a relaxed, editorial rhythm.",
+  geometric:
+    "Geometric centered alignment. Text sits in crisply aligned blocks on a strict grid, with deliberate, even gaps between groups and hairline rules or symmetrical spacing separating each block.",
+};
+
 export const getDesignPreset = (key: string) => DESIGN_PRESET_CATALOGUE[key] || key;
+export const getTextAlignment = (key: string) =>
+  TEXT_ALIGNMENT_CATALOGUE[key] || key;
 export const getTextureEmulation = (key: string) => TEXTURE_EMULATION_CATALOGUE[key] || key;
 export const getMetallicAccents = (key: string) => METALLIC_ACCENTS_CATALOGUE[key] || key;
 export const getNegativeSpace = (key: string) => NEGATIVE_SPACE_CATALOGUE[key] || key;

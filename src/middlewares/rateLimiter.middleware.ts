@@ -55,3 +55,21 @@ export const globalLimiter = rateLimit({
     message: "Too many requests from this IP, please try again after 15 minutes.",
   },
 });
+
+// Rate limiter for public RSVP submissions (no login, so keyed by IP)
+export const rsvpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 30, // Limit each IP to 30 RSVP submissions per window
+  skip: () => process.env.NODE_ENV === "local",
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({
+    // @ts-expect-error - Known typing issue with rate-limit-redis and ioredis
+    sendCommand: (...args: string[]) => redisClient.call(...args),
+    prefix: "rl_rsvp:",
+  }),
+  message: {
+    success: false,
+    message: "Too many RSVP submissions from this IP, please try again after 15 minutes.",
+  },
+});

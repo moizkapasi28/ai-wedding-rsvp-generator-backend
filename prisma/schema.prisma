@@ -183,7 +183,7 @@ model GuestEventInvite {
   event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
   invite_format_id String @db.Uuid
   invite_format GuestEventInviteFormat @relation(fields: [invite_format_id], references: [id], onDelete: Cascade)
-  invite_token String @db.Uuid
+  invite_token String @unique @db.Uuid
   status Status @default(PENDING)
   plus_ones Int? 
   dietary Dietary? 

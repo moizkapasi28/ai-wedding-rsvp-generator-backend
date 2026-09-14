@@ -18,6 +18,7 @@ import guestsRouter from "./routes/guests.routes";
 import eventInviteFormatRouter from "./routes/eventInviteFormat.route";
 import generalRouter from "./routes/general.routes";
 import aiInviteCardRouter from "./routes/aiInviteCard.routes";
+import rsvpRouter from "./routes/rsvp.routes";
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use("/api/guest", guestsRouter);
 app.use("/api/page-setting", eventInviteFormatRouter);
 app.use("/api/ai-invite-card", aiInviteCardRouter);
 app.use("/api/general", generalRouter);
+app.use("/api/rsvp", rsvpRouter);
 
 // API Documentation
 app.use(

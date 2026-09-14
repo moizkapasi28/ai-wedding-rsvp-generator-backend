@@ -199,3 +199,60 @@ export const getAllWeddingsWithEventCountAndTotalGuest = async (
     },
   });
 };
+
+export const getWeddingDashboardCounts = async (
+  weddingId: string,
+  since: Date,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  const inviteWhere: Prisma.GuestEventInviteWhereInput = {
+    event: { wedding_id: weddingId },
+  };
+
+  return Promise.all([
+    db.guest.count({ where: { wedding_id: weddingId } }),
+    db.guest.count({
+      where: { wedding_id: weddingId, created_at: { gte: since } },
+    }),
+    db.guest.count({
+      where: { wedding_id: weddingId, accomodation_required: true },
+    }),
+    db.guest.groupBy({
+      by: ["side"],
+      where: { wedding_id: weddingId },
+      _count: { _all: true },
+    }),
+    db.guestEventInvite.groupBy({
+      by: ["dietary"],
+      where: { ...inviteWhere, status: "ATTENDING", dietary: { not: null } },
+      _count: { _all: true },
+    }),
+    db.guestEventInvite.findMany({
+      where: { ...inviteWhere, responded_at: { gte: since } },
+      select: { responded_at: true },
+    }),
+  ]);
+};
+
+export const getRecentRsvps = async (
+  weddingId: string,
+  take: number,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  return db.guestEventInvite.findMany({
+    where: { event: { wedding_id: weddingId }, responded_at: { not: null } },
+    orderBy: { responded_at: "desc" },
+    take,
+    select: {
+      id: true,
+      status: true,
+      plus_ones: true,
+      responded_at: true,
+      guest: { select: { name: true } },
+      event: { select: { title: true } },
+    },
+  });
+};

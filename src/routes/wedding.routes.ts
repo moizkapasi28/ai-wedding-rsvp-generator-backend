@@ -5,6 +5,8 @@ import {
   editWedding,
   getAllUserWeddings,
   getUserWedding,
+  getWeddingDashboard,
+  streamWeddingLive,
 } from "../controllers/wedding.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/asyncHandler.util";
@@ -37,6 +39,20 @@ weddingRouter.get(
   authenticate,
   validate(getUserWeddingSchema),
   asyncHandler(getUserWedding),
+);
+
+weddingRouter.get(
+  "/:id/dashboard",
+  authenticate,
+  validate(getUserWeddingSchema),
+  asyncHandler(getWeddingDashboard),
+);
+
+weddingRouter.get(
+  "/:id/live",
+  authenticate,
+  validate(getUserWeddingSchema),
+  asyncHandler(streamWeddingLive),
 );
 
 weddingRouter.patch(

@@ -5,8 +5,10 @@ import {
   editUserWeddingService,
   getAllUserWeddingsService,
   getUserWeddingService,
+  getWeddingDashboardService,
 } from "../services/wedding.service";
 import { sendSuccess } from "../utils/response.util";
+import { onRsvp } from "../lib/rsvpEvents";
 import {
   AddNewWeddingDto,
   EditWeddingDto,
@@ -87,4 +89,53 @@ export const deleteWedding = async (
   await deleteWeddingService(params.id);
 
   return sendSuccess(res, "Wedding deleted successfully", {}, 200);
+};
+
+export const getWeddingDashboard = async (
+  req: Request<GetUserWeddingDto>,
+  res: Response,
+): Promise<Response> => {
+  const { user, params } = req;
+
+  await getUserWeddingService(user.id, params.id);
+
+  const dashboard = await getWeddingDashboardService(params.id);
+
+  return sendSuccess(
+    res,
+    "Wedding dashboard fetched successfully",
+    dashboard,
+    200,
+  );
+};
+
+export const streamWeddingLive = async (
+  req: Request<GetUserWeddingDto>,
+  res: Response,
+) => {
+  const { user, params } = req;
+
+  await getUserWeddingService(user.id, params.id);
+
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    // Stops proxies from buffering events
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders();
+
+  // Cloudflare closes connections that stay idle for 100s
+  const heartbeat = setInterval(() => res.write(": ping\n\n"), 25_000);
+
+  const unsubscribe = onRsvp(params.id, (rsvp) => {
+    res.write(`event: rsvp\ndata: ${JSON.stringify(rsvp)}\n\n`);
+  });
+
+  // Unsubscribing on close guarantees nothing is written after the client leaves
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  });
 };

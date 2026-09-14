@@ -20,7 +20,11 @@ export interface AttireConfig {
   attireId: string;
   displayName: string;
   category: string;
+  // Describes the pairing as a whole; used when both subjects are described together
   promptBody: string;
+  // Per-subject halves, so a bride-only or groom-only card is never told to wear both
+  bridePromptBody?: string;
+  groomPromptBody?: string;
   appliesTo: "couple" | "single" | "both";
 }
 
