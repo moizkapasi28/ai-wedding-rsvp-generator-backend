@@ -89,9 +89,9 @@ export const geteventInviteFormat = async (
   req: Request<GetEventInviteFormatDto>,
   res: Response,
 ): Promise<Response> => {
-  const { params } = req;
+  const { user, params } = req;
 
-  const eventInviteFormat = await getEventinviteFormatService(params.id);
+  const eventInviteFormat = await getEventinviteFormatService(params.id, user.id);
 
   return sendSuccess(
     res,

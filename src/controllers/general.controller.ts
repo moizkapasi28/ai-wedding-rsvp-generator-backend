@@ -1,5 +1,4 @@
 import { type Request, type Response } from "express";
-import { generatePresignedUrl } from "../services/aws.service";
 import { sendSuccess } from "../utils/response.util";
 import {
   GenerateS3PresignedUploadURLDto,
@@ -9,13 +8,15 @@ import {
   generateS3PresignedUploadUrlService,
   generateS3PresignedViewUrlService,
 } from "../services/general.service";
+
 export const generateS3PresignedUploadUrl = async (
   req: Request<{}, {}, GenerateS3PresignedUploadURLDto>,
   res: Response,
 ): Promise<Response> => {
-  const { body } = req;
+  const { user, body } = req;
 
   const url = await generateS3PresignedUploadUrlService(
+    user.id,
     body.object_key,
     body.mime_type,
   );
@@ -27,9 +28,9 @@ export const generateS3PresignedViewURL = async (
   req: Request<{}, {}, GenerateS3PresignedViewURLDto>,
   res: Response,
 ) => {
-  const { body } = req;
+  const { user, body } = req;
 
-  const url = await generateS3PresignedViewUrlService(body.object_key);
+  const url = await generateS3PresignedViewUrlService(user.id, body.object_key);
 
   return sendSuccess(res, "Presigned url generated successfully", url, 200);
 };
