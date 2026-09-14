@@ -1,7 +1,15 @@
 import { type Request, type Response } from "express";
-import { getRsvpService, submitRsvpService } from "../services/rsvp.service";
+import {
+  getRsvpService,
+  submitGuestRsvpService,
+  submitRsvpService,
+} from "../services/rsvp.service";
 import { sendSuccess } from "../utils/response.util";
-import { RsvpTokenDto, SubmitRsvpDto } from "../validations/rsvp.validation";
+import {
+  RsvpTokenDto,
+  SubmitGuestRsvpDto,
+  SubmitRsvpDto,
+} from "../validations/rsvp.validation";
 
 export const getRsvp = async (
   req: Request<RsvpTokenDto>,
@@ -21,4 +29,15 @@ export const submitRsvp = async (
   const invite = await submitRsvpService(params.token, body);
 
   return sendSuccess(res, "Your RSVP has been saved", invite, 200);
+};
+
+export const submitGuestRsvp = async (
+  req: Request<SubmitGuestRsvpDto["params"], {}, SubmitGuestRsvpDto["body"]>,
+  res: Response,
+): Promise<Response> => {
+  const { user, params, body } = req;
+
+  const invite = await submitGuestRsvpService(user.id, params.inviteId, body);
+
+  return sendSuccess(res, "RSVP updated for guest", invite, 200);
 };

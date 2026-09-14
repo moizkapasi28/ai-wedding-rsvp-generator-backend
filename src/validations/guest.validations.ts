@@ -125,8 +125,9 @@ export type DownloadGuestTemplateDto = z.infer<
 
 export type UploadGuestTemplateDto = z.infer<typeof uploadGuestTemplateSchema>;
 
+// BullMQ job ids are incrementing numbers, not UUIDs
 export const getJobStatusParamsSchema = z.object({
-  id: z.uuid().describe("Guest Id is required"),
+  jobId: z.string().min(1).describe("Job Id is required"),
 });
 
 export const getJobStatusSchema = z.object({
@@ -134,3 +135,28 @@ export const getJobStatusSchema = z.object({
 });
 
 export type GetJobStatusDto = z.infer<typeof getJobStatusParamsSchema>;
+
+export const inviteParamsSchema = z.object({
+  inviteId: z.uuid().describe("Invite Id is required"),
+});
+
+export const markInviteSentSchema = z.object({
+  params: inviteParamsSchema,
+});
+
+export type InviteParamsDto = z.infer<typeof inviteParamsSchema>;
+
+export const getWhatsAppInvitesQuerySchema = z
+  .object({
+    eventId: z.uuid().optional().describe("All invites for this event"),
+    guestId: z.uuid().optional().describe("All invites for this guest"),
+  })
+  .refine((query) => Boolean(query.eventId) !== Boolean(query.guestId), {
+    message: "Provide either eventId or guestId",
+  });
+
+export const getWhatsAppInvitesSchema = z.object({
+  query: getWhatsAppInvitesQuerySchema,
+});
+
+export type GetWhatsAppInvitesDto = z.infer<typeof getWhatsAppInvitesQuerySchema>;

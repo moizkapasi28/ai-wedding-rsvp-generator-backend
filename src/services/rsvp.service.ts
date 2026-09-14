@@ -1,19 +1,31 @@
+import { Prisma } from "../../generated/prisma/client";
 import { emitRsvp, toLiveRsvp } from "../lib/rsvpEvents";
 import {
-  findInviteByToken,
+  findRsvpInvite,
   updateRsvpInvite,
 } from "../repositories/rsvp.repository";
 import { ApiError } from "../utils/apiError.util";
 import { buildRsvpUpdate } from "../utils/rsvp.util";
 import { SubmitRsvpBody } from "../validations/rsvp.validation";
 
-export const getRsvpService = async (token: string) => {
-  const invite = await findInviteByToken(token);
+type RsvpInvite = NonNullable<Awaited<ReturnType<typeof findRsvpInvite>>>;
 
-  if (!invite) throw new ApiError(404, "This invitation link isn't valid");
+const INVALID_LINK = "This invitation link isn't valid";
 
+const requireInvite = async (
+  where: Prisma.GuestEventInviteWhereInput,
+  notFoundMessage: string,
+) => {
+  const invite = await findRsvpInvite(where);
+
+  if (!invite) throw new ApiError(404, notFoundMessage);
+
+  return invite;
+};
+
+const toRsvpView = (invite: RsvpInvite) => {
   const { guest, event, invite_format, ...reply } = invite;
-  // wedding_id stays internal; the public page never needs it
+  // wedding_id stays internal; the RSVP page never needs it
   const { wedding, wedding_id: _weddingId, ...eventDetails } = event;
 
   return {
@@ -23,14 +35,19 @@ export const getRsvpService = async (token: string) => {
   };
 };
 
-export const submitRsvpService = async (token: string, body: SubmitRsvpBody) => {
-  const invite = await findInviteByToken(token);
-
-  if (!invite) throw new ApiError(404, "This invitation link isn't valid");
-
+const saveReply = async (
+  invite: RsvpInvite,
+  body: SubmitRsvpBody,
+  ignoreDeadline: boolean,
+) => {
   const saved = await updateRsvpInvite(
     invite.id,
-    buildRsvpUpdate(invite, invite.invite_format, body, new Date()),
+    buildRsvpUpdate(
+      ignoreDeadline ? { invite_deadline: null } : invite,
+      invite.invite_format,
+      body,
+      new Date(),
+    ),
   );
 
   // Announce only after the reply is saved
@@ -41,3 +58,25 @@ export const submitRsvpService = async (token: string, body: SubmitRsvpBody) => 
 
   return saved;
 };
+
+export const getRsvpService = async (token: string) =>
+  toRsvpView(await requireInvite({ invite_token: token }, INVALID_LINK));
+
+export const submitRsvpService = async (token: string, body: SubmitRsvpBody) =>
+  saveReply(await requireInvite({ invite_token: token }, INVALID_LINK), body, false);
+
+// Host portal: set a reply for a guest who couldn't use their link.
+// The RSVP deadline only limits guests; hosts can still record late replies.
+export const submitGuestRsvpService = async (
+  userId: string,
+  inviteId: string,
+  body: SubmitRsvpBody,
+) =>
+  saveReply(
+    await requireInvite(
+      { id: inviteId, event: { wedding: { user_id: userId } } },
+      "Invite not found",
+    ),
+    body,
+    true,
+  );

@@ -25,8 +25,7 @@ export const guestWorker = new Worker<GuestJobPayload>(
           logger.error(`Failed to delete temp file ${filePath}: ${err}`);
         }
         return result;
-      }
-    } catch (error) {
+      }    } catch (error) {
       logger.error(`Error processing job ${job.id}: ${error}`);
       throw error;
     }

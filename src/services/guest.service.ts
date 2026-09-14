@@ -6,12 +6,16 @@ import {
   deleteGuest,
   deleteGuestEventInvitesByEventIds,
   findAllGuests,
+  findInvitesToSend,
   findGuestByMobileNumberAndWeddingId,
+  findGuestEventInviteForUser,
   findGuestEventInvitesByGuestId,
   getGuestsConfirmationStats,
   getWeddingGuest,
+  markGuestEventInviteSent,
   updateGuest,
 } from "../repositories/guest.repository";
+import { buildWhatsAppLink, normalizePhone } from "../lib/whatsapp";
 import { v4 as uuidv4 } from "uuid";
 import { verfiyWeddingOwnershipService } from "./wedding.service";
 import { ApiError } from "../utils/apiError.util";
@@ -940,10 +944,14 @@ export const exportGuestsService = async (
   return buffer;
 };
 
-export const getGuestImportStatusService = async (jobId: string) => {
+export const getGuestImportStatusService = async (
+  userId: string,
+  jobId: string,
+) => {
   const job = await guestImportQueue.getJob(jobId);
 
-  if (!job) {
+  // Another user's job reads as missing so its results never leak
+  if (!job || job.data.userId !== userId) {
     throw new ApiError(404, "Job not found");
   }
 
@@ -957,4 +965,72 @@ export const getGuestImportStatusService = async (jobId: string) => {
   };
 
   return result;
+};
+
+type InviteToSend = NonNullable<
+  Awaited<ReturnType<typeof findGuestEventInviteForUser>>
+>;
+
+// The slug keeps the link readable; the token alone identifies the invite, so a renamed wedding's old links still work.
+// Slugs come from the title with non [a-z0-9] stripped, so e.g. a Hindi title yields "" — same fallback as the RSVP page.
+const buildRsvpUrl = (invite: InviteToSend) =>
+  // WEB_APP_URL doubles as the CORS origin, so it has no trailing slash
+  `${process.env.WEB_APP_URL?.replace(/\/$/, "")}/rsvp/${invite.event.wedding.slug || "invite"}/${invite.invite_token}`;
+
+const formatInviteMessage = (invite: InviteToSend, rsvpUrl: string) => {
+  const { guest, event } = invite;
+  const date = event.date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return [
+    `Hi ${guest.name},`,
+    "",
+    `${event.wedding.bride_name} & ${event.wedding.groom_name} would love for you to join them for their ${event.title} on ${date}, ${event.time} at ${event.venue}.`,
+    "",
+    `Please RSVP here: ${rsvpUrl}`,
+  ].join("\n");
+};
+
+// The couple sends from their own WhatsApp: each invite gets a wa.me link with the message pre-filled
+export const getWhatsAppInvitesService = async (
+  userId: string,
+  filter: { eventId?: string; guestId?: string },
+) => {
+  const invites = await findInvitesToSend({
+    event_id: filter.eventId,
+    guest_id: filter.guestId,
+    event: { wedding: { user_id: userId } },
+  });
+
+  return invites.map((invite) => {
+    const phone = normalizePhone(invite.guest.mobile_number);
+    const rsvpUrl = buildRsvpUrl(invite);
+    return {
+      id: invite.id,
+      guest_id: invite.guest_id,
+      guest_name: invite.guest.name,
+      event_id: invite.event_id,
+      event_title: invite.event.title,
+      status: invite.status,
+      invite_sent_at: invite.invite_sent_at,
+      rsvp_url: rsvpUrl,
+      whatsapp_url: phone
+        ? buildWhatsAppLink(phone, formatInviteMessage(invite, rsvpUrl))
+        : null,
+    };
+  });
+};
+
+// ponytail: marked when the couple opens the link; WhatsApp can't tell us they pressed Send
+export const markInviteSentService = async (userId: string, inviteId: string) => {
+  const invite = await findGuestEventInviteForUser(inviteId, userId);
+
+  if (!invite) {
+    throw new ApiError(404, "Invite not found");
+  }
+
+  return markGuestEventInviteSent(invite.id);
 };

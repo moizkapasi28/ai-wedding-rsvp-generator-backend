@@ -6,7 +6,10 @@ import {
   downloadGuestTemplateSchema,
   editWeddingGuestSchema,
   getAllGuestsSchema,
+  getJobStatusSchema,
   getWeddingGuestSchema,
+  getWhatsAppInvitesSchema,
+  markInviteSentSchema,
   uploadGuestTemplateSchema,
 } from "../validations/guest.validations";
 import { asyncHandler } from "../utils/asyncHandler.util";
@@ -21,6 +24,8 @@ import {
   getWeddingGuest,
   importGuestListTemplate,
   getGuestImportStatus,
+  getWhatsAppInvites,
+  markInviteSent,
 } from "../controllers/guest.controller";
 
 const guestsRouter = Router();
@@ -85,7 +90,22 @@ guestsRouter.delete(
 guestsRouter.get(
   "/import-status/:jobId",
   authenticate,
+  validate(getJobStatusSchema),
   asyncHandler(getGuestImportStatus),
+);
+
+guestsRouter.get(
+  "/invites/whatsapp",
+  authenticate,
+  validate(getWhatsAppInvitesSchema),
+  asyncHandler(getWhatsAppInvites),
+);
+
+guestsRouter.post(
+  "/invites/:inviteId/mark-sent",
+  authenticate,
+  validate(markInviteSentSchema),
+  asyncHandler(markInviteSent),
 );
 
 export default guestsRouter;

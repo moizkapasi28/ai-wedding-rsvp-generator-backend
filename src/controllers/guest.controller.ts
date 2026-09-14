@@ -9,6 +9,8 @@ import {
   exportGuestsService,
   importGuestListTemplateService,
   getGuestImportStatusService,
+  getWhatsAppInvitesService,
+  markInviteSentService,
 } from "../services/guest.service";
 import { guestImportQueue } from "../queues/guest.queue";
 import { getUserWeddingService } from "../services/wedding.service";
@@ -21,6 +23,8 @@ import {
   DownloadGuestTemplateDto,
   UploadGuestTemplateDto,
   GetJobStatusDto,
+  GetWhatsAppInvitesDto,
+  InviteParamsDto,
 } from "../validations/guest.validations";
 import { ApiError } from "../utils/apiError.util";
 
@@ -100,7 +104,11 @@ export const downloadGuestListTemplate = async (
   req: Request<DownloadGuestTemplateDto["params"]>,
   res: Response,
 ) => {
-  const { params } = req;
+  const { user, params } = req;
+
+  // Verify the wedding belongs to the user; the template lists its events
+  await getUserWeddingService(user.id, params.id);
+
   const workbook = await downloadGuestListTemplateService(params.id);
   res.setHeader(
     "Content-Type",
@@ -163,9 +171,31 @@ export const getGuestImportStatus = async (
   req: Request<GetJobStatusDto>,
   res: Response,
 ) => {
-  const { id: jobId } = req.params;
+  const { user, params } = req;
 
-  const job = await getGuestImportStatusService(jobId);
+  const job = await getGuestImportStatusService(user.id, params.jobId);
 
   return sendSuccess(res, "Job status fetched successfully", job, 200);
+};
+
+export const getWhatsAppInvites = async (
+  req: Request<{}, {}, {}, GetWhatsAppInvitesDto>,
+  res: Response,
+) => {
+  const { user, query } = req;
+
+  const invites = await getWhatsAppInvitesService(user.id, query);
+
+  return sendSuccess(res, "WhatsApp invites fetched successfully", invites, 200);
+};
+
+export const markInviteSent = async (
+  req: Request<InviteParamsDto>,
+  res: Response,
+) => {
+  const { user, params } = req;
+
+  const invite = await markInviteSentService(user.id, params.inviteId);
+
+  return sendSuccess(res, "Invite marked as sent", invite, 200);
 };

@@ -311,3 +311,54 @@ export const getEventGuestStats = async (
 
   return statsMap;
 };
+
+//* Invite sending
+
+const inviteToSendInclude = {
+  guest: { select: { name: true, mobile_number: true } },
+  event: {
+    select: {
+      title: true,
+      date: true,
+      time: true,
+      venue: true,
+      wedding: { select: { bride_name: true, groom_name: true, slug: true } },
+    },
+  },
+} satisfies Prisma.GuestEventInviteInclude;
+
+export const findGuestEventInviteForUser = async (
+  inviteId: string,
+  userId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guestEventInvite.findFirst({
+    where: { id: inviteId, event: { wedding: { user_id: userId } } },
+    include: inviteToSendInclude,
+  });
+};
+
+export const findInvitesToSend = async (
+  where: Prisma.GuestEventInviteWhereInput,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  return db.guestEventInvite.findMany({
+    where,
+    include: inviteToSendInclude,
+    orderBy: { guest: { name: "asc" } },
+  });
+};
+
+export const markGuestEventInviteSent = async (
+  id: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+  const now = new Date();
+  return db.guestEventInvite.update({
+    where: { id },
+    data: { invite_sent_at: now, updated_at: now },
+  });
+};

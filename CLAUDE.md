@@ -1,0 +1,54 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+```bash
+npm run dev          # API server with hot reload (tsx watch src/index.ts)
+npm run worker       # BullMQ workers — separate process, needed for guest import and AI card generation
+npm run build        # tsc + copy src/public (email templates) into dist
+npx tsc --noEmit     # type-check only
+npx prisma migrate dev --name <snake_case_name>   # create + apply a migration
+npx prisma generate  # regenerate the client after any schema.prisma change
+```
+
+There are no tests. Both the API and the worker need PostgreSQL (`DATABASE_URL`) and Redis (`REDIS_HOST`/`REDIS_PORT`, also used by the rate limiters). API docs are served at `/reference` (Scalar) from `src/openapi.json`, which is hand-maintained and badly out of date — don't rely on it for the current route list; read `src/routes`. Health check: `GET /health`.
+
+The frontend is the sibling repo `../ai-wedding-rsvp-generator-frontend`.
+
+## Architecture
+
+**Request flow** — `routes → controller → service → repository`, one file per resource in each folder. Routers are mounted in `src/index.ts` under `/api/<resource>`; note `eventInviteFormat.*` is mounted at `/api/page-setting` (the `GuestEventInviteFormat` model holds each event's RSVP page settings: which questions to ask, reminder toggles, illustration).
+- Routes chain `authenticate, validate(schema), asyncHandler(controller)`. `validate` (`middlewares/validate.middleware.ts`) parses `{ body, query, params }` with a zod object from `src/validations` and writes the parsed values back onto `req`, so defaults/transforms apply. Zod `.infer` types from the same file type the controller's `Request<Params, {}, Body, Query>`.
+- Controllers respond with `sendSuccess(res, message, data, status)` (`utils/response.util.ts` → `{ success, statusCode, message, data }`). Throw `new ApiError(status, message)` anywhere; `middlewares/error.middleware.ts` turns it into the response, anything else becomes a 500.
+- Repositories are plain functions over `prisma` taking an optional `tx?: Prisma.TransactionClient`; services run multi-step writes in `prisma.$transaction(async (tx) => …)` and pass `tx` down.
+- **Ownership is not enforced by middleware.** Every service/controller must check that the wedding/event/guest belongs to `req.user.id` (e.g. `getUserWeddingService`, `verifyWeddingEventOwnershipService`, or a `where: { …, wedding: { user_id } }` query).
+
+**Prisma** — Prisma 7 with the `pg` driver adapter (`src/lib/prisma.ts`). The client is generated to `generated/prisma`, so import types/enums from `../../generated/prisma/client` (or `/enums`), not `@prisma/client`. Migration folders are `YYYYMMDDHHMMSS_snake_case_name`; recent ones start `migration.sql` with a short comment explaining why.
+
+**Auth** — `authenticate` expects `Authorization: Bearer <access token>`; tokens (access/refresh/verify-email/reset-password, `enums/token.enum.ts`) are JWTs also stored in the DB and checked by `verifyTokenService`. `req.user` is typed in `src/types/express.d.ts`. The public RSVP routes (`/api/rsvp/:token`) use the per-event `GuestEventInvite.invite_token` as the only credential. Hosts can set a guest's reply (the Guest Details status dropdown) through the authenticated `PUT /api/rsvp/invite/:inviteId` (ownership-checked, not bound by the RSVP deadline); both paths share `rsvp.service.ts` `saveReply`, including the live dashboard event.
+
+**Background jobs** (BullMQ, `src/queues` + `src/workers`) — the API enqueues and returns `202 { jobId }`; the worker process runs the job via a service function and its return value is the job result; the client polls a status endpoint.
+- `guest-import-queue` (`guest.queue.ts`) runs `parse-excel` guest imports; its payload is a union discriminated on `type` so more job kinds can share the queue. Status: `GET /api/guest/import-status/:jobId`, which checks `job.data.userId` against the caller — keep `userId` in job payloads.
+- `aiInviteCard.queue.ts` runs `runAiInviteCardGenerationJob`; status lives on the `AIEventInviteCard` row.
+- New workers must be added to the array in `src/workers/index.ts`. Use `attempts: 1` for jobs that aren't safe to repeat (e.g. sending messages).
+
+**Live RSVP updates** — `GET /api/wedding/:id/live` is a server-sent events stream fed by an in-process `EventEmitter` (`lib/rsvpEvents.ts`), emitted from `submitRsvpService`. Because it's in-process, events emitted from the worker process never reach clients, and it breaks with more than one API instance (Redis pub/sub is the noted upgrade).
+
+**External services**
+- Images: clients upload/view directly via S3 presigned URLs (`/api/general/generate-upload-url`, `generate-view-url`; `services/aws.service.ts`). The DB stores S3 object keys, not URLs.
+- AI invite cards: two-stage Gemini image generation (`services/aiInviteCardGeneration.service.ts`, model `gemini-3-pro-image`, 9:16) with prompts assembled in `utils/*PromptBuilder*`/`*Catelogue*` utils, `generateContentWithRetry` for transient errors, results uploaded to S3; `faceSwap.service.ts` handles putting couple photos into a reference design.
+- Email: AWS SES with Handlebars templates in `src/public/emailTemplates` (`services/email.service.ts`).
+- WhatsApp: no API integration. `GET /api/guest/invites/whatsapp?eventId=|guestId=` returns `wa.me` click-to-chat links with the invite message pre-filled (message built in `guest.service.ts` `formatInviteMessage`; guest mobile numbers are stored as typed and normalized by `normalizePhone` in `lib/whatsapp.ts`, using `WHATSAPP_DEFAULT_COUNTRY_CODE`). The couple sends each message from their own WhatsApp, and the frontend calls `POST /api/guest/invites/:inviteId/mark-sent` on click, which sets `GuestEventInvite.invite_sent_at`.
+
+**Config** — there is no env validation; `process.env.X` is read inline, with `dotenv/config` loaded at each entrypoint. `WEB_APP_URL` is both the CORS origin (so it has no trailing slash, e.g. `http://localhost:5173`) and the base for links sent to users — join paths with an explicit `/` (as `createUrl` in `utils/utils.ts` and `buildRsvpUrl` in `guest.service.ts` do). Rate limiters (`middlewares/rateLimiter.middleware.ts`): `globalLimiter` on all `/api`, plus `authLimiter`, `rsvpLimiter`, `imageGenerationLimiter` on specific routes. TypeScript runs with `strict: false`, CommonJS output.
+
+**Logging** — pino (`src/config/logger.ts`) writes to the console and `logs/app.log`.
+
+**Deployment** — a single Docker image (`dockerfile`) builds the app and `start.sh` runs Redis, the worker, and the API together in one container.
+
+## Conventions and quirks
+
+- Deliberate shortcuts are marked with `// ponytail:` comments naming the limitation and the upgrade path.
+- Existing misspellings are part of the API/schema — keep them when referencing: `verfiyWeddingOwnershipService`, `accomodation_*` guest fields, `Dietary.NON_VEGETARAIN`, `*Catelogue` util names, and `eventInviteFormat.route.ts` (singular, unlike the other route files).

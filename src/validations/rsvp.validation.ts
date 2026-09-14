@@ -29,3 +29,14 @@ export const submitRsvpSchema = z.object({
 });
 
 export type SubmitRsvpDto = z.infer<typeof submitRsvpSchema>;
+
+const inviteIdParamsSchema = z.object({
+  inviteId: z.uuid().describe("Guest event invite id"),
+});
+
+export const submitGuestRsvpSchema = z.object({
+  params: inviteIdParamsSchema,
+  body: submitRsvpBodySchema,
+});
+
+export type SubmitGuestRsvpDto = z.infer<typeof submitGuestRsvpSchema>;

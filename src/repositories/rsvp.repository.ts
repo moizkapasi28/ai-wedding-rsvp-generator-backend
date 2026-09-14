@@ -12,14 +12,15 @@ const inviteReplySelect = {
   responded_at: true,
 } satisfies Prisma.GuestEventInviteSelect;
 
-export const findInviteByToken = async (
-  token: string,
+// Looked up by invite_token (guest's link) or by id + owner (host portal)
+export const findRsvpInvite = async (
+  where: Prisma.GuestEventInviteWhereInput,
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
 
-  return db.guestEventInvite.findUnique({
-    where: { invite_token: token },
+  return db.guestEventInvite.findFirst({
+    where,
     select: {
       ...inviteReplySelect,
       guest: { select: { name: true } },
@@ -37,7 +38,7 @@ export const findInviteByToken = async (
           latitude: true,
           longitude: true,
           event_side: true,
-          wedding: { select: { bride_name: true, groom_name: true } },
+          wedding: { select: { bride_name: true, groom_name: true, slug: true } },
         },
       },
       invite_format: {
