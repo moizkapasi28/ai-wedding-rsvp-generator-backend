@@ -70,18 +70,21 @@ const getHTMLandSendEmail = async (
       email,
       password,
       otp,
+      expiry_minutes,
     } = request;
 
     const replacements = {
-      user_name: `${first_name} ${middle_name} ${last_name}`,
+      // A missing middle name used to render the literal string "undefined".
+      user_name: [first_name, middle_name, last_name].filter(Boolean).join(" "),
+      first_name: first_name ?? "",
       url: url ?? "",
       email_verification_link: email_verification_link ?? "",
       reset_password_link: reset_password_link ?? "",
       email,
       password,
       otp: otp ?? "",
+      expiry_minutes: expiry_minutes ?? "",
       //   support_email: config.email.supportEmail,
-      //   project_name: config.projectName,
       //   company_url: config.logo.companyLogoUrl,
     };
 
@@ -133,6 +136,8 @@ export const sendEmail = async (
           type: "verify-email",
           query: `token=${request.token}`,
         });
+        request.expiry_minutes =
+          process.env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES ?? "10";
         return await getHTMLandSendEmail(
           `${publicDir}/email-verification.html`,
           request,
@@ -155,6 +160,8 @@ export const sendEmail = async (
           type: "reset-password",
           query: `token=${request.token}`,
         });
+        request.expiry_minutes =
+          process.env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES ?? "10";
         return await getHTMLandSendEmail(
           `${publicDir}/forgot-password.html`,
           request,

@@ -15,7 +15,7 @@ import { AuthResponseDto } from "../types/auth.type";
 import { ApiError } from "../utils/apiError.util";
 import {
   USER_EMAIL_VERIFICATION_TEMPLATE,
-  USER_FORGOT_PASSWORD_TEMPLATE
+  USER_FORGOT_PASSWORD_TEMPLATE,
 } from "../utils/constants/email.constant";
 import {
   ForgotPasswordDto,
@@ -50,7 +50,7 @@ export const signUpService = async (
       } = payload;
       const exitingUser = await findUserByEmail(email, tx);
 
-      if (exitingUser || exitingUser.is_email_verified)
+      if (exitingUser && exitingUser.is_email_verified)
         throw new ApiError(
           409,
           "User already associated with this email address",
@@ -279,9 +279,8 @@ export const logoutService = async (payload: LogoutDto) => {
   if (!deletedTokens) throw new ApiError(400, "Failed to logout user");
 };
 
-
 export const userProfileService = async (userId: string) => {
-  const user = await findUserProfileById(userId)
+  const user = await findUserProfileById(userId);
 
   if (!user) throw new ApiError(404, "User not found");
 
@@ -295,13 +294,13 @@ export const updateProfileService = async (
     last_name?: string;
     mobile_number?: string;
     profile_picture?: string | null;
-  }
+  },
 ) => {
   const user = await findUserById(userId);
 
   if (!user) throw new ApiError(404, "User not found");
 
-  console.log(payload)
+  console.log(payload);
 
   const updatedUser = await updateUserById(userId, payload);
 
