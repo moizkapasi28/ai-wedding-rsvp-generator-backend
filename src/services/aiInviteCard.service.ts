@@ -1,10 +1,11 @@
+import { UnrecoverableError } from "bullmq";
 import { AIEventInviteCard, Prisma } from "../../generated/prisma/client";
 import logger from "../config/logger";
 import {
-  GENERATION_MODE,
-  GENERATION_STAGE,
+  GENERATION_ERROR_CODE,
   GENERATION_STALE_AFTER_MS,
   GENERATION_STATUS,
+  MAX_GENERATION_ATTEMPTS,
 } from "../enums/aiEventInvite.enum";
 import {
   addGenerateInviteCardJob,
@@ -19,17 +20,24 @@ import {
 import { ApiError } from "../utils/apiError.util";
 import { GenerateAIInviteCardImageDto } from "../validations/aiInviteCard.validation";
 import {
-  aiInviteCardExampleGenerationService,
-  aiInviteCardManualGenerationService,
+  classifyGeminiError,
+  GeminiGenerationError,
+} from "../utils/geminiImage.util";
+import {
+  defaultPipelineDeps,
+  PipelineDeps,
+  runInviteCardPipeline,
 } from "./aiInviteCardGeneration.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
 
 const isGenerationStale = (aiInviteCard: AIEventInviteCard) => {
-  const startedAt = aiInviteCard.generation_started_at;
+  // Heartbeats keep a slow but healthy retry chain alive; older rows only have started_at
+  const lastSeen =
+    aiInviteCard.generation_heartbeat_at ?? aiInviteCard.generation_started_at;
 
-  if (!startedAt) return true;
+  if (!lastSeen) return true;
 
-  return Date.now() - startedAt.getTime() > GENERATION_STALE_AFTER_MS;
+  return Date.now() - lastSeen.getTime() > GENERATION_STALE_AFTER_MS;
 };
 
 const isGenerationInFlight = (aiInviteCard: AIEventInviteCard) => {
@@ -112,7 +120,10 @@ export const generateAIInviteCardService = async (
     generation_status: GENERATION_STATUS.QUEUED,
     generation_stage: null,
     generation_error: null,
+    generation_error_code: null,
+    generation_attempt: 1,
     generation_started_at: new Date(),
+    generation_heartbeat_at: new Date(),
     generation_completed_at: null,
   });
 
@@ -137,72 +148,114 @@ export const generateAIInviteCardService = async (
 // so every outcome has to be recorded on the card for the page to read back.
 export const runAiInviteCardGenerationJob = async (
   { aiInviteCardId, userId }: GenerateInviteCardJobPayload,
-  onStage?: (stage: GENERATION_STAGE) => Promise<void> | void,
+  {
+    attempt,
+    maxAttempts,
+    jobId,
+  }: { attempt: number; maxAttempts: number; jobId?: string },
+  deps: PipelineDeps = defaultPipelineDeps(),
 ) => {
+  const log = logger.child({ cardId: aiInviteCardId, jobId, attempt });
+  const startedAt = Date.now();
+
   const aiInviteCard = await findAiEventInviteCardById(aiInviteCardId);
 
-  if (!aiInviteCard) throw new ApiError(404, "AI Invite Card Not Found");
+  // Nowhere to record the failure, and a retry cannot bring the card back
+  if (!aiInviteCard) throw new UnrecoverableError("AI Invite Card Not Found");
 
-  const ownershipEvent = await verifyWeddingEventOwnershipService(
-    aiInviteCard.event_id,
-    userId,
-  );
-
-  if (!ownershipEvent)
-    throw new ApiError(400, "Invalid Invite card or Invite card Not Found");
-
-  const reportStage = async (stage: GENERATION_STAGE) => {
-    await updateAiEventInviteCard(aiInviteCardId, { generation_stage: stage });
-    await onStage?.(stage);
-  };
-
-  await updateAiEventInviteCard(aiInviteCardId, {
-    generation_status: GENERATION_STATUS.PROCESSING,
-    generation_stage: GENERATION_STAGE.DESIGN,
-    generation_error: null,
-  });
+  const heartbeat = (data: Prisma.AIEventInviteCardUpdateInput = {}) =>
+    updateAiEventInviteCard(aiInviteCardId, {
+      ...data,
+      generation_heartbeat_at: new Date(),
+    });
 
   try {
-    const generatedImageKey =
-      aiInviteCard.generation_mode === GENERATION_MODE.EXAMPLE
-        ? await aiInviteCardExampleGenerationService(
-            aiInviteCard,
-            ownershipEvent,
-            reportStage,
-          )
-        : await aiInviteCardManualGenerationService(
-            aiInviteCard,
-            ownershipEvent,
-            reportStage,
-          );
+    const ownershipEvent = await verifyWeddingEventOwnershipService(
+      aiInviteCard.event_id,
+      userId,
+    );
 
-    if (!generatedImageKey)
-      throw new ApiError(502, "The image generator returned no invitation.");
+    if (!ownershipEvent)
+      throw new GeminiGenerationError(
+        GENERATION_ERROR_CODE.INVALID_INPUT,
+        "Event not found for the job's user",
+      );
 
-    await updateAiEventInviteCard(aiInviteCardId, {
+    await heartbeat({
+      generation_status: GENERATION_STATUS.PROCESSING,
+      generation_stage: null,
+      generation_attempt: attempt,
+    });
+
+    const result = await runInviteCardPipeline(
+      aiInviteCard,
+      ownershipEvent,
+      deps,
+      {
+        log,
+        onStage: (stage) => heartbeat({ generation_stage: stage }),
+        onRetry: () => heartbeat(),
+      },
+    );
+
+    await heartbeat({
       generation_status: GENERATION_STATUS.COMPLETED,
       generation_stage: null,
       generation_error: null,
+      generation_error_code: null,
       generation_completed_at: new Date(),
     });
 
-    return { generatedImageKey };
+    log.info(
+      {
+        status: GENERATION_STATUS.COMPLETED,
+        duration_ms: Date.now() - startedAt,
+        attempts: attempt,
+      },
+      "generation.end",
+    );
+
+    return result;
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to generate the invitation.";
+    const failure = classifyGeminiError(error);
+    const willRetry = failure.retryable && attempt < maxAttempts;
 
-    logger.error({ err: error, aiInviteCardId }, "AI invite card job failed");
+    await heartbeat(
+      willRetry
+        ? {
+            // Back to QUEUED while BullMQ waits; the attempt shown is the one coming up
+            generation_status: GENERATION_STATUS.QUEUED,
+            generation_stage: null,
+            generation_attempt: attempt + 1,
+            generation_error: failure.message,
+            generation_error_code: failure.code,
+          }
+        : {
+            generation_status: GENERATION_STATUS.FAILED,
+            generation_stage: null,
+            generation_error: failure.message,
+            generation_error_code: failure.code,
+            generation_completed_at: new Date(),
+          },
+    );
 
-    await updateAiEventInviteCard(aiInviteCardId, {
-      generation_status: GENERATION_STATUS.FAILED,
-      generation_stage: null,
-      generation_error: message,
-      generation_completed_at: new Date(),
-    });
+    const fields = {
+      err: error,
+      status: willRetry ? "RETRYING" : GENERATION_STATUS.FAILED,
+      error_code: failure.code,
+      duration_ms: Date.now() - startedAt,
+      attempts: attempt,
+    };
 
-    throw error;
+    if (failure.code === GENERATION_ERROR_CODE.BILLING)
+      log.error(
+        fields,
+        "generation.end: Gemini billing problem, check prepaid credits",
+      );
+    else log.warn(fields, "generation.end");
+
+    // UnrecoverableError makes BullMQ skip the remaining attempts
+    throw willRetry ? failure : new UnrecoverableError(failure.message);
   }
 };
 
@@ -233,6 +286,7 @@ export const getAiInviteCardGenerationStatusService = async (
       generation_status: GENERATION_STATUS.FAILED,
       generation_stage: null,
       generation_error: "Generation timed out. Please try again.",
+      generation_error_code: GENERATION_ERROR_CODE.TIMEOUT,
       generation_completed_at: new Date(),
     });
   }
@@ -243,6 +297,9 @@ export const getAiInviteCardGenerationStatusService = async (
     status: aiInviteCard.generation_status,
     stage: aiInviteCard.generation_stage,
     error: aiInviteCard.generation_error,
+    error_code: aiInviteCard.generation_error_code,
+    attempt: aiInviteCard.generation_attempt,
+    max_attempts: MAX_GENERATION_ATTEMPTS,
     job_id: aiInviteCard.generation_job_id,
     generated_invite_image_url: aiInviteCard.generated_invite_image_url,
     started_at: aiInviteCard.generation_started_at,

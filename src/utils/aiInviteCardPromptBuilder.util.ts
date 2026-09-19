@@ -1,7 +1,9 @@
 import { AIEventInviteCard, Event, Wedding } from "../../generated/prisma/client";
 import { getBufferFromS3 } from "../services/aws.service";
 import logger from "../config/logger";
-import { PHOTO_PLACEMENT } from "../enums/aiEventInvite.enum";
+import { GENERATION_ERROR_CODE, PHOTO_PLACEMENT } from "../enums/aiEventInvite.enum";
+import { GeminiGenerationError } from "./geminiImage.util";
+import { normalizeImageForGemini } from "./imageNormalize.util";
 import {
   buildCoupleInitials,
   formatEventDate,
@@ -20,16 +22,43 @@ import {
 
 export async function fetchImageAsGeminiPart(
   s3Key: string | null | undefined,
-  mimeType: string = "image/jpeg",
 ): Promise<{ inlineData: { mimeType: string; data: string } } | null> {
   if (!s3Key) return null;
 
-  const { buffer } = await getBufferFromS3(s3Key);
+  let buffer: Buffer;
+
+  try {
+    ({ buffer } = await getBufferFromS3(s3Key, AbortSignal.timeout(30_000)));
+  } catch (error) {
+    // A missing object will still be missing on retry; network or S3 hiccups may not be.
+    if ((error as { name?: string })?.name === "NoSuchKey")
+      throw new GeminiGenerationError(
+        GENERATION_ERROR_CODE.INVALID_INPUT,
+        `Image not found in S3: ${s3Key}`,
+        error,
+      );
+
+    throw error;
+  }
+
+  const { data, mimeType } = await normalizeImageForGemini(buffer);
+
+  return { inlineData: { mimeType, data: data.toString("base64") } };
+}
+
+// The S3 keys of every image stage 1 sends, in order. Part of the design fingerprint.
+export function getStage1ImageKeys(
+  record: Partial<AIEventInviteCard>,
+  isExample: boolean,
+): { reference: string | null; subject: string | null } {
   return {
-    inlineData: {
-      mimeType,
-      data: buffer.toString("base64"),
-    },
+    reference: isExample && record.reference_image ? record.reference_image : null,
+    // The couple photo belongs in both modes: reference mode needs it to swap faces onto
+    // the example's figures, or to build the framed portrait inset.
+    subject:
+      record.photo_type && record.couple_raw_image_key
+        ? record.couple_raw_image_key
+        : null,
   };
 }
 
@@ -39,29 +68,16 @@ export async function buildGeminiParts(
   isExample: boolean,
 ): Promise<any[]> {
   const parts: any[] = [];
-  const hasReferenceImage = isExample && !!record.reference_image;
-  // The couple photo belongs in both modes: reference mode needs it to swap faces onto
-  // the example's figures, or to build the framed portrait inset.
-  const hasSubjectPhoto = !!record.photo_type && !!record.couple_raw_image_key;
+  const { reference, subject } = getStage1ImageKeys(record, isExample);
 
-  if (hasReferenceImage) {
-    const referencePart = await fetchImageAsGeminiPart(record.reference_image!);
-    if (referencePart) {
-      parts.push({ text: "[REFERENCE IMAGE — illustrated card design, existing character(s) if any]" });
-      parts.push(referencePart);
-    } else {
-      logger.warn(`Reference image fetch failed: ${record.reference_image}`);
-    }
+  if (reference) {
+    parts.push({ text: "[REFERENCE IMAGE — illustrated card design, existing character(s) if any]" });
+    parts.push(await fetchImageAsGeminiPart(reference));
   }
 
-  if (hasSubjectPhoto) {
-    const subjectPart = await fetchImageAsGeminiPart(record.couple_raw_image_key!);
-    if (subjectPart) {
-      parts.push({ text: "[SUBJECT PHOTO — real face(s) to swap in]" });
-      parts.push(subjectPart);
-    } else {
-      logger.warn(`Subject photo fetch failed: ${record.couple_raw_image_key}`);
-    }
+  if (subject) {
+    parts.push({ text: "[SUBJECT PHOTO — real face(s) to swap in]" });
+    parts.push(await fetchImageAsGeminiPart(subject));
   }
 
   // Instructions come LAST, after the model has already seen both images

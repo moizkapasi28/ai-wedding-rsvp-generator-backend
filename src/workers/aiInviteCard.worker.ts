@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Worker } from "bullmq";
 import logger from "../config/logger";
+import { JOB_RETRY_DELAYS_MS } from "../enums/aiEventInvite.enum";
 import { redisOptions } from "../lib/redis";
 import {
   AI_INVITE_CARD_QUEUE_NAME,
@@ -22,9 +23,12 @@ export const aiInviteCardWorker = new Worker<AiInviteCardJobPayload>(
       "Starting AI invite card generation",
     );
 
-    const result = await runAiInviteCardGenerationJob(job.data, (stage) =>
-      job.updateProgress({ stage }),
-    );
+    const result = await runAiInviteCardGenerationJob(job.data, {
+      // attemptsMade counts finished attempts, so it is 0 on the first run
+      attempt: job.attemptsMade + 1,
+      maxAttempts: job.opts.attempts ?? 1,
+      jobId: job.id,
+    });
 
     logger.info(
       { jobId: job.id, aiInviteCardId },
@@ -37,6 +41,11 @@ export const aiInviteCardWorker = new Worker<AiInviteCardJobPayload>(
     connection: redisOptions,
     // Each job makes two image-model calls, so keep the fan-out narrow.
     concurrency: 1,
+    settings: {
+      // BullMQ passes 1 once the first attempt has failed
+      backoffStrategy: (attemptsMade: number) =>
+        JOB_RETRY_DELAYS_MS[Math.min(attemptsMade, JOB_RETRY_DELAYS_MS.length) - 1],
+    },
   },
 );
 

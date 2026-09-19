@@ -254,10 +254,14 @@ model AIEventInviteCard {
   groom_attire_style String?
   generated_invite_image_url String?
   invite_design_image_url String?
+  design_fingerprint String?
   generation_status GenerationStatus @default(IDLE)
   generation_stage String?
   generation_job_id String?
   generation_error String?
+  generation_error_code String?
+  generation_attempt Int?
+  generation_heartbeat_at DateTime? @db.Timestamptz(6)
   generation_started_at DateTime? @db.Timestamptz(6)
   generation_completed_at DateTime? @db.Timestamptz(6)
   created_at DateTime @default(now()) @db.Timestamptz(6)

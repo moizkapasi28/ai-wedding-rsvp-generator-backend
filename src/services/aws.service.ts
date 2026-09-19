@@ -51,12 +51,13 @@ export const generatePresignedUrl = async (
 
 export const getBufferFromS3 = async (
   s3Key: string,
+  abortSignal?: AbortSignal,
 ): Promise<S3BufferResponse> => {
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: s3Key,
   });
-  const response = await s3Client.send(command);
+  const response = await s3Client.send(command, { abortSignal });
   if (!response.Body)
     throw new Error(`Failed to read object from S3 key: ${s3Key}`);
 
