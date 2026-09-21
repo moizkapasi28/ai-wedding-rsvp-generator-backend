@@ -10,6 +10,7 @@ import {
   getAllWeddingEvents,
   getGuestStatsForEvents,
   updateWeddingEventById,
+  type EventFilters,
 } from "../repositories/event.repository";
 import { createGuestEventInviteFormat } from "../repositories/eventInviteFormat.repository";
 import { deleteGuestsWithNoEvents } from "../repositories/guest.repository";
@@ -94,6 +95,7 @@ export const getAllWeddingEventsService = async (
   page: number = 1,
   limit: number = 10,
   includeStats: boolean = false,
+  filters: EventFilters = {},
 ): Promise<{
   events: EventWithStats[];
   totalCount: number;
@@ -102,36 +104,24 @@ export const getAllWeddingEventsService = async (
 }> => {
   const skip = (page - 1) * limit;
 
-  if (includeStats) {
-    const [data, totalCount] = await Promise.all([
-      getAllWeddingEvents(weddingId, skip, limit),
-      countWeddingEvents(weddingId),
-    ]);
+  const [data, totalCount] = await Promise.all([
+    getAllWeddingEvents(weddingId, skip, limit, filters),
+    countWeddingEvents(weddingId, filters),
+  ]);
 
-    const eventIds = data.map((e) => e.id);
-    const guestStats = await getGuestStatsForEvents(eventIds);
+  const events = includeStats
+    ? mapGuestStatsToEvents(
+        data,
+        await getGuestStatsForEvents(data.map((e) => e.id)),
+      )
+    : data;
 
-    const eventsWithStats = mapGuestStatsToEvents(data, guestStats);
-
-    return {
-      events: eventsWithStats,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
-    };
-  } else {
-    const [data, totalCount] = await Promise.all([
-      getAllWeddingEvents(weddingId, skip, limit),
-      countWeddingEvents(weddingId),
-    ]);
-
-    return {
-      events: data,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
-    };
-  }
+  return {
+    events,
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+  };
 };
 
 export const addNewWeddingEventService = async (

@@ -18,6 +18,10 @@ import {
   updateAiEventInviteCard,
 } from "../repositories/aiInviteCard.repository";
 import { ApiError } from "../utils/apiError.util";
+import {
+  AI_CARD_IMAGE_KEY_FIELDS,
+  assertOwnedImageKeys,
+} from "../utils/imageKeyOwnership.util";
 import { GenerateAIInviteCardImageDto } from "../validations/aiInviteCard.validation";
 import {
   classifyGeminiError,
@@ -80,6 +84,8 @@ export const updateAiInviteCardService = async (
       "Invalid AI Invite Card or AI Invite Card Not Found",
     );
 
+  assertOwnedImageKeys(userId, AI_CARD_IMAGE_KEY_FIELDS, aiInviteCard, payload);
+
   const updatedAiInviteCard = await updateAiEventInviteCard(id, payload);
 
   if (!updatedAiInviteCard)
@@ -106,6 +112,8 @@ export const generateAIInviteCardService = async (
 
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Invite card or Invite card Not Found");
+
+  assertOwnedImageKeys(userId, AI_CARD_IMAGE_KEY_FIELDS, aiInviteCard, config);
 
   if (isGenerationInFlight(aiInviteCard))
     throw new ApiError(

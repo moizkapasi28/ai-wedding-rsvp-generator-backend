@@ -32,6 +32,7 @@ export const getAllWeddingEvents = async (
     page,
     limit,
     includeStats,
+    { search: query.search, sides: query.sides, sort: query.sort },
   );
 
   return sendSuccess(res, "Events fetched successfully", events, 200);

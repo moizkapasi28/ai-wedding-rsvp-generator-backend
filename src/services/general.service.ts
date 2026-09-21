@@ -1,8 +1,8 @@
 import { isObjectKeyReferencedByUser } from "../repositories/general.repository";
 import { ApiError } from "../utils/apiError.util";
+import { userPrefix } from "../utils/imageKeyOwnership.util";
 import { generatePresignedUrl } from "./aws.service";
 
-const userPrefix = (userId: string) => `users/${userId}/`;
 
 // Uploads always land under the uploader's own prefix, so nobody can overwrite another user's
 // files. Clients save the returned object_key, so rewriting the requested key is safe.

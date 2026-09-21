@@ -11,6 +11,11 @@ import { prisma } from "../lib/prisma";
 import { getEventGuestStats } from "../repositories/guest.repository";
 import { BuildPromptParams } from "../types/eventInviteFormat.type";
 import { ApiError } from "../utils/apiError.util";
+import {
+  assertOwnedImageKeys,
+  PAGE_SETTING_IMAGE_KEY_FIELDS,
+  userPrefix,
+} from "../utils/imageKeyOwnership.util";
 import { pageSettingEditImageWithGemini } from "../utils/geminiImageEditor.util";
 import { getBufferFromS3, uploadBufferToS3 } from "./aws.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
@@ -79,6 +84,13 @@ export const updateEventInviteFormatService = async (
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Invite Format or Invite Format Not Found");
 
+  assertOwnedImageKeys(
+    userId,
+    PAGE_SETTING_IMAGE_KEY_FIELDS,
+    eventInviteFormat,
+    payload,
+  );
+
   const updatedEventInviteFormat = await prisma.$transaction(async (tx) => {
     const format = await updateGuestEventInviteFormat(
       eventInviteFormat.id,
@@ -126,6 +138,18 @@ export const generateEventInviteFormatImageService = async (
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Invite Format or Invite Format Not Found");
 
+  // The server reads this key itself, so without the check a caller could have
+  // someone else's photo pulled from S3 and run through the model for them.
+  // The one already saved on this event's settings stays usable even if it
+  // predates per-user prefixes.
+  const format = await findGuestEventInviteFormatByEventId(eventId);
+  assertOwnedImageKeys(
+    userId,
+    ["raw_image"],
+    { raw_image: format?.raw_image ?? null },
+    { raw_image: rawImageKey },
+  );
+
   const { buffer: rawImageBuffer, contentType } =
     await getBufferFromS3(rawImageKey);
 
@@ -138,7 +162,9 @@ export const generateEventInviteFormatImageService = async (
 
   const generatedImageKey = await uploadBufferToS3(
     generatedImageBuffer,
-    "generated-images/rsvp-generated-images",
+    // Under the user's own prefix: the client saves this key back onto the
+    // page settings, and that save only accepts keys the user owns.
+    `${userPrefix(userId)}generated-images/rsvp-generated-images`,
     "image/png",
   );
 

@@ -10,6 +10,23 @@ export const getAllWeddingEventsQuerySchema = z.object({
   page: z.string().optional().default("1"),
   limit: z.string().optional().default("10"),
   stats: z.string().optional().default("false").describe("True or false"),
+  search: z.string().trim().optional().default("").describe("search keyword"),
+  sides: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val
+        ?.split(",")
+        .map((f) => f.trim().toUpperCase())
+        .filter(Boolean),
+    )
+    .pipe(z.array(EventSideSchema).optional())
+    .describe("Comma-separated sides (e.g. 'BRIDE,GROOM,BOTH')"),
+  sort: z
+    .enum(["newest", "date_asc", "date_desc"])
+    .optional()
+    .default("newest")
+    .describe("Order: newest added, or by event date"),
 });
 
 export const getAllWeddingEventsSchema = z.object({
