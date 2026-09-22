@@ -23,7 +23,15 @@ export const findRsvpInvite = async (
     where,
     select: {
       ...inviteReplySelect,
-      guest: { select: { name: true } },
+      // Accommodation goes to the guest's own RSVP page: they're the only
+      // one this token opens it for, and it's where they asked to stay
+      guest: {
+        select: {
+          name: true,
+          accomodation_required: true,
+          accomodation_address: true,
+        },
+      },
       event: {
         select: {
           id: true,
