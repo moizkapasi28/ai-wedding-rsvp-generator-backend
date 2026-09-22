@@ -16,7 +16,7 @@ export const isObjectKeyReferencedByUser = async (
         OR: [{ raw_image: objectKey }, { generated_image: objectKey }],
       },
     }),
-    prisma.aIEventInviteCard.count({
+    prisma.eventInviteCard.count({
       where: {
         event: ownedEvent,
         OR: [

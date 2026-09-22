@@ -19,7 +19,7 @@ import openApiDoc from "./openapi.json";
 import guestsRouter from "./routes/guests.routes";
 import eventInviteFormatRouter from "./routes/eventInviteFormat.route";
 import generalRouter from "./routes/general.routes";
-import aiInviteCardRouter from "./routes/aiInviteCard.routes";
+import inviteCardRouter from "./routes/inviteCard.routes";
 import rsvpRouter from "./routes/rsvp.routes";
 
 const app = express();
@@ -57,7 +57,7 @@ app.use("/api/wedding", weddingRouter);
 app.use("/api/event", eventRouter);
 app.use("/api/guest", guestsRouter);
 app.use("/api/page-setting", eventInviteFormatRouter);
-app.use("/api/ai-invite-card", aiInviteCardRouter);
+app.use("/api/invite-card", inviteCardRouter);
 app.use("/api/general", generalRouter);
 app.use("/api/rsvp", rsvpRouter);
 

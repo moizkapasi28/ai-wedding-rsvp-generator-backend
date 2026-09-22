@@ -3,27 +3,27 @@ dotenv.config();
 
 import { Worker } from "bullmq";
 import logger from "../config/logger";
-import { JOB_RETRY_DELAYS_MS } from "../enums/aiEventInvite.enum";
+import { JOB_RETRY_DELAYS_MS } from "../enums/inviteCard.enum";
 import { redisOptions } from "../lib/redis";
 import {
-  AI_INVITE_CARD_QUEUE_NAME,
-  AiInviteCardJobPayload,
-} from "../queues/aiInviteCard.queue";
-import { runAiInviteCardGenerationJob } from "../services/aiInviteCard.service";
+  INVITE_CARD_QUEUE_NAME,
+  InviteCardJobPayload,
+} from "../queues/inviteCard.queue";
+import { runInviteCardGenerationJob } from "../services/inviteCard.service";
 
-export const aiInviteCardWorker = new Worker<AiInviteCardJobPayload>(
-  AI_INVITE_CARD_QUEUE_NAME,
+export const inviteCardWorker = new Worker<InviteCardJobPayload>(
+  INVITE_CARD_QUEUE_NAME,
   async (job) => {
     if (job.data.type !== "generate-invite-card") return;
 
-    const { aiInviteCardId } = job.data;
+    const { inviteCardId } = job.data;
 
     logger.info(
-      { jobId: job.id, aiInviteCardId },
+      { jobId: job.id, inviteCardId },
       "Starting AI invite card generation",
     );
 
-    const result = await runAiInviteCardGenerationJob(job.data, {
+    const result = await runInviteCardGenerationJob(job.data, {
       // attemptsMade counts finished attempts, so it is 0 on the first run
       attempt: job.attemptsMade + 1,
       maxAttempts: job.opts.attempts ?? 1,
@@ -31,7 +31,7 @@ export const aiInviteCardWorker = new Worker<AiInviteCardJobPayload>(
     });
 
     logger.info(
-      { jobId: job.id, aiInviteCardId },
+      { jobId: job.id, inviteCardId },
       "Completed AI invite card generation",
     );
 
@@ -49,17 +49,17 @@ export const aiInviteCardWorker = new Worker<AiInviteCardJobPayload>(
   },
 );
 
-aiInviteCardWorker.on("ready", () => {
+inviteCardWorker.on("ready", () => {
   logger.info("✅ AI invite card worker connected to Redis and ready!");
 });
 
-aiInviteCardWorker.on("failed", (job, err) => {
+inviteCardWorker.on("failed", (job, err) => {
   logger.error(
-    { err, jobId: job?.id, aiInviteCardId: job?.data?.aiInviteCardId },
+    { err, jobId: job?.id, inviteCardId: job?.data?.inviteCardId },
     "❌ AI invite card job failed",
   );
 });
 
-aiInviteCardWorker.on("error", (err) => {
+inviteCardWorker.on("error", (err) => {
   logger.error(err, "❌ AI invite card worker encountered an error:");
 });

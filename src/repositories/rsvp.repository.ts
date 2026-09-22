@@ -47,6 +47,8 @@ export const findRsvpInvite = async (
           plus_ones: true,
           song_request: true,
           message: true,
+          // The RSVP illustration's S3 key; getRsvpService swaps it for a signed URL
+          generated_image: true,
         },
       },
     },

@@ -1,19 +1,19 @@
 // Self-check for the pure parts of AI invite card generation (no Gemini, S3 or DB).
-// Run from the backend root: npx tsx src/utils/aiInviteCardGeneration.check.ts
+// Run from the backend root: npx tsx src/utils/inviteCardGeneration.check.ts
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { AIEventInviteCard } from "../../generated/prisma/client";
+import { EventInviteCard } from "../../generated/prisma/client";
 import {
   GEMINI_IMAGE_MODEL,
   GENERATION_ERROR_CODE,
   GENERATION_ERROR_CODE as CODE,
-} from "../enums/aiEventInvite.enum";
-import { computeDesignFingerprint } from "./aiInviteCardGeneration.util";
+} from "../enums/inviteCard.enum";
+import { computeDesignFingerprint } from "./inviteCardGeneration.util";
 import {
   buildStage1ExamplePrompt,
   buildStage1ManualPrompt,
   getStage1ImageKeys,
-} from "./aiInviteCardPromptBuilder.util";
+} from "./inviteCardPromptBuilder.util";
 import {
   classifyGeminiError,
   extractImageOrThrow,
@@ -152,10 +152,10 @@ const checkNormalize = async () => {
 };
 
 const checkFingerprint = async () => {
-  type Card = Partial<AIEventInviteCard>;
+  type Card = Partial<EventInviteCard>;
 
   const fingerprintOf = async (card: Card) => {
-    const isExample = card.generation_mode === "EXAMPLE";
+    const isExample = card.card_source === "EXAMPLE";
     const prompt = isExample
       ? await buildStage1ExamplePrompt(card)
       : await buildStage1ManualPrompt(card);
@@ -169,7 +169,7 @@ const checkFingerprint = async () => {
   };
 
   const manual: Card = {
-    generation_mode: "MANUAL",
+    card_source: "PRESETS",
     additional_details: "Marigold garlands framing the edges",
     custom_message: "Join us as we begin forever",
     photo_type: "couple",
@@ -198,7 +198,7 @@ const checkFingerprint = async () => {
 
   const example: Card = {
     ...manual,
-    generation_mode: "EXAMPLE",
+    card_source: "EXAMPLE",
     reference_image: "users/u1/ref-a.jpg",
     photo_placement: "FRAMED_INSET",
   };
@@ -218,7 +218,7 @@ const main = async () => {
 
 main().then(
   () => {
-    console.log("aiInviteCardGeneration checks passed");
+    console.log("inviteCardGeneration checks passed");
     process.exit(0);
   },
   (error) => {

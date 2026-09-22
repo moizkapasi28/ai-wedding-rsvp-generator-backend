@@ -1,7 +1,7 @@
 import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 
-export const getAiInviteCardsByWedding = async (
+export const getInviteCardsByWedding = async (
   weddingId: string,
   page: number,
   limit: number,
@@ -14,7 +14,7 @@ export const getAiInviteCardsByWedding = async (
     db.event.findMany({
       where: { wedding_id: weddingId },
       include: {
-        aiEventInviteCard: true,
+        inviteCard: true,
         wedding: true,
       },
       skip,
@@ -35,11 +35,11 @@ export const getAiInviteCardsByWedding = async (
 };
 
 export const createAiEventInviteCard = async (
-  data: Prisma.AIEventInviteCardUncheckedCreateInput,
+  data: Prisma.EventInviteCardUncheckedCreateInput,
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  return db.aIEventInviteCard.create({ data });
+  return db.eventInviteCard.create({ data });
 };
 
 export const findAiEventInviteCardById = async (
@@ -47,7 +47,7 @@ export const findAiEventInviteCardById = async (
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  return db.aIEventInviteCard.findUnique({ where: { id } });
+  return db.eventInviteCard.findUnique({ where: { id } });
 };
 
 export const findAiEventInviteCardByEventId = async (
@@ -55,16 +55,16 @@ export const findAiEventInviteCardByEventId = async (
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  return db.aIEventInviteCard.findUnique({ where: { event_id: eventId } });
+  return db.eventInviteCard.findUnique({ where: { event_id: eventId } });
 };
 
 export const updateAiEventInviteCard = async (
   id: string,
-  payload: Prisma.AIEventInviteCardUpdateInput,
+  payload: Prisma.EventInviteCardUpdateInput,
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  return db.aIEventInviteCard.update({
+  return db.eventInviteCard.update({
     where: { id },
     data: { ...payload, updated_at: new Date() },
   });

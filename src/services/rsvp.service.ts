@@ -1,5 +1,7 @@
 import { Prisma } from "../../generated/prisma/client";
+import logger from "../config/logger";
 import { emitRsvp, toLiveRsvp } from "../lib/rsvpEvents";
+import { findAiEventInviteCardByEventId } from "../repositories/inviteCard.repository";
 import {
   findRsvpInvite,
   updateRsvpInvite,
@@ -7,6 +9,7 @@ import {
 import { ApiError } from "../utils/apiError.util";
 import { buildRsvpUpdate } from "../utils/rsvp.util";
 import { SubmitRsvpBody } from "../validations/rsvp.validation";
+import { generatePresignedUrl } from "./aws.service";
 
 type RsvpInvite = NonNullable<Awaited<ReturnType<typeof findRsvpInvite>>>;
 
@@ -59,8 +62,49 @@ const saveReply = async (
   return saved;
 };
 
-export const getRsvpService = async (token: string) =>
-  toRsvpView(await requireInvite({ invite_token: token }, INVALID_LINK));
+// Guests aren't signed in and can't ask for a view URL themselves, so images on
+// their page go out already signed, never as raw S3 keys.
+const signForGuest = async (key: string | null | undefined, eventId: string) => {
+  if (!key) return null;
+
+  try {
+    return await generatePresignedUrl(
+      process.env.AWS_BUCKET_NAME,
+      key,
+      // The same expiry the host-side view URLs use
+      Number(process.env.AWS_BUCKET_PUT_URL_EXPIRE),
+      "getObject",
+    );
+  } catch (error) {
+    // A missing picture shouldn't cost the guest their RSVP page
+    logger.error({ error, eventId, key }, "Failed to sign image for RSVP page");
+    return null;
+  }
+};
+
+export const getRsvpService = async (token: string) => {
+  const invite = await requireInvite({ invite_token: token }, INVALID_LINK);
+  const view = toRsvpView(invite);
+  const eventId = invite.event.id;
+  const { generated_image: illustrationKey, ...format } = view.event.format ?? {};
+
+  // The invitation card (generated or uploaded) is looked up here rather than in
+  // findRsvpInvite, whose result also feeds reply saving and the live stream.
+  const card = await findAiEventInviteCardByEventId(eventId);
+  const [invite_card_url, illustration_url] = await Promise.all([
+    signForGuest(card?.generated_invite_image_url, eventId),
+    signForGuest(illustrationKey, eventId),
+  ]);
+
+  return {
+    ...view,
+    event: {
+      ...view.event,
+      format: { ...format, illustration_url },
+      invite_card_url,
+    },
+  };
+};
 
 export const submitRsvpService = async (token: string, body: SubmitRsvpBody) =>
   saveReply(await requireInvite({ invite_token: token }, INVALID_LINK), body, false);

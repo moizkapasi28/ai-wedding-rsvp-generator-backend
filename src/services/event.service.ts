@@ -21,7 +21,7 @@ import {
   GuestStatQueryGroup,
 } from "../types/event.type";
 import { STATUS } from "../enums/event.enum";
-import { createAiEventInviteCard } from "../repositories/aiInviteCard.repository";
+import { createAiEventInviteCard } from "../repositories/inviteCard.repository";
 
 export const mapGuestStatsToEvents = (
   events: Event[],
@@ -155,12 +155,12 @@ export const addNewWeddingEventService = async (
     if (!eventInviteFormat)
       throw new ApiError(400, "Failed to create event invite format");
 
-    const aiInviteCard = await createAiEventInviteCard(
+    const inviteCard = await createAiEventInviteCard(
       { event_id: event.id },
       tx,
     );
 
-    if (!aiInviteCard)
+    if (!inviteCard)
       throw new ApiError(400, "Failed to create AI invite card");
 
     return event;

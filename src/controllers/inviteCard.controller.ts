@@ -1,26 +1,26 @@
 import { type Request, type Response } from "express";
 import {
-  GenerateAIInviteCardImageDto,
-  GetAiInviteCardGenerationStatusParamsDto,
-  GetAiInviteCardsByWeddingParamsDto,
-  GetAiInviteCardsByWeddingQueryDto,
-  UpdateAiInviteCardDto,
-} from "../validations/aiInviteCard.validation";
+  GenerateInviteCardImageDto,
+  GetInviteCardGenerationStatusParamsDto,
+  GetInviteCardsByWeddingParamsDto,
+  GetInviteCardsByWeddingQueryDto,
+  UpdateInviteCardDto,
+} from "../validations/inviteCard.validation";
 import { getUserWeddingService } from "../services/wedding.service";
 import {
-  generateAIInviteCardService,
-  getAiInviteCardGenerationStatusService,
-  getAiInviteCardsByWeddingService,
-  updateAiInviteCardService,
-} from "../services/aiInviteCard.service";
+  generateInviteCardService,
+  getInviteCardGenerationStatusService,
+  getInviteCardsByWeddingService,
+  updateInviteCardService,
+} from "../services/inviteCard.service";
 import { sendSuccess } from "../utils/response.util";
 
-export const getAiInviteCardsByWedding = async (
+export const getInviteCardsByWedding = async (
   req: Request<
-    GetAiInviteCardsByWeddingParamsDto,
+    GetInviteCardsByWeddingParamsDto,
     {},
     {},
-    GetAiInviteCardsByWeddingQueryDto
+    GetInviteCardsByWeddingQueryDto
   >,
   res: Response,
 ) => {
@@ -30,7 +30,7 @@ export const getAiInviteCardsByWedding = async (
 
   await getUserWeddingService(user.id, params.weddingId);
 
-  const aiInviteCards = await getAiInviteCardsByWeddingService(
+  const inviteCards = await getInviteCardsByWeddingService(
     params.weddingId,
     page,
     limit,
@@ -39,22 +39,22 @@ export const getAiInviteCardsByWedding = async (
   return sendSuccess(
     res,
     "Invite cards fetched successfully",
-    aiInviteCards,
+    inviteCards,
     200,
   );
 };
 
-export const updateAiInviteCard = async (
+export const updateInviteCard = async (
   req: Request<
-    UpdateAiInviteCardDto["params"],
+    UpdateInviteCardDto["params"],
     {},
-    UpdateAiInviteCardDto["body"]
+    UpdateInviteCardDto["body"]
   >,
   res: Response,
 ) => {
   const { user, params, body } = req;
 
-  const aiInviteCard = await updateAiInviteCardService(
+  const inviteCard = await updateInviteCardService(
     params.id,
     user.id,
     body,
@@ -63,30 +63,30 @@ export const updateAiInviteCard = async (
   return sendSuccess(
     res,
     "Invite card updated successfully",
-    aiInviteCard,
+    inviteCard,
     200,
   );
 };
 
-export const generateAIInviteCardImage = async (
-  req: Request<{}, {}, GenerateAIInviteCardImageDto>,
+export const generateInviteCardImage = async (
+  req: Request<{}, {}, GenerateInviteCardImageDto>,
   res: Response,
 ) => {
   const { user, body } = req;
 
-  const result = await generateAIInviteCardService(body.eventId, user.id, body);
+  const result = await generateInviteCardService(body.eventId, user.id, body);
 
   // 202: the design is produced by the worker, so the request only reports that it was queued
   return sendSuccess(res, "AI invite card generation started", result, 202);
 };
 
-export const getAiInviteCardGenerationStatus = async (
-  req: Request<GetAiInviteCardGenerationStatusParamsDto>,
+export const getInviteCardGenerationStatus = async (
+  req: Request<GetInviteCardGenerationStatusParamsDto>,
   res: Response,
 ) => {
   const { user, params } = req;
 
-  const status = await getAiInviteCardGenerationStatusService(
+  const status = await getInviteCardGenerationStatusService(
     params.id,
     user.id,
   );

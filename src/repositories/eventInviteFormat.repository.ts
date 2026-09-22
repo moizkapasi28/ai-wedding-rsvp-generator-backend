@@ -33,7 +33,7 @@ export const getGuestEventInviteFormatsByWedding = async (
         guestEventInviteFormat: true,
         wedding: true,
         // S3 key of the event's AI invitation card (one per event), shown on Guest Preview
-        aiEventInviteCard: { select: { generated_invite_image_url: true } },
+        inviteCard: { select: { generated_invite_image_url: true } },
       },
       skip,
       take: limit,

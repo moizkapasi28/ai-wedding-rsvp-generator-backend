@@ -1,6 +1,8 @@
-export enum GENERATION_MODE {
+// Where an invitation card comes from; mirrors the CardSource enum in schema.prisma
+export enum CARD_SOURCE {
+  PRESETS = "PRESETS",
   EXAMPLE = "EXAMPLE",
-  MANUAL = "MANUAL",
+  UPLOAD = "UPLOAD",
 }
 
 export enum PHOTO_PLACEMENT {

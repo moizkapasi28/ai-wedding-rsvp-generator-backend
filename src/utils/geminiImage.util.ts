@@ -8,7 +8,7 @@ import {
   GEMINI_IMAGE_MODEL,
   GENERATION_ERROR_CODE,
   RETRYABLE_ERROR_CODES,
-} from "../enums/aiEventInvite.enum";
+} from "../enums/inviteCard.enum";
 
 export type GeneratedImage = { data: Buffer; mimeType: string };
 

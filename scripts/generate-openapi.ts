@@ -3,7 +3,7 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import z from "zod";
-import * as aiInviteCard from "../src/validations/aiInviteCard.validation";
+import * as inviteCard from "../src/validations/inviteCard.validation";
 import * as auth from "../src/validations/auth.validation";
 import * as event from "../src/validations/event.validations";
 import * as inviteFormat from "../src/validations/eventInviteFormat.validation";
@@ -76,10 +76,10 @@ const routes: Route[] = [
   { method: "patch", path: "/api/page-setting/:id", tag: "RSVP page settings", summary: "Update RSVP page settings (the RSVP deadline is copied onto every invite)", schema: inviteFormat.updateEventInviteFormatSchema },
   { method: "post", path: "/api/page-setting/generate-image", tag: "RSVP page settings", summary: "Generate the RSVP page illustration", schema: inviteFormat.generateEventInviteFormatImageSchema },
 
-  { method: "get", path: "/api/ai-invite-card/cards/:weddingId", tag: "AI invite cards", summary: "Events with their AI invite cards", schema: aiInviteCard.getAiInvitecardsByWeddingSchema },
-  { method: "get", path: "/api/ai-invite-card/:id/generation-status", tag: "AI invite cards", summary: "Generation status of an AI invite card", schema: aiInviteCard.getAiInviteCardGenerationStatusSchema },
-  { method: "patch", path: "/api/ai-invite-card/:id", tag: "AI invite cards", summary: "Update an AI invite card", schema: aiInviteCard.updateAiInviteCardSchema },
-  { method: "post", path: "/api/ai-invite-card/generate-invite", tag: "AI invite cards", summary: "Queue AI invite card generation (rate limited)", schema: aiInviteCard.generateAIInviteCardImageSchema },
+  { method: "get", path: "/api/invite-card/cards/:weddingId", tag: "Invite cards", summary: "Events with their invite cards", schema: inviteCard.getAiInvitecardsByWeddingSchema },
+  { method: "get", path: "/api/invite-card/:id/generation-status", tag: "Invite cards", summary: "Generation status of an invite card", schema: inviteCard.getInviteCardGenerationStatusSchema },
+  { method: "patch", path: "/api/invite-card/:id", tag: "Invite cards", summary: "Update an invite card", schema: inviteCard.updateInviteCardSchema },
+  { method: "post", path: "/api/invite-card/generate-invite", tag: "Invite cards", summary: "Queue invite card generation (rate limited)", schema: inviteCard.generateInviteCardImageSchema },
 
   { method: "post", path: "/api/general/generate-upload-url", tag: "Files", summary: "Presigned S3 upload URL", schema: general.generateS3PresignedUploadURLSchema },
   { method: "post", path: "/api/general/generate-view-url", tag: "Files", summary: "Presigned S3 view URL for an object key", schema: general.generateS3PresignedViewURLSchema },

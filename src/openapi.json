@@ -1084,6 +1084,43 @@
               "description": "True or false",
               "type": "string"
             }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "search keyword",
+            "schema": {
+              "default": "",
+              "description": "search keyword",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sides",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated sides (e.g. 'BRIDE,GROOM,BOTH')",
+            "schema": {
+              "description": "Comma-separated sides (e.g. 'BRIDE,GROOM,BOTH')",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: newest added, or by event date",
+            "schema": {
+              "default": "newest",
+              "description": "Order: newest added, or by event date",
+              "type": "string",
+              "enum": [
+                "newest",
+                "date_asc",
+                "date_desc"
+              ]
+            }
           }
         ],
         "responses": {
@@ -3113,12 +3150,12 @@
         }
       }
     },
-    "/api/ai-invite-card/cards/{weddingId}": {
+    "/api/invite-card/cards/{weddingId}": {
       "get": {
         "tags": [
-          "AI invite cards"
+          "Invite cards"
         ],
-        "summary": "Events with their AI invite cards",
+        "summary": "Events with their invite cards",
         "security": [
           {
             "bearerAuth": []
@@ -3182,12 +3219,12 @@
         }
       }
     },
-    "/api/ai-invite-card/{id}/generation-status": {
+    "/api/invite-card/{id}/generation-status": {
       "get": {
         "tags": [
-          "AI invite cards"
+          "Invite cards"
         ],
-        "summary": "Generation status of an AI invite card",
+        "summary": "Generation status of an invite card",
         "security": [
           {
             "bearerAuth": []
@@ -3230,12 +3267,12 @@
         }
       }
     },
-    "/api/ai-invite-card/{id}": {
+    "/api/invite-card/{id}": {
       "patch": {
         "tags": [
-          "AI invite cards"
+          "Invite cards"
         ],
-        "summary": "Update an AI invite card",
+        "summary": "Update an invite card",
         "security": [
           {
             "bearerAuth": []
@@ -3262,12 +3299,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "generation_mode": {
-                    "description": "Generation mode of AI invite card",
+                  "card_source": {
+                    "description": "Where the invite card comes from: PRESETS, EXAMPLE or UPLOAD",
                     "type": "string",
                     "enum": [
-                      "MANUAL",
-                      "EXAMPLE"
+                      "PRESETS",
+                      "EXAMPLE",
+                      "UPLOAD"
                     ]
                   },
                   "photo_type": {
@@ -3516,12 +3554,12 @@
         }
       }
     },
-    "/api/ai-invite-card/generate-invite": {
+    "/api/invite-card/generate-invite": {
       "post": {
         "tags": [
-          "AI invite cards"
+          "Invite cards"
         ],
-        "summary": "Queue AI invite card generation (rate limited)",
+        "summary": "Queue invite card generation (rate limited)",
         "security": [
           {
             "bearerAuth": []
@@ -3541,12 +3579,12 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
                     "description": "Event ID is required"
                   },
-                  "generation_mode": {
-                    "default": "MANUAL",
-                    "description": "Generation mode of AI invite card",
+                  "card_source": {
+                    "default": "PRESETS",
+                    "description": "How to generate the card: from PRESETS or from an EXAMPLE",
                     "type": "string",
                     "enum": [
-                      "MANUAL",
+                      "PRESETS",
                       "EXAMPLE"
                     ]
                   },

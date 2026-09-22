@@ -1,28 +1,28 @@
 import { UnrecoverableError } from "bullmq";
-import { AIEventInviteCard, Prisma } from "../../generated/prisma/client";
+import { EventInviteCard, Prisma } from "../../generated/prisma/client";
 import logger from "../config/logger";
 import {
   GENERATION_ERROR_CODE,
   GENERATION_STALE_AFTER_MS,
   GENERATION_STATUS,
   MAX_GENERATION_ATTEMPTS,
-} from "../enums/aiEventInvite.enum";
+} from "../enums/inviteCard.enum";
 import {
   addGenerateInviteCardJob,
   GenerateInviteCardJobPayload,
-} from "../queues/aiInviteCard.queue";
+} from "../queues/inviteCard.queue";
 import {
   findAiEventInviteCardByEventId,
   findAiEventInviteCardById,
-  getAiInviteCardsByWedding,
+  getInviteCardsByWedding,
   updateAiEventInviteCard,
-} from "../repositories/aiInviteCard.repository";
+} from "../repositories/inviteCard.repository";
 import { ApiError } from "../utils/apiError.util";
 import {
   AI_CARD_IMAGE_KEY_FIELDS,
   assertOwnedImageKeys,
 } from "../utils/imageKeyOwnership.util";
-import { GenerateAIInviteCardImageDto } from "../validations/aiInviteCard.validation";
+import { GenerateInviteCardImageDto } from "../validations/inviteCard.validation";
 import {
   classifyGeminiError,
   GeminiGenerationError,
@@ -31,50 +31,50 @@ import {
   defaultPipelineDeps,
   PipelineDeps,
   runInviteCardPipeline,
-} from "./aiInviteCardGeneration.service";
+} from "./inviteCardGeneration.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
 
-const isGenerationStale = (aiInviteCard: AIEventInviteCard) => {
+const isGenerationStale = (inviteCard: EventInviteCard) => {
   // Heartbeats keep a slow but healthy retry chain alive; older rows only have started_at
   const lastSeen =
-    aiInviteCard.generation_heartbeat_at ?? aiInviteCard.generation_started_at;
+    inviteCard.generation_heartbeat_at ?? inviteCard.generation_started_at;
 
   if (!lastSeen) return true;
 
   return Date.now() - lastSeen.getTime() > GENERATION_STALE_AFTER_MS;
 };
 
-const isGenerationInFlight = (aiInviteCard: AIEventInviteCard) => {
+const isGenerationInFlight = (inviteCard: EventInviteCard) => {
   const isRunning =
-    aiInviteCard.generation_status === GENERATION_STATUS.QUEUED ||
-    aiInviteCard.generation_status === GENERATION_STATUS.PROCESSING;
+    inviteCard.generation_status === GENERATION_STATUS.QUEUED ||
+    inviteCard.generation_status === GENERATION_STATUS.PROCESSING;
 
-  return isRunning && !isGenerationStale(aiInviteCard);
+  return isRunning && !isGenerationStale(inviteCard);
 };
 
-export const getAiInviteCardsByWeddingService = async (
+export const getInviteCardsByWeddingService = async (
   weddingId: string,
   page: number = 1,
   limit: number = 5,
 ) => {
-  const inviteCards = await getAiInviteCardsByWedding(weddingId, page, limit);
+  const inviteCards = await getInviteCardsByWedding(weddingId, page, limit);
 
   if (!inviteCards) throw new ApiError(404, "AI Invite Cards Not Found");
 
   return inviteCards;
 };
 
-export const updateAiInviteCardService = async (
+export const updateInviteCardService = async (
   id: string,
   userId: string,
-  payload: Prisma.AIEventInviteCardUpdateInput,
+  payload: Prisma.EventInviteCardUpdateInput,
 ) => {
-  const aiInviteCard = await findAiEventInviteCardById(id);
+  const inviteCard = await findAiEventInviteCardById(id);
 
-  if (!aiInviteCard) throw new ApiError(404, "AI Invite Card Not Found");
+  if (!inviteCard) throw new ApiError(404, "AI Invite Card Not Found");
 
   const ownershipEvent = await verifyWeddingEventOwnershipService(
-    aiInviteCard.event_id,
+    inviteCard.event_id,
     userId,
   );
 
@@ -84,38 +84,38 @@ export const updateAiInviteCardService = async (
       "Invalid AI Invite Card or AI Invite Card Not Found",
     );
 
-  assertOwnedImageKeys(userId, AI_CARD_IMAGE_KEY_FIELDS, aiInviteCard, payload);
+  assertOwnedImageKeys(userId, AI_CARD_IMAGE_KEY_FIELDS, inviteCard, payload);
 
-  const updatedAiInviteCard = await updateAiEventInviteCard(id, payload);
+  const updatedInviteCard = await updateAiEventInviteCard(id, payload);
 
-  if (!updatedAiInviteCard)
+  if (!updatedInviteCard)
     throw new ApiError(400, "Failed to update invite card");
 
-  return updatedAiInviteCard;
+  return updatedInviteCard;
 };
 
-export const generateAIInviteCardService = async (
+export const generateInviteCardService = async (
   eventId: string,
   userId: string,
-  body: GenerateAIInviteCardImageDto,
+  body: GenerateInviteCardImageDto,
 ) => {
   const { eventId: _eventId, ...config } = body;
 
-  const aiInviteCard = await findAiEventInviteCardByEventId(eventId);
+  const inviteCard = await findAiEventInviteCardByEventId(eventId);
 
-  if (!aiInviteCard) throw new ApiError(404, "Event Invite card Not Found");
+  if (!inviteCard) throw new ApiError(404, "Event Invite card Not Found");
 
   const ownershipEvent = await verifyWeddingEventOwnershipService(
-    aiInviteCard.event_id,
+    inviteCard.event_id,
     userId,
   );
 
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Invite card or Invite card Not Found");
 
-  assertOwnedImageKeys(userId, AI_CARD_IMAGE_KEY_FIELDS, aiInviteCard, config);
+  assertOwnedImageKeys(userId, AI_CARD_IMAGE_KEY_FIELDS, inviteCard, config);
 
-  if (isGenerationInFlight(aiInviteCard))
+  if (isGenerationInFlight(inviteCard))
     throw new ApiError(
       409,
       "An invitation is already being generated for this event.",
@@ -123,7 +123,7 @@ export const generateAIInviteCardService = async (
 
   // Persist the submitted configuration so the design survives a reload, and so
   // the worker generates from the stored record rather than the request body.
-  const savedAiInviteCard = await updateAiEventInviteCard(aiInviteCard.id, {
+  const savedInviteCard = await updateAiEventInviteCard(inviteCard.id, {
     ...config,
     generation_status: GENERATION_STATUS.QUEUED,
     generation_stage: null,
@@ -136,17 +136,17 @@ export const generateAIInviteCardService = async (
   });
 
   const job = await addGenerateInviteCardJob(
-    savedAiInviteCard.id,
-    savedAiInviteCard.event_id,
+    savedInviteCard.id,
+    savedInviteCard.event_id,
     userId,
   );
 
-  await updateAiEventInviteCard(savedAiInviteCard.id, {
+  await updateAiEventInviteCard(savedInviteCard.id, {
     generation_job_id: job.id ?? null,
   });
 
   return {
-    aiInviteCardId: savedAiInviteCard.id,
+    inviteCardId: savedInviteCard.id,
     jobId: job.id ?? null,
     status: GENERATION_STATUS.QUEUED,
   };
@@ -154,8 +154,8 @@ export const generateAIInviteCardService = async (
 
 // Runs inside the worker process — the HTTP request is long gone by this point,
 // so every outcome has to be recorded on the card for the page to read back.
-export const runAiInviteCardGenerationJob = async (
-  { aiInviteCardId, userId }: GenerateInviteCardJobPayload,
+export const runInviteCardGenerationJob = async (
+  { inviteCardId, userId }: GenerateInviteCardJobPayload,
   {
     attempt,
     maxAttempts,
@@ -163,23 +163,23 @@ export const runAiInviteCardGenerationJob = async (
   }: { attempt: number; maxAttempts: number; jobId?: string },
   deps: PipelineDeps = defaultPipelineDeps(),
 ) => {
-  const log = logger.child({ cardId: aiInviteCardId, jobId, attempt });
+  const log = logger.child({ cardId: inviteCardId, jobId, attempt });
   const startedAt = Date.now();
 
-  const aiInviteCard = await findAiEventInviteCardById(aiInviteCardId);
+  const inviteCard = await findAiEventInviteCardById(inviteCardId);
 
   // Nowhere to record the failure, and a retry cannot bring the card back
-  if (!aiInviteCard) throw new UnrecoverableError("AI Invite Card Not Found");
+  if (!inviteCard) throw new UnrecoverableError("AI Invite Card Not Found");
 
-  const heartbeat = (data: Prisma.AIEventInviteCardUpdateInput = {}) =>
-    updateAiEventInviteCard(aiInviteCardId, {
+  const heartbeat = (data: Prisma.EventInviteCardUpdateInput = {}) =>
+    updateAiEventInviteCard(inviteCardId, {
       ...data,
       generation_heartbeat_at: new Date(),
     });
 
   try {
     const ownershipEvent = await verifyWeddingEventOwnershipService(
-      aiInviteCard.event_id,
+      inviteCard.event_id,
       userId,
     );
 
@@ -196,7 +196,7 @@ export const runAiInviteCardGenerationJob = async (
     });
 
     const result = await runInviteCardPipeline(
-      aiInviteCard,
+      inviteCard,
       ownershipEvent,
       deps,
       {
@@ -267,16 +267,16 @@ export const runAiInviteCardGenerationJob = async (
   }
 };
 
-export const getAiInviteCardGenerationStatusService = async (
+export const getInviteCardGenerationStatusService = async (
   id: string,
   userId: string,
 ) => {
-  let aiInviteCard = await findAiEventInviteCardById(id);
+  let inviteCard = await findAiEventInviteCardById(id);
 
-  if (!aiInviteCard) throw new ApiError(404, "AI Invite Card Not Found");
+  if (!inviteCard) throw new ApiError(404, "AI Invite Card Not Found");
 
   const ownershipEvent = await verifyWeddingEventOwnershipService(
-    aiInviteCard.event_id,
+    inviteCard.event_id,
     userId,
   );
 
@@ -286,11 +286,11 @@ export const getAiInviteCardGenerationStatusService = async (
   // A worker that died mid-run can never write its own failure, so the page would
   // poll a PROCESSING card forever. Retire it here instead.
   if (
-    (aiInviteCard.generation_status === GENERATION_STATUS.QUEUED ||
-      aiInviteCard.generation_status === GENERATION_STATUS.PROCESSING) &&
-    isGenerationStale(aiInviteCard)
+    (inviteCard.generation_status === GENERATION_STATUS.QUEUED ||
+      inviteCard.generation_status === GENERATION_STATUS.PROCESSING) &&
+    isGenerationStale(inviteCard)
   ) {
-    aiInviteCard = await updateAiEventInviteCard(aiInviteCard.id, {
+    inviteCard = await updateAiEventInviteCard(inviteCard.id, {
       generation_status: GENERATION_STATUS.FAILED,
       generation_stage: null,
       generation_error: "Generation timed out. Please try again.",
@@ -300,17 +300,17 @@ export const getAiInviteCardGenerationStatusService = async (
   }
 
   return {
-    id: aiInviteCard.id,
-    event_id: aiInviteCard.event_id,
-    status: aiInviteCard.generation_status,
-    stage: aiInviteCard.generation_stage,
-    error: aiInviteCard.generation_error,
-    error_code: aiInviteCard.generation_error_code,
-    attempt: aiInviteCard.generation_attempt,
+    id: inviteCard.id,
+    event_id: inviteCard.event_id,
+    status: inviteCard.generation_status,
+    stage: inviteCard.generation_stage,
+    error: inviteCard.generation_error,
+    error_code: inviteCard.generation_error_code,
+    attempt: inviteCard.generation_attempt,
     max_attempts: MAX_GENERATION_ATTEMPTS,
-    job_id: aiInviteCard.generation_job_id,
-    generated_invite_image_url: aiInviteCard.generated_invite_image_url,
-    started_at: aiInviteCard.generation_started_at,
-    completed_at: aiInviteCard.generation_completed_at,
+    job_id: inviteCard.generation_job_id,
+    generated_invite_image_url: inviteCard.generated_invite_image_url,
+    started_at: inviteCard.generation_started_at,
+    completed_at: inviteCard.generation_completed_at,
   };
 };

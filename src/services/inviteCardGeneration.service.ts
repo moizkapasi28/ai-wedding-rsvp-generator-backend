@@ -1,16 +1,16 @@
 import { GoogleGenAI, Part } from "@google/genai";
 import type { Logger } from "pino";
-import { AIEventInviteCard, Event } from "../../generated/prisma/client";
+import { EventInviteCard, Event } from "../../generated/prisma/client";
 import {
   GEMINI_IMAGE_MODEL,
   GENERATION_ERROR_CODE,
-  GENERATION_MODE,
+  CARD_SOURCE,
   GENERATION_STAGE,
-} from "../enums/aiEventInvite.enum";
+} from "../enums/inviteCard.enum";
 import { getGeminiClient } from "../lib/geminiClient";
-import { updateAiEventInviteCard } from "../repositories/aiInviteCard.repository";
+import { updateAiEventInviteCard } from "../repositories/inviteCard.repository";
 import { findWeddingById } from "../repositories/wedding.repository";
-import { computeDesignFingerprint } from "../utils/aiInviteCardGeneration.util";
+import { computeDesignFingerprint } from "../utils/inviteCardGeneration.util";
 import {
   buildGeminiParts,
   buildStage1ExamplePrompt,
@@ -18,7 +18,7 @@ import {
   buildStage2TextPrompt,
   fetchImageAsGeminiPart,
   getStage1ImageKeys,
-} from "../utils/aiInviteCardPromptBuilder.util";
+} from "../utils/inviteCardPromptBuilder.util";
 import {
   classifyGeminiError,
   GeminiGenerationError,
@@ -92,12 +92,12 @@ const timedStage = async (
 // DESIGN draws text-less artwork, TYPESETTING adds the wedding text to it. The artwork is
 // saved with a fingerprint of its stage 1 input, so a retry or a text-only edit skips DESIGN.
 export const runInviteCardPipeline = async (
-  card: AIEventInviteCard,
+  card: EventInviteCard,
   event: Event,
   deps: PipelineDeps,
   hooks: PipelineHooks,
 ): Promise<{ generatedImageKey: string; designReused: boolean }> => {
-  const isExample = card.generation_mode === GENERATION_MODE.EXAMPLE;
+  const isExample = card.card_source === CARD_SOURCE.EXAMPLE;
 
   const wedding = await findWeddingById(event.wedding_id);
 
@@ -131,7 +131,7 @@ export const runInviteCardPipeline = async (
   };
 
   hooks.log.info(
-    { mode: card.generation_mode, design_reused: designReused },
+    { source: card.card_source, design_reused: designReused },
     "generation.start",
   );
 

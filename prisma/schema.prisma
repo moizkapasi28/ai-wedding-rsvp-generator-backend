@@ -59,9 +59,12 @@ enum Group {
   OTHER
 }
 
-enum GenerationMode {
-  MANUAL
+// Where the event's invitation card comes from: generated from design presets,
+// generated from an example the couple liked, or their own finished card uploaded
+enum CardSource {
+  PRESETS
   EXAMPLE
+  UPLOAD
 }
 
 enum PhotoPlacement {
@@ -145,7 +148,7 @@ model Event{
   event_side EventSide
   guestEventInvite GuestEventInvite[]
   guestEventInviteFormat GuestEventInviteFormat[]
-  aiEventInviteCard AIEventInviteCard[]
+  inviteCard EventInviteCard[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
@@ -229,11 +232,13 @@ model GuestEventInviteFormat {
 
 }
 
-model AIEventInviteCard {
+// The event's invitation card — generated from presets or an example, or the
+// couple's own uploaded card (see card_source). Was AIEventInviteCard.
+model EventInviteCard {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   event_id String @db.Uuid
   event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  generation_mode GenerationMode @default(EXAMPLE) 
+  card_source CardSource @default(EXAMPLE)
   design_preset String?
   texture_emulation String?
   typography_pairing String?

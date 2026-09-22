@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { GENERATION_ERROR_CODE } from "../enums/aiEventInvite.enum";
+import { GENERATION_ERROR_CODE } from "../enums/inviteCard.enum";
 import { GeminiGenerationError, GeneratedImage } from "./geminiImage.util";
 
 export const MAX_SOURCE_IMAGE_BYTES = 20 * 1024 * 1024;

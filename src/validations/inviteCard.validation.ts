@@ -1,55 +1,61 @@
 import z from "zod";
-import { GenerationMode, PhotoPlacement } from "../../generated/prisma/enums";
+import { CardSource, PhotoPlacement } from "../../generated/prisma/enums";
 
-export const GenerationModeSchema = z.enum(
-  Object.values(GenerationMode) as [GenerationMode, ...GenerationMode[]],
+export const CardSourceSchema = z.enum(
+  Object.values(CardSource) as [CardSource, ...CardSource[]],
 );
+
+// Only these two involve generating; an UPLOAD card is the couple's own image
+const GeneratedCardSourceSchema = z.enum([
+  CardSource.PRESETS,
+  CardSource.EXAMPLE,
+]);
 
 export const PhotoPlacementSchema = z.enum(
   Object.values(PhotoPlacement) as [PhotoPlacement, ...PhotoPlacement[]],
 );
 
-export const getAiInviteCardsByWeddingParamsSchema = z.object({
+export const getInviteCardsByWeddingParamsSchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
 });
 
-export const getAiInviteCardsByWeddingQuerySchema = z.object({
+export const getInviteCardsByWeddingQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1).optional(),
   limit: z.coerce.number().min(1).max(50).default(5).optional(),
 });
 
-export type GetAiInviteCardsByWeddingQueryDto = z.infer<
-  typeof getAiInviteCardsByWeddingQuerySchema
+export type GetInviteCardsByWeddingQueryDto = z.infer<
+  typeof getInviteCardsByWeddingQuerySchema
 >;
 
 export const getAiInvitecardsByWeddingSchema = z.object({
-  params: getAiInviteCardsByWeddingParamsSchema,
-  query: getAiInviteCardsByWeddingQuerySchema,
+  params: getInviteCardsByWeddingParamsSchema,
+  query: getInviteCardsByWeddingQuerySchema,
 });
 
-export type GetAiInviteCardsByWeddingParamsDto = z.infer<
-  typeof getAiInviteCardsByWeddingParamsSchema
+export type GetInviteCardsByWeddingParamsDto = z.infer<
+  typeof getInviteCardsByWeddingParamsSchema
 >;
 
-export const updateAiInviteCardParamsSchema = z.object({
+export const updateInviteCardParamsSchema = z.object({
   id: z.uuid().describe("AI invite card ID is required"),
 });
 
-export const aiInviteCardGenerationStatusParamsSchema = z.object({
+export const inviteCardGenerationStatusParamsSchema = z.object({
   id: z.uuid().describe("AI invite card ID is required"),
 });
 
-export const getAiInviteCardGenerationStatusSchema = z.object({
-  params: aiInviteCardGenerationStatusParamsSchema,
+export const getInviteCardGenerationStatusSchema = z.object({
+  params: inviteCardGenerationStatusParamsSchema,
 });
 
-export type GetAiInviteCardGenerationStatusParamsDto = z.infer<
-  typeof aiInviteCardGenerationStatusParamsSchema
+export type GetInviteCardGenerationStatusParamsDto = z.infer<
+  typeof inviteCardGenerationStatusParamsSchema
 >;
 
 export const updateEventInviteFormatBodySchema = z.object({
-  generation_mode: GenerationModeSchema.optional().describe(
-    "Generation mode of AI invite card",
+  card_source: CardSourceSchema.optional().describe(
+    "Where the invite card comes from: PRESETS, EXAMPLE or UPLOAD",
   ),
   photo_type: z
     .enum(["couple", "bride", "groom"])
@@ -114,19 +120,19 @@ export const updateEventInviteFormatBodySchema = z.object({
     .describe("Generated invite image URL"),
 });
 
-export const updateAiInviteCardSchema = z.object({
-  params: updateAiInviteCardParamsSchema,
+export const updateInviteCardSchema = z.object({
+  params: updateInviteCardParamsSchema,
   body: updateEventInviteFormatBodySchema,
 });
 
-export type UpdateAiInviteCardDto = z.infer<typeof updateAiInviteCardSchema>;
+export type UpdateInviteCardDto = z.infer<typeof updateInviteCardSchema>;
 
-export const generateAIInviteCardImageBodySchema = z
+export const generateInviteCardImageBodySchema = z
   .object({
     eventId: z.uuid().describe("Event ID is required"),
-    generation_mode: GenerationModeSchema.optional()
-      .default("MANUAL")
-      .describe("Generation mode of AI invite card"),
+    card_source: GeneratedCardSourceSchema.optional()
+      .default(CardSource.PRESETS)
+      .describe("How to generate the card: from PRESETS or from an EXAMPLE"),
     photo_type: z
       .enum(["couple", "bride", "groom"])
       .optional()
@@ -202,12 +208,12 @@ export const generateAIInviteCardImageBodySchema = z
   })
   .superRefine((data, ctx) => {
     if (
-      data.generation_mode === "EXAMPLE" &&
+      data.card_source === "EXAMPLE" &&
       (!data.reference_image || data.reference_image.trim() === "")
     ) {
       ctx.addIssue({
         code: "custom",
-        message: "Reference image is required when generation_mode is EXAMPLE",
+        message: "Reference image is required when card_source is EXAMPLE",
         path: ["reference_image"],
       });
     }
@@ -215,19 +221,19 @@ export const generateAIInviteCardImageBodySchema = z
     // In EXAMPLE mode the photo can either be swapped onto the reference's figures or
     // added as a portrait inset — the two produce very different cards, so ask.
     if (
-      data.generation_mode === "EXAMPLE" &&
+      data.card_source === "EXAMPLE" &&
       data.couple_raw_image_key &&
       !data.photo_placement
     ) {
       ctx.addIssue({
         code: "custom",
         message:
-          "Choose how the couple photo should be used when generation_mode is EXAMPLE",
+          "Choose how the couple photo should be used when card_source is EXAMPLE",
         path: ["photo_placement"],
       });
     }
 
-    if (data.generation_mode === "MANUAL") {
+    if (data.card_source === "PRESETS") {
       const requiredManualFields = [
         "design_preset",
         "texture_emulation",
@@ -243,7 +249,7 @@ export const generateAIInviteCardImageBodySchema = z
         if (!data[field] || data[field]?.trim() === "") {
           ctx.addIssue({
             code: "custom",
-            message: `${field} is required when generation_mode is MANUAL`,
+            message: `${field} is required when card_source is PRESETS`,
             path: [field],
           });
         }
@@ -251,10 +257,10 @@ export const generateAIInviteCardImageBodySchema = z
     }
   });
 
-export const generateAIInviteCardImageSchema = z.object({
-  body: generateAIInviteCardImageBodySchema,
+export const generateInviteCardImageSchema = z.object({
+  body: generateInviteCardImageBodySchema,
 });
 
-export type GenerateAIInviteCardImageDto = z.infer<
-  typeof generateAIInviteCardImageBodySchema
+export type GenerateInviteCardImageDto = z.infer<
+  typeof generateInviteCardImageBodySchema
 >;

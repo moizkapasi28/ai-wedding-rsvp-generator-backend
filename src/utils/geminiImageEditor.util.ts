@@ -98,7 +98,7 @@ export async function pageSettingEditImageWithGemini({
   return generatedImageBuffer;
 }
 
-export async function aiInviteCardEditImageWithGemini({
+export async function inviteCardEditImageWithGemini({
   imageBuffer,
   contentType,
   promptParams,

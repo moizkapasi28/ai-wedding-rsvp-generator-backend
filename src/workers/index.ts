@@ -5,11 +5,11 @@ dotenv.config();
 import "../config/env";
 
 import logger from "../config/logger";
-import { aiInviteCardWorker } from "./aiInviteCard.worker";
+import { inviteCardWorker } from "./inviteCard.worker";
 import { guestWorker } from "./guest.worker";
 
 // Single entry point for every background queue, so one process covers them all.
-const workers = [guestWorker, aiInviteCardWorker];
+const workers = [guestWorker, inviteCardWorker];
 
 logger.info(
   { queues: workers.map((worker) => worker.name) },

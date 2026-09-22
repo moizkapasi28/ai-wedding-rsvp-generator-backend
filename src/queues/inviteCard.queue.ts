@@ -1,30 +1,30 @@
 import { Queue } from "bullmq";
-import { MAX_GENERATION_ATTEMPTS } from "../enums/aiEventInvite.enum";
+import { MAX_GENERATION_ATTEMPTS } from "../enums/inviteCard.enum";
 import { redisOptions } from "../lib/redis";
 
-export const AI_INVITE_CARD_QUEUE_NAME = "ai-invite-card-queue";
+export const INVITE_CARD_QUEUE_NAME = "ai-invite-card-queue";
 
-export const aiInviteCardQueue = new Queue(AI_INVITE_CARD_QUEUE_NAME, {
+export const inviteCardQueue = new Queue(INVITE_CARD_QUEUE_NAME, {
   connection: redisOptions,
 });
 
 export interface GenerateInviteCardJobPayload {
   type: "generate-invite-card";
-  aiInviteCardId: string;
+  inviteCardId: string;
   eventId: string;
   userId: string;
 }
 
-export type AiInviteCardJobPayload = GenerateInviteCardJobPayload;
+export type InviteCardJobPayload = GenerateInviteCardJobPayload;
 
 export const addGenerateInviteCardJob = async (
-  aiInviteCardId: string,
+  inviteCardId: string,
   eventId: string,
   userId: string,
 ) => {
-  return aiInviteCardQueue.add(
+  return inviteCardQueue.add(
     "generate-invite-card",
-    { type: "generate-invite-card", aiInviteCardId, eventId, userId },
+    { type: "generate-invite-card", inviteCardId, eventId, userId },
     {
       // Retryable failures re-run the job, which resumes from the saved artwork; the job
       // throws UnrecoverableError for failures a retry cannot fix (billing, safety, input).
