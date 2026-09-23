@@ -33,6 +33,12 @@ import {
   runInviteCardPipeline,
 } from "./inviteCardGeneration.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
+import {
+  AI_CREDIT_COST,
+  refundInviteCardCredits,
+  spendCredits,
+} from "./credits.service";
+import { prisma } from "../lib/prisma";
 
 const isGenerationStale = (inviteCard: EventInviteCard) => {
   // Heartbeats keep a slow but healthy retry chain alive; older rows only have started_at
@@ -123,23 +129,43 @@ export const generateInviteCardService = async (
 
   // Persist the submitted configuration so the design survives a reload, and so
   // the worker generates from the stored record rather than the request body.
-  const savedInviteCard = await updateAiEventInviteCard(inviteCard.id, {
-    ...config,
-    generation_status: GENERATION_STATUS.QUEUED,
-    generation_stage: null,
-    generation_error: null,
-    generation_error_code: null,
-    generation_attempt: 1,
-    generation_started_at: new Date(),
-    generation_heartbeat_at: new Date(),
-    generation_completed_at: null,
+  // Charged up front in the same transaction; a final failure refunds it.
+  const savedInviteCard = await prisma.$transaction(async (tx) => {
+    await spendCredits(userId, AI_CREDIT_COST.INVITE_CARD, tx);
+    return updateAiEventInviteCard(
+      inviteCard.id,
+      {
+        ...config,
+        generation_status: GENERATION_STATUS.QUEUED,
+        generation_stage: null,
+        generation_error: null,
+        generation_error_code: null,
+        generation_attempt: 1,
+        generation_started_at: new Date(),
+        generation_heartbeat_at: new Date(),
+        generation_completed_at: null,
+        credits_charged: AI_CREDIT_COST.INVITE_CARD,
+      },
+      tx,
+    );
   });
 
-  const job = await addGenerateInviteCardJob(
-    savedInviteCard.id,
-    savedInviteCard.event_id,
-    userId,
-  );
+  let job;
+  try {
+    job = await addGenerateInviteCardJob(
+      savedInviteCard.id,
+      savedInviteCard.event_id,
+      userId,
+    );
+  } catch (error) {
+    await updateAiEventInviteCard(savedInviteCard.id, {
+      generation_status: GENERATION_STATUS.FAILED,
+      generation_error: "Could not start generation. Please try again.",
+      generation_completed_at: new Date(),
+    });
+    await refundInviteCardCredits(savedInviteCard.id, userId);
+    throw error;
+  }
 
   await updateAiEventInviteCard(savedInviteCard.id, {
     generation_job_id: job.id ?? null,
@@ -262,6 +288,9 @@ export const runInviteCardGenerationJob = async (
       );
     else log.warn(fields, "generation.end");
 
+    // The user got nothing, whatever the cause (a BILLING failure cost no Gemini usage)
+    if (!willRetry) await refundInviteCardCredits(inviteCardId, userId);
+
     // UnrecoverableError makes BullMQ skip the remaining attempts
     throw willRetry ? failure : new UnrecoverableError(failure.message);
   }
@@ -297,6 +326,7 @@ export const getInviteCardGenerationStatusService = async (
       generation_error_code: GENERATION_ERROR_CODE.TIMEOUT,
       generation_completed_at: new Date(),
     });
+    await refundInviteCardCredits(inviteCard.id, userId);
   }
 
   return {

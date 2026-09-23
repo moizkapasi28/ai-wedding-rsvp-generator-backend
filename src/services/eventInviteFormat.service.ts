@@ -17,6 +17,7 @@ import {
   userPrefix,
 } from "../utils/imageKeyOwnership.util";
 import { pageSettingEditImageWithGemini } from "../utils/geminiImageEditor.util";
+import { AI_CREDIT_COST, refundCredits, spendCredits } from "./credits.service";
 import { getBufferFromS3, uploadBufferToS3 } from "./aws.service";
 import { verifyWeddingEventOwnershipService } from "./event.service";
 
@@ -153,20 +154,28 @@ export const generateEventInviteFormatImageService = async (
   const { buffer: rawImageBuffer, contentType } =
     await getBufferFromS3(rawImageKey);
 
-  const generatedImageBuffer = await pageSettingEditImageWithGemini({
-    contentType,
-    imageBuffer: rawImageBuffer,
-    aspectRatio: "1:1",
-    promptParams,
-  });
+  await spendCredits(userId, AI_CREDIT_COST.HEADER_IMAGE);
 
-  const generatedImageKey = await uploadBufferToS3(
-    generatedImageBuffer,
-    // Under the user's own prefix: the client saves this key back onto the
-    // page settings, and that save only accepts keys the user owns.
-    `${userPrefix(userId)}generated-images/rsvp-generated-images`,
-    "image/png",
-  );
+  let generatedImageKey: string;
+  try {
+    const generatedImageBuffer = await pageSettingEditImageWithGemini({
+      contentType,
+      imageBuffer: rawImageBuffer,
+      aspectRatio: "1:1",
+      promptParams,
+    });
+
+    generatedImageKey = await uploadBufferToS3(
+      generatedImageBuffer,
+      // Under the user's own prefix: the client saves this key back onto the
+      // page settings, and that save only accepts keys the user owns.
+      `${userPrefix(userId)}generated-images/rsvp-generated-images`,
+      "image/png",
+    );
+  } catch (error) {
+    await refundCredits(userId, AI_CREDIT_COST.HEADER_IMAGE);
+    throw error;
+  }
 
   logger.info(
     { eventId, userId, generatedImageKey },

@@ -52,6 +52,7 @@ export const findUserProfileById = async (userId: string, tx?: Prisma.Transactio
       last_name: true,
       mobile_number: true,
       profile_picture: true,
+      ai_credits: true,
       created_at: true,
       updated_at: true,
       is_email_verified: true,
