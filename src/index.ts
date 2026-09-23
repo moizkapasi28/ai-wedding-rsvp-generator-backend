@@ -43,7 +43,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(requestLogger);
 
-import { globalLimiter, authLimiter } from "./middlewares/rateLimiter.middleware";
+import { globalLimiter } from "./middlewares/rateLimiter.middleware";
 
 // Health check endpoint (placed before rate limiter for load balancers)
 app.get("/health", (req, res) => {
@@ -52,7 +52,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api", globalLimiter);
 
-app.use("/api/auth", authLimiter, authRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/wedding", weddingRouter);
 app.use("/api/event", eventRouter);
 app.use("/api/guest", guestsRouter);
