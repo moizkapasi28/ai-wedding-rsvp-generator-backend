@@ -75,7 +75,13 @@ export const addNewGuestBodySchema = z.object({
     .refine((value) => normalizePhone(value) !== null, {
       message: "Enter a valid mobile number (at least 8 digits)",
     }),
-  email: z.string().min(1, "Email is required").max(50),
+  // Optional: blank from the form or Excel import is stored as null
+  email: z
+    .string()
+    .trim()
+    .max(50)
+    .nullish()
+    .transform((value) => value || null),
   side: SideSchema.describe("Side is required (BRIDE or GROOM)"),
   group: GroupSchema.describe(
     "Group is required (FRIEND or RELATIVE or COLLEAGUE or EMPLOYEE or VIP)",
