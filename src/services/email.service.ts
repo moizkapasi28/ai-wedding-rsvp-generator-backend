@@ -2,24 +2,40 @@ import * as constants from "../utils/constants/email.constant";
 import fs from "fs";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import handlebars from "handlebars";
+import nodemailer from "nodemailer";
 import path from "path";
 import * as utils from "../utils/utils";
 import logger from "../config/logger";
 
 const publicDir: string = path.join(__dirname, "../public/emailTemplates"); //THIS IS FOR LOCAL
 
+// EMAIL_PROVIDER in .env picks the sender: "ses" (default) or "smtp" (Nodemailer)
+const useSmtp = process.env.EMAIL_PROVIDER === "smtp";
+
 // Initialize AWS SES Client
 const sesClient = new SESClient({
   region: process.env.AWS_SES_REGION,
   credentials: {
-    accessKeyId: process.env.AWS_SES_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SES_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.AWS_SES_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.AWS_SES_SECRET_ACCESS_KEY ?? "",
   },
 });
 
+const smtpTransport = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT ?? 587),
+  secure: process.env.SMTP_PORT === "465",
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+});
+
+// Gmail and most SMTP hosts only send "from" the account you log in with
+const senderEmail = useSmtp
+  ? process.env.SMTP_USER
+  : process.env.AWS_SENDER_EMAIL;
+
 /* istanbul ignore next */
 if (process.env.NODE_ENV !== "test") {
-  logger.info("🚀 Email service initialized");
+  logger.info(`🚀 Email service initialized (${useSmtp ? "smtp" : "ses"})`);
 }
 
 const readHTMLFile = function (
@@ -42,7 +58,7 @@ const getHTMLandSendEmail = async (
   try {
     const subject: string = "";
     const mailOptions = {
-      from: `"${process.env.PROJECT_NAME}" <${process.env.AWS_SENDER_EMAIL}>`,
+      from: `"${process.env.PROJECT_NAME}" <${senderEmail}>`,
       to: request.email,
       subject,
       html: "",
@@ -111,8 +127,8 @@ const getHTMLandSendEmail = async (
       },
     };
 
-    const command = new SendEmailCommand(params);
-    await sesClient.send(command);
+    if (useSmtp) await smtpTransport.sendMail(mailOptions);
+    else await sesClient.send(new SendEmailCommand(params));
     logger.info(
       `Email sent to ${request.email} with subject: ${mailOptions.subject}`,
     );

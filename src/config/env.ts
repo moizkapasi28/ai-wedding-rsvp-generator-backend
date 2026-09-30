@@ -26,10 +26,16 @@ const envSchema = z
     AWS_BUCKET_NAME: z.string().min(1),
     AWS_BUCKET_PUT_URL_EXPIRE: z.coerce.number().int().positive(),
 
-    AWS_SES_ACCESS_KEY_ID: z.string().min(1),
-    AWS_SES_SECRET_ACCESS_KEY: z.string().min(1),
-    AWS_SES_REGION: z.string().min(1),
-    AWS_SENDER_EMAIL: z.email(),
+    // "ses" needs the AWS_SES_* vars, "smtp" (Nodemailer) needs the SMTP_* vars
+    EMAIL_PROVIDER: z.enum(["ses", "smtp"]).default("ses"),
+    AWS_SES_ACCESS_KEY_ID: z.string().min(1).optional(),
+    AWS_SES_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    AWS_SES_REGION: z.string().min(1).optional(),
+    AWS_SENDER_EMAIL: z.email().optional(),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().positive().optional(),
+    SMTP_USER: z.email().optional(),
+    SMTP_PASS: z.string().min(1).optional(),
     PROJECT_NAME: z.string().min(1),
 
     // AI invite cards fail with a clear error without it, so the rest of the app can run
@@ -47,6 +53,26 @@ const envSchema = z
   .refine((env) => env.AWS_S3_REGION || env.AWS_REGION, {
     message: "Set AWS_S3_REGION or AWS_REGION",
     path: ["AWS_S3_REGION"],
+  })
+  .superRefine((env, ctx) => {
+    const required =
+      env.EMAIL_PROVIDER === "smtp"
+        ? (["SMTP_HOST", "SMTP_USER", "SMTP_PASS"] as const)
+        : ([
+            "AWS_SES_ACCESS_KEY_ID",
+            "AWS_SES_SECRET_ACCESS_KEY",
+            "AWS_SES_REGION",
+            "AWS_SENDER_EMAIL",
+          ] as const);
+    for (const key of required) {
+      if (!env[key]) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Required when EMAIL_PROVIDER=${env.EMAIL_PROVIDER}`,
+          path: [key],
+        });
+      }
+    }
   });
 
 const result = envSchema.safeParse(process.env);
