@@ -4,7 +4,8 @@ import pretty from "pino-pretty";
 const consoleStream = pretty({ colorize: true });
 
 const logFilePath = "./logs/app.log";
-const fileStream = pino.destination(logFilePath);
+// mkdir: logs/ isn't in git, so a fresh clone (or CI) would otherwise crash on the first import
+const fileStream = pino.destination({ dest: logFilePath, mkdir: true });
 
 const logger = pino(
   {
