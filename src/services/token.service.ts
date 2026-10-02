@@ -8,6 +8,7 @@ import {
   deleteTokensByUserId,
   findTokenByJti,
 } from "../repositories/token.repository";
+import { ApiError } from "../utils/apiError.util";
 
 export const generateAuthTokensService = async (user: User) => {
   const tokenExpiryTime = process.env.JWT_ACCESS_EXPIRATION_MINUTES;
@@ -133,17 +134,17 @@ export const verifyTokenService = async (
       process.env.JWT_SECRET as string,
     ) as jwt.JwtPayload;
   } catch (error) {
-    throw new Error("Invalid or expired token");
+    throw new ApiError(401, "Invalid or expired token");
   }
 
   const tokenDoc = await findTokenByJti(payload.jti as string, tx);
 
   if (!tokenDoc || tokenDoc.token_type !== tokenType) {
-    throw new Error("Token not found please login again");
+    throw new ApiError(401, "Token not found please login again");
   }
 
   if (moment().isAfter(moment(tokenDoc.expires_at))) {
-    throw new Error("Token has expired");
+    throw new ApiError(401, "Token has expired");
   }
 
   return tokenDoc;

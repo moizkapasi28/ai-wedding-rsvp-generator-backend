@@ -2,6 +2,25 @@ import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import { connection as redisClient } from "../lib/redis";
 
+// Strict limiter for the credential and email-sending auth routes only (applied per route in
+// auth.routes.ts). Not on access-token/me/logout: the frontend calls those on every page load.
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 10, // Limit each IP to 10 requests per window, shared across those routes
+  skip: () => process.env.NODE_ENV === "local",
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({
+    // @ts-expect-error - Known typing issue with rate-limit-redis and ioredis
+    sendCommand: (...args: string[]) => redisClient.call(...args),
+    prefix: "rl_auth:",
+  }),
+  message: {
+    success: false,
+    message: "Too many authentication attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
 // Create a scalable rate limiter backed by Redis for image generation (strict)
 export const imageGenerationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window

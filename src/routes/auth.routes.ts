@@ -25,33 +25,38 @@ import {
 } from "../controllers/auth.controller";
 import { asyncHandler } from "../utils/asyncHandler.util";
 import { authenticate } from "../middlewares/auth.middleware";
+import { authLimiter } from "../middlewares/rateLimiter.middleware";
 
 const authRouter = Router();
 
-authRouter.post("/signup", validate(signUpSchema), asyncHandler(signUp));
+authRouter.post("/signup", authLimiter, validate(signUpSchema), asyncHandler(signUp));
 
-authRouter.post("/signin", validate(loginSchema), asyncHandler(signIn));
+authRouter.post("/signin", authLimiter, validate(loginSchema), asyncHandler(signIn));
 
 authRouter.post(
   "/verify-email",
+  authLimiter,
   validate(verifyEmailSchema),
   asyncHandler(verifyEmail),
 );
 
 authRouter.post(
   "/resend-verify-email",
+  authLimiter,
   validate(resendEmailVerificationSchema),
   asyncHandler(resendVerificationEmail),
 );
 
 authRouter.post(
   "/forgot-password",
+  authLimiter,
   validate(forgotPasswordSchema),
   asyncHandler(forgotPasswordEmail),
 );
 
 authRouter.patch(
   "/reset-password",
+  authLimiter,
   validate(resetPasswordSchema),
   asyncHandler(resetPassword),
 );

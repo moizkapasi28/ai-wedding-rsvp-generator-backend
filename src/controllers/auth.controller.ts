@@ -132,8 +132,6 @@ export const updateProfile = async (
   const { id } = req.user;
   const { body } = req;
 
-  console.log(body)
-
   const payload = {
     first_name: body.firstName,
     last_name: body.lastName,

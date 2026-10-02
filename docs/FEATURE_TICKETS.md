@@ -80,10 +80,10 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Consider a second key for `signin`/`forgot-password`/`resend-verify-email` on the submitted email (`keyGenerator`) so one address can't be hammered from many IPs.
 
 **Acceptance criteria**
-- [ ] The 11th `POST /api/auth/signin` from one IP within 15 min returns 429 with the JSON `{ success: false, message }` shape.
-- [ ] `POST /api/auth/access-token` and `GET /api/auth/me` are not affected by `authLimiter` (reload the app 20 times without a 429).
-- [ ] `NODE_ENV=local` still skips the limiter, like the others.
-- [ ] OpenAPI summaries mention the limit; `npm run docs:openapi` regenerated.
+- [x] The 11th `POST /api/auth/signin` from one IP within 15 min returns 429 with the JSON `{ success: false, message }` shape.
+- [x] `POST /api/auth/access-token` and `GET /api/auth/me` are not affected by `authLimiter` (reload the app 20 times without a 429).
+- [x] `NODE_ENV=local` still skips the limiter, like the others.
+- [x] OpenAPI summaries mention the limit; `npm run docs:openapi` regenerated.
 
 **Notes/risks**
 - Pairs with BE-002 (sign-in sending emails). Keep limits generous enough that a couple typing a wrong password a few times is not locked out for long.
@@ -140,9 +140,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - `logoutService`: treat an already-invalid refresh token as success (idempotent logout).
 
 **Acceptance criteria**
-- [ ] `POST /api/auth/access-token` with a garbage or expired refresh token returns 401.
-- [ ] `POST /api/auth/logout` with an expired refresh token returns 200 (or 401), never 500.
-- [ ] No "Something went wrong" 500 in `logs/app.log` for these cases.
+- [x] `POST /api/auth/access-token` with a garbage or expired refresh token returns 401.
+- [x] `POST /api/auth/logout` with an expired refresh token returns 200 (or 401), never 500.
+- [x] No "Something went wrong" 500 in `logs/app.log` for these cases.
 
 **Notes/risks**
 - Keep error messages generic.
@@ -199,8 +199,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Delete both lines. Grep `src/` for other `console.` uses outside `config/env.ts` (startup) and `*.check.ts` (scripts).
 
 **Acceptance criteria**
-- [ ] `PATCH /api/auth/me` produces no raw console output.
-- [ ] `grep -rn "console\." src` only matches `config/env.ts` and `*.check.ts`.
+- [x] `PATCH /api/auth/me` produces no raw console output.
+- [x] `grep -rn "console\." src` only matches `config/env.ts` and `*.check.ts`.
 
 **Notes/risks**
 - None.
@@ -216,8 +216,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Return the same field list as `GET /auth/me` from the profile update (add a `select`, or re-read the user through the existing profile query).
 
 **Acceptance criteria**
-- [ ] The `PATCH /api/auth/me` response has no `password` key.
-- [ ] Its `data` shape matches `GET /api/auth/me`.
+- [x] The `PATCH /api/auth/me` response has no `password` key.
+- [x] Its `data` shape matches `GET /api/auth/me`.
 
 **Notes/risks**
 - The frontend writes this response into `userAtom` (localStorage), so existing browsers may hold a stored hash until the next profile fetch overwrites it.
@@ -233,8 +233,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Run the same `assertOwnedImageKeys` check the invite card and page-setting writes use before saving `profile_picture`.
 
 **Acceptance criteria**
-- [ ] Saving a `profilePicture` key outside `users/<callerId>/` that no record of the caller references is rejected.
-- [ ] Saving a key the caller just uploaded still works, and so does clearing the picture with `null`.
+- [x] Saving a `profilePicture` key outside `users/<callerId>/` that no record of the caller references is rejected.
+- [x] Saving a key the caller just uploaded still works, and so does clearing the picture with `null`.
 
 **Notes/risks**
 - Check existing rows for keys outside the owner's prefix before relying on the column again.

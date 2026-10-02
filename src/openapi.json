@@ -37,7 +37,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Create an account",
+        "summary": "Create an account (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -98,7 +98,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Sign in",
+        "summary": "Sign in (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -147,7 +147,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Verify an email address",
+        "summary": "Verify an email address (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -193,7 +193,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Resend the verification email",
+        "summary": "Resend the verification email (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -238,7 +238,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Send a password reset email",
+        "summary": "Send a password reset email (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -283,7 +283,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Reset a password",
+        "summary": "Reset a password (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1648,9 +1648,15 @@
                     "maxLength": 15
                   },
                   "email": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 50
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 50
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "side": {
                     "type": "string",
@@ -1694,7 +1700,6 @@
                   "eventIds",
                   "name",
                   "mobile_number",
-                  "email",
                   "side",
                   "group"
                 ]
@@ -1957,9 +1962,15 @@
                     "maxLength": 15
                   },
                   "email": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 50
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 50
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "side": {
                     "type": "string",

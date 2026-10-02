@@ -13,6 +13,7 @@ import {
 } from "../repositories/user.repository";
 import { AuthResponseDto } from "../types/auth.type";
 import { ApiError } from "../utils/apiError.util";
+import { assertOwnedImageKeys } from "../utils/imageKeyOwnership.util";
 import {
   USER_EMAIL_VERIFICATION_TEMPLATE,
   USER_FORGOT_PASSWORD_TEMPLATE,
@@ -263,10 +264,16 @@ export const refreshTokenService = async (payload: RefreshTokenDto) => {
 export const logoutService = async (payload: LogoutDto) => {
   const { refreshToken } = payload;
 
-  const refreshTokenDoc = await verifyTokenService(
-    refreshToken,
-    TOKEN_TYPE.REFRESH,
-  );
+  let refreshTokenDoc: Token;
+  try {
+    refreshTokenDoc = await verifyTokenService(
+      refreshToken,
+      TOKEN_TYPE.REFRESH,
+    );
+  } catch (error: any) {
+    // Already invalid or expired: there is no session left to end
+    return;
+  }
 
   const user = await findUserById(refreshTokenDoc.user_id);
 
@@ -300,9 +307,11 @@ export const updateProfileService = async (
 
   if (!user) throw new ApiError(404, "User not found");
 
-  console.log(payload);
+  // generate-view-url signs any key saved here, so it must be the caller's own
+  assertOwnedImageKeys(userId, ["profile_picture"], user, payload);
 
-  const updatedUser = await updateUserById(userId, payload);
+  await updateUserById(userId, payload);
 
-  return updatedUser;
+  // Re-read with the GET /auth/me field list so the password hash never leaves
+  return findUserProfileById(userId);
 };

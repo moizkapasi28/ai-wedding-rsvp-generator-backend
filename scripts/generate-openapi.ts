@@ -26,12 +26,12 @@ type Route = {
 
 // Keep in step with src/routes/*.ts (paths include the /api/<resource> mount from src/index.ts)
 const routes: Route[] = [
-  { method: "post", path: "/api/auth/signup", tag: "Auth", summary: "Create an account", schema: auth.signUpSchema, auth: false },
-  { method: "post", path: "/api/auth/signin", tag: "Auth", summary: "Sign in", schema: auth.loginSchema, auth: false },
-  { method: "post", path: "/api/auth/verify-email", tag: "Auth", summary: "Verify an email address", schema: auth.verifyEmailSchema, auth: false },
-  { method: "post", path: "/api/auth/resend-verify-email", tag: "Auth", summary: "Resend the verification email", schema: auth.resendEmailVerificationSchema, auth: false },
-  { method: "post", path: "/api/auth/forgot-password", tag: "Auth", summary: "Send a password reset email", schema: auth.forgotPasswordSchema, auth: false },
-  { method: "patch", path: "/api/auth/reset-password", tag: "Auth", summary: "Reset a password", schema: auth.resetPasswordSchema, auth: false },
+  { method: "post", path: "/api/auth/signup", tag: "Auth", summary: "Create an account (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.signUpSchema, auth: false },
+  { method: "post", path: "/api/auth/signin", tag: "Auth", summary: "Sign in (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.loginSchema, auth: false },
+  { method: "post", path: "/api/auth/verify-email", tag: "Auth", summary: "Verify an email address (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.verifyEmailSchema, auth: false },
+  { method: "post", path: "/api/auth/resend-verify-email", tag: "Auth", summary: "Resend the verification email (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.resendEmailVerificationSchema, auth: false },
+  { method: "post", path: "/api/auth/forgot-password", tag: "Auth", summary: "Send a password reset email (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.forgotPasswordSchema, auth: false },
+  { method: "patch", path: "/api/auth/reset-password", tag: "Auth", summary: "Reset a password (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.resetPasswordSchema, auth: false },
   { method: "post", path: "/api/auth/access-token", tag: "Auth", summary: "Exchange a refresh token for a new access token", schema: auth.refreshTokenSchema, auth: false },
   { method: "post", path: "/api/auth/logout", tag: "Auth", summary: "Sign out", schema: auth.logoutSchema },
   { method: "get", path: "/api/auth/me", tag: "Auth", summary: "Get my profile" },
