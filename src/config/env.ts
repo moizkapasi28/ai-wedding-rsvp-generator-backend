@@ -25,6 +25,8 @@ const envSchema = z
     AWS_REGION: z.string().min(1).optional(),
     AWS_BUCKET_NAME: z.string().min(1),
     AWS_BUCKET_PUT_URL_EXPIRE: z.coerce.number().int().positive(),
+    // Seconds a view (getObject) URL stays valid; longer than uploads because pages keep images on screen
+    AWS_BUCKET_GET_URL_EXPIRE: z.coerce.number().int().positive().default(3600),
 
     // "ses" needs the AWS_SES_* vars, "smtp" (Nodemailer) needs the SMTP_* vars
     EMAIL_PROVIDER: z.enum(["ses", "smtp"]).default("ses"),

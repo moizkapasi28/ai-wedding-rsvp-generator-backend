@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { isObjectKeyReferencedByUser } from "../repositories/general.repository";
 import { ApiError } from "../utils/apiError.util";
 import { userPrefix } from "../utils/imageKeyOwnership.util";
@@ -42,14 +43,18 @@ export const generateS3PresignedViewUrlService = async (
   // 404 rather than 403, so the endpoint doesn't confirm other users' files exist
   if (!canView) throw new ApiError(404, "File not found");
 
+  const expiresIn = env.AWS_BUCKET_GET_URL_EXPIRE;
+  // Taken before signing, so it is never later than the URL's real expiry
+  const expires_at = new Date(Date.now() + expiresIn * 1000).toISOString();
+
   const url = await generatePresignedUrl(
     process.env.AWS_BUCKET_NAME,
     object_key,
-    Number(process.env.AWS_BUCKET_PUT_URL_EXPIRE),
+    expiresIn,
     "getObject",
   );
 
   if (!url) throw new Error("Failed to generate view presigned url");
 
-  return { url, object_key };
+  return { url, object_key, expires_at };
 };

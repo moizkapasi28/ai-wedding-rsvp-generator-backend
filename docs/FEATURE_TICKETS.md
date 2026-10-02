@@ -408,9 +408,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Return `expires_at` (ISO) next to `url` from `generate-view-url`.
 
 **Acceptance criteria**
-- [ ] View URLs from `generate-view-url` and on the RSVP page are valid for `AWS_BUCKET_GET_URL_EXPIRE` seconds.
-- [ ] Response includes `expires_at`; OpenAPI regenerated.
-- [ ] Upload URLs still use the PUT expiry.
+- [x] View URLs from `generate-view-url` and on the RSVP page are valid for `AWS_BUCKET_GET_URL_EXPIRE` seconds.
+- [x] Response includes `expires_at`; OpenAPI regenerated.
+- [x] Upload URLs still use the PUT expiry.
 
 **Notes/risks**
 - Frontend counterpart FE-011 uses `expires_at` for `staleTime`.
@@ -637,7 +637,7 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 
 **Acceptance criteria**
 - [ ] One full invite card generation with the page open, plus the dashboard open in another tab, completes without any 429.
-- [ ] Unauthenticated floods are still limited.
+- [x] Unauthenticated floods are still limited.
 
 **Notes/risks**
 - Pair with FE-014 (poll back-off).

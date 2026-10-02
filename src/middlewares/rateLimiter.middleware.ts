@@ -1,3 +1,4 @@
+import { type Request } from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import { connection as redisClient } from "../lib/redis";
@@ -39,11 +40,18 @@ export const imageGenerationLimiter = rateLimit({
   },
 });
 
-// Global rate limiter for all other APIs (more permissive)
+// The dashboard's SSE stream (GET /api/wedding/:id/live) is one long-lived request that
+// reconnects by itself, so it isn't counted. Paths here are relative to the /api mount.
+const isLiveStream = (req: Request) =>
+  req.method === "GET" && /^\/wedding\/[^/]+\/live$/.test(req.path);
+
+// Global rate limiter for all other APIs (more permissive). Sized so one household IP can keep
+// the invite card page polling (every 3s for minutes) with the dashboard open in another tab;
+// the expensive routes have their own strict limiters above and below.
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
-  max: 100, // Limit each IP to 100 requests per window
-  skip: () => process.env.NODE_ENV === "local",
+  max: 1000, // Limit each IP to 1000 requests per window
+  skip: (req) => process.env.NODE_ENV === "local" || isLiveStream(req),
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({

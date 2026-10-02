@@ -3908,7 +3908,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Presigned S3 view URL for an object key",
+        "summary": "Presigned S3 view URL for an object key (returns url and its expires_at)",
         "security": [
           {
             "bearerAuth": []

@@ -1,4 +1,5 @@
 import { Prisma } from "../../generated/prisma/client";
+import { env } from "../config/env";
 import logger from "../config/logger";
 import { emitRsvp, toLiveRsvp } from "../lib/rsvpEvents";
 import { findAiEventInviteCardByEventId } from "../repositories/inviteCard.repository";
@@ -72,7 +73,7 @@ const signForGuest = async (key: string | null | undefined, eventId: string) => 
       process.env.AWS_BUCKET_NAME,
       key,
       // The same expiry the host-side view URLs use
-      Number(process.env.AWS_BUCKET_PUT_URL_EXPIRE),
+      env.AWS_BUCKET_GET_URL_EXPIRE,
       "getObject",
     );
   } catch (error) {

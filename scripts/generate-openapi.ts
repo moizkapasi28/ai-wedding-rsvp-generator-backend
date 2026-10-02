@@ -82,7 +82,7 @@ const routes: Route[] = [
   { method: "post", path: "/api/invite-card/generate-invite", tag: "Invite cards", summary: "Queue invite card generation (rate limited)", schema: inviteCard.generateInviteCardImageSchema },
 
   { method: "post", path: "/api/general/generate-upload-url", tag: "Files", summary: "Presigned S3 upload URL", schema: general.generateS3PresignedUploadURLSchema },
-  { method: "post", path: "/api/general/generate-view-url", tag: "Files", summary: "Presigned S3 view URL for an object key", schema: general.generateS3PresignedViewURLSchema },
+  { method: "post", path: "/api/general/generate-view-url", tag: "Files", summary: "Presigned S3 view URL for an object key (returns url and its expires_at)", schema: general.generateS3PresignedViewURLSchema },
 ];
 
 type JsonSchema = Record<string, unknown> & {
