@@ -1,24 +1,32 @@
 // Self-check for the profile update and token error paths against the local DB (creates and
 // deletes a throwaway user). Run from the backend root: npx tsx src/utils/auth.check.ts
 import assert from "node:assert/strict";
+import bcrypt from "bcrypt";
 import { TOKEN_TYPE } from "../enums/token.enum";
 import { prisma } from "../lib/prisma";
 import {
+  forgotPasswordService,
   logoutService,
+  resetPasswordService,
+  signInService,
   updateProfileService,
   userProfileService,
 } from "../services/auth.service";
-import { verifyTokenService } from "../services/token.service";
+import {
+  generateResetPasswordTokenService,
+  verifyTokenService,
+} from "../services/token.service";
 import { userPrefix } from "./imageKeyOwnership.util";
 
 const main = async () => {
+  const password = "Right-pass-1";
   const user = await prisma.user.create({
     data: {
       first_name: "Auth",
       last_name: "Check",
       email: `auth-check-${Date.now()}@example.test`,
       mobile_number: "0",
-      password: "hashed-secret",
+      password: await bcrypt.hash(password, 4),
     },
   });
 
@@ -58,6 +66,34 @@ const main = async () => {
     });
     // ...and logging out with one is a no-op, not an error
     await logoutService({ refreshToken: "garbage" });
+
+    // Wrong password on an unverified account: the generic 401, and no verification token
+    // is created (so no email goes out)
+    await assert.rejects(
+      signInService({ email: user.email, password: "wrong" }),
+      { statusCode: 401 },
+    );
+    assert.equal(await prisma.token.count({ where: { user_id: user.id } }), 0);
+
+    // A password reset ends every existing session
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { is_email_verified: true },
+    });
+    const { tokens } = await signInService({ email: user.email, password });
+    const resetToken = await generateResetPasswordTokenService(user.id);
+    await resetPasswordService({ token: resetToken, newPassword: "New-pass-2" });
+    await assert.rejects(
+      verifyTokenService(tokens.refresh.token, TOKEN_TYPE.REFRESH),
+      { statusCode: 401 },
+    );
+    await assert.rejects(signInService({ email: user.email, password }), {
+      statusCode: 401,
+    });
+    await signInService({ email: user.email, password: "New-pass-2" });
+
+    // Forgot-password for an unknown email resolves quietly instead of throwing
+    await forgotPasswordService({ email: `nobody-${Date.now()}@example.test` });
 
     console.log("auth checks passed");
   } finally {

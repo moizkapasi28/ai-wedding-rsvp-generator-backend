@@ -102,9 +102,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Change the invalid-credentials status to 401 (keep the message); check the frontend login form still shows it (`useLogin` toasts `error.message`).
 
 **Acceptance criteria**
-- [ ] Sign-in to an unverified account with a wrong password returns the generic invalid-credentials error and sends no email.
+- [x] Sign-in to an unverified account with a wrong password returns the generic invalid-credentials error and sends no email.
 - [ ] Sign-in with the right password to an unverified account still returns 403 and sends the verification email.
-- [ ] Verified-account sign-in is unchanged.
+- [x] Verified-account sign-in is unchanged.
 
 **Notes/risks**
 - Frontend relies on the 403 message text to show the verification notice; keep it unchanged.
@@ -121,7 +121,7 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Return early (200, same message) when no user is found, before calling `sendEmail`.
 
 **Acceptance criteria**
-- [ ] `POST /api/auth/forgot-password` with an unknown email returns 200 with the same message as a known email, and no error is logged.
+- [x] `POST /api/auth/forgot-password` with an unknown email returns 200 with the same message as a known email, and no error is logged.
 - [ ] Known email still receives the reset link.
 
 **Notes/risks**
@@ -182,8 +182,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Inside the same transaction, delete the user's ACCESS and REFRESH tokens (not only by jti).
 
 **Acceptance criteria**
-- [ ] After a password reset, a previously valid refresh token returns 401 on `POST /auth/access-token`.
-- [ ] The user can sign in with the new password.
+- [x] After a password reset, a previously valid refresh token returns 401 on `POST /auth/access-token`.
+- [x] The user can sign in with the new password.
 
 **Notes/risks**
 - If BE-005 introduces sessions, delete all sessions for the user here.

@@ -102,7 +102,12 @@ export const signInService = async (
 
   const existingUser = await findUserByEmail(email);
 
-  if (!existingUser) throw new ApiError(404, "Invalid email or password");
+  if (!existingUser) throw new ApiError(401, "Invalid email or password");
+
+  // Password first: a wrong password must not send mail to, or reveal, an unverified account
+  const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+
+  if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
 
   if (!existingUser.is_email_verified) {
     const verifyEmailToken = await generateVerifyEmailTokenService(
@@ -121,10 +126,6 @@ export const signInService = async (
       "Account verification is pending. A verification email has been sent to your email address.",
     );
   }
-
-  const isPasswordValid = await bcrypt.compare(password, existingUser.password);
-
-  if (!isPasswordValid) throw new ApiError(404, "Invalid email or password");
 
   await deleteTokensByUserIdService(existingUser.id);
 
@@ -193,7 +194,7 @@ export const forgotPasswordService = async (
 ): Promise<void> => {
   const { email } = payload;
 
-  const { user, resetPasswordToken } = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const user = await findUserByEmail(email, tx);
     if (!user) return;
 
@@ -207,6 +208,11 @@ export const forgotPasswordService = async (
       resetPasswordToken,
     };
   });
+
+  // Unknown email: same response as a known one, just no mail
+  if (!result) return;
+
+  const { user, resetPasswordToken } = result;
 
   await sendEmail(USER_FORGOT_PASSWORD_TEMPLATE, {
     email: user.email,
@@ -238,7 +244,8 @@ export const resetPasswordService = async (
       { password: hashedPassword, updated_at: new Date() },
       tx,
     );
-    await deleteTokenByJti(tokenDoc.jti, tx);
+    // Every token, not just this link: whoever held the old password is signed out too
+    await deleteTokensByUserIdService(user.id, tx);
   });
 };
 
