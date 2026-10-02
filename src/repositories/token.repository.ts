@@ -24,6 +24,26 @@ export const deleteTokenByJti = (
   return db.token.deleteMany({ where: { jti } });
 };
 
+export const deleteTokensBySessionId = (
+  sessionId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  return db.token.deleteMany({ where: { session_id: sessionId } });
+};
+
+export const deleteExpiredTokensByUserId = (
+  userId: string,
+  tx?: Prisma.TransactionClient,
+) => {
+  const db = tx || prisma;
+
+  return db.token.deleteMany({
+    where: { user_id: userId, expires_at: { lt: new Date() } },
+  });
+};
+
 export const deleteTokensByUserId = async (
   userId: string,
   tx?: Prisma.TransactionClient,

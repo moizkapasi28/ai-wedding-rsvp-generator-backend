@@ -3,7 +3,11 @@ import { User } from "../../generated/prisma/browser";
 import { Token } from "../../generated/prisma/client";
 import { TOKEN_TYPE } from "../enums/token.enum";
 import { prisma } from "../lib/prisma";
-import { deleteTokenByJti } from "../repositories/token.repository";
+import {
+  deleteExpiredTokensByUserId,
+  deleteTokenByJti,
+  deleteTokensBySessionId,
+} from "../repositories/token.repository";
 import {
   createUser,
   findUserByEmail,
@@ -127,7 +131,10 @@ export const signInService = async (
     );
   }
 
-  await deleteTokensByUserIdService(existingUser.id);
+  // A sign-in is a new session; the user's other devices stay signed in. Sessions are no
+  // longer wiped here, so sweep this user's expired rows instead.
+  // ponytail: only swept for the user signing in; add a repeatable job if the Token table grows
+  await deleteExpiredTokensByUserId(existingUser.id);
 
   const tokens = await generateAuthTokensService(existingUser);
 
@@ -261,11 +268,23 @@ export const refreshTokenService = async (payload: RefreshTokenDto) => {
 
   if (!user) throw new ApiError(404, "User not found");
 
-  await deleteTokensByUserIdService(refreshTokenDoc.user_id);
+  return prisma.$transaction(async (tx) => {
+    // The delete is the gate: of two requests racing with the same refresh token only one
+    // removes the row, and the other must not go on to delete the winner's new tokens
+    const { count } = await deleteTokenByJti(refreshTokenDoc.jti, tx);
+    if (count === 0) throw new ApiError(401, "Invalid or expired token");
 
-  const newTokens = await generateAuthTokensService(user);
+    // The rest of this session only (its old access token), never the user's other sessions.
+    // Rows from before session_id existed have none; their access token just runs out.
+    if (refreshTokenDoc.session_id)
+      await deleteTokensBySessionId(refreshTokenDoc.session_id, tx);
 
-  return newTokens;
+    return generateAuthTokensService(
+      user,
+      refreshTokenDoc.session_id ?? undefined,
+      tx,
+    );
+  });
 };
 
 export const logoutService = async (payload: LogoutDto) => {
@@ -282,15 +301,11 @@ export const logoutService = async (payload: LogoutDto) => {
     return;
   }
 
-  const user = await findUserById(refreshTokenDoc.user_id);
-
-  if (!user) throw new ApiError(404, "User not found");
-
-  const deletedTokens = await deleteTokensByUserIdService(
-    refreshTokenDoc.user_id,
-  );
-
-  if (!deletedTokens) throw new ApiError(400, "Failed to logout user");
+  // Only this session: the user's other devices stay signed in. A row from before
+  // session_id existed has no session, so just the refresh token itself goes.
+  if (refreshTokenDoc.session_id)
+    await deleteTokensBySessionId(refreshTokenDoc.session_id);
+  else await deleteTokenByJti(refreshTokenDoc.jti);
 };
 
 export const userProfileService = async (userId: string) => {

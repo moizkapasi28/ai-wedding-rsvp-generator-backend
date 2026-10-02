@@ -2,11 +2,13 @@
 // deletes a throwaway user). Run from the backend root: npx tsx src/utils/auth.check.ts
 import assert from "node:assert/strict";
 import bcrypt from "bcrypt";
+import moment from "moment";
 import { TOKEN_TYPE } from "../enums/token.enum";
 import { prisma } from "../lib/prisma";
 import {
   forgotPasswordService,
   logoutService,
+  refreshTokenService,
   resetPasswordService,
   signInService,
   updateProfileService,
@@ -14,6 +16,8 @@ import {
 } from "../services/auth.service";
 import {
   generateResetPasswordTokenService,
+  generateTokenService,
+  saveTokenService,
   verifyTokenService,
 } from "../services/token.service";
 import { userPrefix } from "./imageKeyOwnership.util";
@@ -94,6 +98,74 @@ const main = async () => {
 
     // Forgot-password for an unknown email resolves quietly instead of throwing
     await forgotPasswordService({ email: `nobody-${Date.now()}@example.test` });
+
+    // Sessions are per device. Two sign-ins, plus a reset link and an expired row from before them
+    const credentials = { email: user.email, password: "New-pass-2" };
+    const isValid = (token: string, type: TOKEN_TYPE) =>
+      verifyTokenService(token, type).then(
+        () => true,
+        () => false,
+      );
+    const earlierResetLink = await generateResetPasswordTokenService(user.id);
+    const expired = await prisma.token.create({
+      data: {
+        jti: "00000000-0000-4000-8000-000000000000",
+        user_id: user.id,
+        token_type: "ACCESS",
+        expires_at: new Date(Date.now() - 1000),
+      },
+    });
+    const laptop = (await signInService(credentials)).tokens;
+    const phone = (await signInService(credentials)).tokens;
+
+    // A sign-in keeps the other session and a pending reset link, and sweeps expired rows
+    assert.equal(await isValid(laptop.refresh.token, TOKEN_TYPE.REFRESH), true);
+    assert.equal(
+      await isValid(earlierResetLink, TOKEN_TYPE.RESET_PASSWORD),
+      true,
+    );
+    assert.equal(await prisma.token.count({ where: { id: expired.id } }), 0);
+
+    // Refreshing the laptop rotates its pair only; its old tokens are dead, the phone's are not
+    const laptop2 = await refreshTokenService({
+      refreshToken: laptop.refresh.token,
+    });
+    assert.equal(await isValid(laptop2.access.token, TOKEN_TYPE.ACCESS), true);
+    assert.equal(await isValid(laptop.access.token, TOKEN_TYPE.ACCESS), false);
+    assert.equal(await isValid(phone.access.token, TOKEN_TYPE.ACCESS), true);
+    // ...and using the old refresh token a second time is a 401
+    await assert.rejects(
+      refreshTokenService({ refreshToken: laptop.refresh.token }),
+      { statusCode: 401 },
+    );
+
+    // Two requests racing with the same refresh token: one wins, and its new pair survives
+    const race = await Promise.allSettled([
+      refreshTokenService({ refreshToken: laptop2.refresh.token }),
+      refreshTokenService({ refreshToken: laptop2.refresh.token }),
+    ]);
+    const winners = race.filter((r) => r.status === "fulfilled");
+    assert.equal(winners.length, 1);
+    const laptop3 = (winners[0] as PromiseFulfilledResult<typeof laptop2>)
+      .value;
+    assert.equal(await isValid(laptop3.refresh.token, TOKEN_TYPE.REFRESH), true);
+
+    // Signing out on the laptop leaves the phone signed in
+    await logoutService({ refreshToken: laptop3.refresh.token });
+    assert.equal(await isValid(laptop3.access.token, TOKEN_TYPE.ACCESS), false);
+    assert.equal(await isValid(phone.refresh.token, TOKEN_TYPE.REFRESH), true);
+    assert.equal(await isValid(phone.access.token, TOKEN_TYPE.ACCESS), true);
+
+    // A refresh token issued before session_id existed (no session) still refreshes once,
+    // without touching the phone
+    const legacyJti = "11111111-1111-4111-8111-111111111111";
+    const legacyExpiry = moment().add(1, "day");
+    await saveTokenService(legacyJti, user.id, TOKEN_TYPE.REFRESH, legacyExpiry);
+    const legacyRefresh = generateTokenService(user.id, legacyExpiry, legacyJti);
+    const upgraded = await refreshTokenService({ refreshToken: legacyRefresh });
+    assert.equal(await isValid(upgraded.access.token, TOKEN_TYPE.ACCESS), true);
+    assert.equal(await isValid(legacyRefresh, TOKEN_TYPE.REFRESH), false);
+    assert.equal(await isValid(phone.refresh.token, TOKEN_TYPE.REFRESH), true);
 
     console.log("auth checks passed");
   } finally {

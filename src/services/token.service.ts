@@ -10,7 +10,12 @@ import {
 } from "../repositories/token.repository";
 import { ApiError } from "../utils/apiError.util";
 
-export const generateAuthTokensService = async (user: User) => {
+// A new sessionId is a new sign-in; pass the existing one when rotating a session's tokens
+export const generateAuthTokensService = async (
+  user: User,
+  sessionId: string = uuidv4(),
+  tx?: Prisma.TransactionClient,
+) => {
   const tokenExpiryTime = process.env.JWT_ACCESS_EXPIRATION_MINUTES;
   const accessTokenExpires = moment().add(tokenExpiryTime, "minutes");
 
@@ -27,6 +32,8 @@ export const generateAuthTokensService = async (user: User) => {
     user.id,
     TOKEN_TYPE.ACCESS,
     accessTokenExpires,
+    tx,
+    sessionId,
   );
 
   const refreshTokenExpires = moment().add(
@@ -50,6 +57,8 @@ export const generateAuthTokensService = async (user: User) => {
     user.id,
     TOKEN_TYPE.REFRESH,
     refreshTokenExpires,
+    tx,
+    sessionId,
   );
 
   return {
@@ -85,6 +94,7 @@ export const saveTokenService = async (
   tokenType: TOKEN_TYPE,
   expiresAt: moment.Moment,
   tx?: Prisma.TransactionClient,
+  sessionId?: string,
 ) => {
   const token = await createToken(
     {
@@ -92,6 +102,7 @@ export const saveTokenService = async (
       user_id: userId,
       token_type: tokenType as any,
       expires_at: expiresAt.toDate(),
+      session_id: sessionId,
     },
     tx,
   );

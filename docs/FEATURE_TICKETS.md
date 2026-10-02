@@ -163,10 +163,10 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Add a nightly or on-sign-in cleanup of expired Token rows (they will now accumulate).
 
 **Acceptance criteria**
-- [ ] Two browsers signed into the same account both keep working past several access-token expiries.
-- [ ] Logging out in one browser does not log out the other.
-- [ ] A reset-password link generated before a sign-in still works after it.
-- [ ] Using a refresh token twice returns 401 the second time.
+- [x] Two browsers signed into the same account both keep working past several access-token expiries.
+- [x] Logging out in one browser does not log out the other.
+- [x] A reset-password link generated before a sign-in still works after it.
+- [x] Using a refresh token twice returns 401 the second time.
 
 **Notes/risks**
 - Needs a migration if a session column is added. Land FE-001 first; the frontend currently cannot survive a mid-session refresh at all.
