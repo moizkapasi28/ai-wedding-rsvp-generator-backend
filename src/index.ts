@@ -37,6 +37,8 @@ app.use(
   cors({
     origin: process.env.WEB_APP_URL || "http://localhost:5173",
     credentials: true,
+    // Lets the frontend read how long a rate limiter (429) asked it to wait
+    exposedHeaders: ["Retry-After"],
   }),
 );
 app.use(cookieParser());
