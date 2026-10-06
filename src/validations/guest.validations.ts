@@ -8,8 +8,9 @@ export const GroupSchema = z.enum(Object.values(Group) as [Group, ...Group[]]);
 export const getAllGuestsQuerySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
   eventId: z.uuid().optional().describe("Event Id if need to filter by event"),
-  page: z.string().optional().default("1"),
-  limit: z.string().optional().default("10"),
+  page: z.coerce.number().int().min(1).default(1),
+  // Capped: an unbounded limit would load every row with its relations
+  limit: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().trim().optional().default("").describe("search keyword"),
   events: z
     .string()
@@ -64,7 +65,7 @@ export const getAllGuestsSchema = z.object({
 
 export type GetAllGuestsDto = z.infer<typeof getAllGuestsQuerySchema>;
 
-export const addNewGuestBodySchema = z.object({
+const guestBodyFields = z.object({
   eventIds: z.array(z.uuid()).min(1, "At least one event must be selected"),
   name: z.string().min(1, "Name is required").max(50),
   mobile_number: z
@@ -75,13 +76,15 @@ export const addNewGuestBodySchema = z.object({
     .refine((value) => normalizePhone(value) !== null, {
       message: "Enter a valid mobile number (at least 8 digits)",
     }),
-  // Optional: blank from the form or Excel import is stored as null
+  // Optional: blank from the form or Excel import is stored as null; anything else must
+  // be an email address, the same rule the frontend form applies
   email: z
     .string()
     .trim()
     .max(50)
     .nullish()
-    .transform((value) => value || null),
+    .transform((value) => value || null)
+    .pipe(z.email("Enter a valid email address").nullable()),
   side: SideSchema.describe("Side is required (BRIDE or GROOM)"),
   group: GroupSchema.describe(
     "Group is required (FRIEND or RELATIVE or COLLEAGUE or EMPLOYEE or VIP)",
@@ -104,6 +107,31 @@ export const addNewGuestBodySchema = z.object({
     .describe("Note for the guest"),
 });
 
+// A guest who needs a room needs an address to stay at. The frontend form requires it too,
+// but the Excel import and direct API calls don't go through that form. On a partial edit
+// the rule only applies when the request carries the address field as well.
+const requireAccomodationAddress =
+  (partial: boolean) =>
+  (
+    guest: { accomodation_required?: boolean; accomodation_address?: string },
+    ctx: z.RefinementCtx,
+  ) => {
+    if (!guest.accomodation_required) return;
+    if (partial && guest.accomodation_address === undefined) return;
+    if (!guest.accomodation_address) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["accomodation_address"],
+        message:
+          "Accommodation address is required when the guest needs accommodation",
+      });
+    }
+  };
+
+export const addNewGuestBodySchema = guestBodyFields.superRefine(
+  requireAccomodationAddress(false),
+);
+
 export const addNewGuestSchema = z.object({
   body: addNewGuestBodySchema,
 });
@@ -122,7 +150,9 @@ export type GetWeddingGuestDto = z.infer<typeof getWeddingGuestParamsSchema>;
 
 export const editWeddingGuestSchema = z.object({
   params: getWeddingGuestParamsSchema,
-  body: addNewGuestBodySchema.partial(),
+  body: guestBodyFields
+    .partial()
+    .superRefine(requireAccomodationAddress(true)),
 });
 
 export type EditWeddingGuestDto = z.infer<typeof editWeddingGuestSchema>;

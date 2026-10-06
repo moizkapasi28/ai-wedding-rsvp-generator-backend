@@ -1,8 +1,9 @@
 import z from "zod";
 
 export const getAllUserWeddingsQuerySchema = z.object({
-  page: z.string().optional().default("1"),
-  limit: z.string().optional().default("10"),
+  page: z.coerce.number().int().min(1).default(1),
+  // Capped: an unbounded limit would load every row with its relations
+  limit: z.coerce.number().int().min(1).max(100).default(10),
   stats: z.string().optional().default("false").describe("True or false"),
   search: z.string().optional().default("").describe("search keyword"),
   filter: z
@@ -79,6 +80,8 @@ export const addNewWeddingBodySchema = z.object({
     .describe("Example: New York"),
   message: z
     .string()
+    // Same limit as the frontend form
+    .max(250, "Message cannot be longer than 250 characters")
     .optional()
     .describe("Example: We can't wait to celebrate with you!"),
 });

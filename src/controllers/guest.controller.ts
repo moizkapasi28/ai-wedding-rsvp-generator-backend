@@ -37,8 +37,7 @@ export const getAllGuests = async (
   res: Response,
 ): Promise<Response> => {
   const { user, query } = req;
-  const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 10;
+  const { page, limit } = query;
 
   // Verify the wedding belongs to the user
   await getUserWeddingService(user.id, query.weddingId);
@@ -163,6 +162,9 @@ export const importGuestListTemplate = async (
   if (!file) {
     throw new ApiError(400, "File is required");
   }
+
+  // 404 before anything is queued for a wedding that isn't the caller's
+  await getUserWeddingService(user.id, params.id);
 
   const result = await importGuestListTemplateService(
     user.id,

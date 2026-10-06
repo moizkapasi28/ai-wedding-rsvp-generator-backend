@@ -601,6 +601,9 @@ export const importGuestListTemplateService = async (
   weddingId: string,
   fileBuffer: Buffer,
 ) => {
+  // A file that isn't this wedding's template is a 400 now, not a failed job found by polling
+  await readGuestTemplateMeta(fileBuffer, weddingId);
+
   const fileName = `guest-import-${uuidv4()}.xlsx`;
   const filePath = path.join(os.tmpdir(), fileName);
   await fs.writeFile(filePath, fileBuffer);
@@ -613,21 +616,15 @@ export const importGuestListTemplateService = async (
   };
 };
 
-export const parseGuestListTemplateJob = async (
-  job: Job,
-  userId: string,
+// The hidden _meta sheet ties a downloaded template to its wedding and maps its columns.
+// Read from the upload before queueing, and again from the temp file in the worker.
+const readGuestTemplateMeta = async (
+  file: string | Buffer,
   weddingId: string,
-  filePath: string,
 ) => {
-  try {
-    await fs.access(filePath);
-  } catch (err) {
-    throw new Error(`Template file not found or already deleted: ${filePath}`);
-  }
-
   let metaRows: any[][];
   try {
-    metaRows = (await readXlsxFile(filePath, { sheet: "_meta" } as any)) as any;
+    metaRows = (await readXlsxFile(file as any, { sheet: "_meta" } as any)) as any;
   } catch (err) {
     throw new ApiError(
       400,
@@ -672,8 +669,32 @@ export const parseGuestListTemplateJob = async (
     throw new ApiError(400, "Invalid template file format.");
   }
 
-  const fieldColMap = JSON.parse(fieldColMapStr) as Record<string, string>;
-  const eventMap = JSON.parse(eventMapStr) as Record<string, string>;
+  try {
+    return {
+      fieldColMap: JSON.parse(fieldColMapStr) as Record<string, string>,
+      eventMap: JSON.parse(eventMapStr) as Record<string, string>,
+    };
+  } catch (err) {
+    throw new ApiError(400, "Invalid template file format.");
+  }
+};
+
+export const parseGuestListTemplateJob = async (
+  job: Job,
+  userId: string,
+  weddingId: string,
+  filePath: string,
+) => {
+  try {
+    await fs.access(filePath);
+  } catch (err) {
+    throw new Error(`Template file not found or already deleted: ${filePath}`);
+  }
+
+  const { fieldColMap, eventMap } = await readGuestTemplateMeta(
+    filePath,
+    weddingId,
+  );
 
   let guestRows: any[][];
   try {

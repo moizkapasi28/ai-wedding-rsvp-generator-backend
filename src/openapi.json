@@ -541,8 +541,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "1",
-              "type": "string"
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           {
@@ -550,8 +552,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "10",
-              "type": "string"
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -700,7 +704,8 @@
                   },
                   "message": {
                     "description": "Example: We can't wait to celebrate with you!",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 250
                   }
                 },
                 "required": [
@@ -860,7 +865,8 @@
                   },
                   "message": {
                     "description": "Example: We can't wait to celebrate with you!",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 250
                   }
                 }
               }
@@ -1061,8 +1067,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "1",
-              "type": "string"
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           {
@@ -1070,8 +1078,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "10",
-              "type": "string"
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -1519,8 +1529,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "1",
-              "type": "string"
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           {
@@ -1528,8 +1540,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "10",
-              "type": "string"
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -1771,8 +1785,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "1",
-              "type": "string"
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           {
@@ -1780,8 +1796,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": "10",
-              "type": "string"
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {

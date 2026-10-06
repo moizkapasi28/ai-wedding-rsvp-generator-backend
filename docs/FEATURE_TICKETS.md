@@ -254,9 +254,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Verify the wedding belongs to the caller before enqueueing (today only per-row event checks enforce ownership).
 
 **Acceptance criteria**
-- [ ] Uploading a `.csv`, `.xls`, a random `.xlsx`, or another wedding's template returns 400 immediately, with no job queued.
-- [ ] A valid template still returns 202 with a `jobId`.
-- [ ] Uploading to a wedding the caller does not own returns 404.
+- [x] Uploading a `.csv`, `.xls`, a random `.xlsx`, or another wedding's template returns 400 immediately, with no job queued.
+- [x] A valid template still returns 202 with a `jobId`.
+- [x] Uploading to a wedding the caller does not own returns 404.
 
 **Notes/risks**
 - Keep the worker-side checks; they protect against races.
@@ -276,7 +276,7 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Note (not required here): moving the upload to S3 or passing the buffer in the job payload removes the shared-filesystem assumption.
 
 **Acceptance criteria**
-- [ ] A failed import leaves no file in the tmp dir.
+- [x] A failed import leaves no file in the tmp dir.
 - [ ] Old import jobs disappear from Redis after the retention window; `GET /guest/import-status/:jobId` still works within it.
 
 **Notes/risks**
@@ -296,7 +296,7 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Regenerate OpenAPI.
 
 **Acceptance criteria**
-- [ ] `POST /api/guest` with `email: "abc"` returns 400; with `email: ""` stores `null`.
+- [x] `POST /api/guest` with `email: "abc"` returns 400; with `email: ""` stores `null`.
 - [ ] Import rows with an invalid email or missing address are reported per row in the job result, not silently saved.
 
 **Notes/risks**
@@ -313,8 +313,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Switch to `z.coerce.number().int().min(1).max(100).default(10)` (and `page` min 1), drop the `parseInt` in controllers.
 
 **Acceptance criteria**
-- [ ] `GET /api/guest?weddingId=...&limit=5000` returns 400.
-- [ ] Default and existing frontend page sizes still work.
+- [x] `GET /api/guest?weddingId=...&limit=5000` returns 400.
+- [x] Default and existing frontend page sizes still work.
 
 **Notes/risks**
 - `exportGuestsService` passes 999999 directly to the repository, not through the schema; leave it.

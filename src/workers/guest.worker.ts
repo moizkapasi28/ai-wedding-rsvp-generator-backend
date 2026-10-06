@@ -17,17 +17,18 @@ export const guestWorker = new Worker<GuestJobPayload>(
         logger.info(`Starting excel parse job for wedding ${weddingId}`);
         const result = await parseGuestListTemplateJob(job, userId, weddingId, filePath);
         logger.info(`Completed excel parse for wedding ${weddingId}.`);
-
-        // Clean up the temporary file after successfully parsing
-        try {
-          await fs.unlink(filePath);
-        } catch (err) {
-          logger.error(`Failed to delete temp file ${filePath}: ${err}`);
-        }
         return result;
-      }    } catch (error) {
+      }
+    } catch (error) {
       logger.error(`Error processing job ${job.id}: ${error}`);
       throw error;
+    } finally {
+      // The upload is a temp file; remove it whether the import worked or not
+      try {
+        await fs.unlink(job.data.filePath);
+      } catch (err) {
+        logger.error(`Failed to delete temp file ${job.data.filePath}: ${err}`);
+      }
     }
   },
   {

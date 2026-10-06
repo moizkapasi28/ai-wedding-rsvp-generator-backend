@@ -7,8 +7,9 @@ export const EventSideSchema = z.enum(
 
 export const getAllWeddingEventsQuerySchema = z.object({
   weddingId: z.uuid().describe("Wedding ID is required"),
-  page: z.string().optional().default("1"),
-  limit: z.string().optional().default("10"),
+  page: z.coerce.number().int().min(1).default(1),
+  // Capped: an unbounded limit would load every row with its relations
+  limit: z.coerce.number().int().min(1).max(100).default(10),
   stats: z.string().optional().default("false").describe("True or false"),
   search: z.string().trim().optional().default("").describe("search keyword"),
   sides: z

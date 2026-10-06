@@ -16,6 +16,8 @@ export interface ParseGuestListJobPayload {
 
 export type GuestJobPayload = ParseGuestListJobPayload;
 
+const JOB_RETENTION = { age: 24 * 60 * 60, count: 1000 };
+
 export const addParseGuestListJob = async (
   userId: string,
   weddingId: string,
@@ -27,7 +29,9 @@ export const addParseGuestListJob = async (
     weddingId,
     filePath,
   }, {
-    removeOnComplete: false, // Keep on complete so the user can fetch the result
-    removeOnFail: false,
+    // Kept for a day so the client can fetch the result (it polls for 5 minutes), then
+    // dropped so imports don't pile up in Redis forever
+    removeOnComplete: JOB_RETENTION,
+    removeOnFail: JOB_RETENTION,
   });
 };
