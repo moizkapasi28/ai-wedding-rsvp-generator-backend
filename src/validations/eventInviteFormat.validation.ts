@@ -21,18 +21,6 @@ export type GetEventInviteFormatsByWeddingDto = z.infer<
   typeof getEventInviteFormatsByWeddingParamsSchema
 >;
 
-export const getEventInviteFormatByEventParamsSchema = z.object({
-  eventId: z.uuid().describe("Event ID is required"),
-});
-
-export const getEventInviteFormatByeventSchema = z.object({
-  params: getEventInviteFormatByEventParamsSchema,
-});
-
-export type GetEventInviteFormatByEventDto = z.infer<
-  typeof getEventInviteFormatByEventParamsSchema
->;
-
 export const updateEventInviteFormatParamsSchema = z.object({
   id: z.uuid().describe("Event Invite Format ID is required"),
 });
@@ -111,18 +99,6 @@ export const updateEventInviteFormatSchema = z.object({
 
 export type UpdateEventInviteFormatDto = z.infer<
   typeof updateEventInviteFormatSchema
->;
-
-export const getEventInviteFormatParamsSchema = z.object({
-  id: z.uuid().describe("Event Invite Format ID is required"),
-});
-
-export const getEventInviteFormatSchema = z.object({
-  params: getEventInviteFormatParamsSchema,
-});
-
-export type GetEventInviteFormatDto = z.infer<
-  typeof getEventInviteFormatParamsSchema
 >;
 
 export const generateEventInviteFormatImageBodySchema = z.object({

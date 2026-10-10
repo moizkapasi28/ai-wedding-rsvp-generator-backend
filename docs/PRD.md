@@ -494,7 +494,7 @@ These are observations from the code on 2026-10-01. They are listed as open ques
 
 ### 9.4 Dead code, drift and housekeeping
 - **Q20.** `backend: src/services/faceSwap.service.ts` is unused (face swapping is now part of the Example pipeline via `photo_placement`). Delete it?
-- **Q21.** `GET /api/page-setting/event/:eventId` is marked in code as not used by the client (`backend: src/routes/eventInviteFormat.route.ts`).
+- **Q21.** Resolved (BE-014): `GET /api/page-setting/event/:eventId`, `GET /api/page-setting/:id` and `GET /api/event/:id` were never called by the client and have been removed.
 - **Q22.** `frontend: src/components/DashboardCard.tsx` and `DASHBOARD_CARD_MENU` (Edit/Copy/Delete) in `src/constants/index.ts` are not rendered anywhere.
 - **Q23. Documentation drift.**
   - Frontend CLAUDE.md names `src/routes/index.tsx` (the file no longer exists) and an `ai-invite-card` route (actual mount: `/api/invite-card`).
@@ -512,9 +512,9 @@ These are observations from the code on 2026-10-01. They are listed as open ques
 |---|---|
 | Auth | `POST auth/signup`, `POST auth/signin`, `POST auth/verify-email`, `POST auth/resend-verify-email`, `POST auth/forgot-password`, `PATCH auth/reset-password`, `POST auth/access-token`, `POST auth/logout`, `GET/PATCH auth/me` |
 | Weddings | `GET/POST wedding`, `GET/PATCH/DELETE wedding/:id`, `GET wedding/:id/dashboard`, `GET wedding/:id/live` (SSE) |
-| Events | `GET/POST event`, `GET/PATCH/DELETE event/:id` |
+| Events | `GET/POST event`, `PATCH/DELETE event/:id` |
 | Guests | `GET/POST guest`, `GET guest/export`, `GET/PATCH/DELETE guest/:id`, `GET guest/template/download/:weddingId`, `POST guest/template/upload/:weddingId`, `GET guest/import-status/:jobId`, `GET guest/invites/whatsapp`, `POST guest/invites/:inviteId/mark-sent`, `GET guest/invites/reminders`, `POST guest/invites/:inviteId/mark-reminded` |
-| Page settings | `GET page-setting/pages/:weddingId`, `GET/PATCH page-setting/:id`, `GET page-setting/event/:eventId` (unused), `POST page-setting/generate-image` |
+| Page settings | `GET page-setting/pages/:weddingId`, `PATCH page-setting/:id`, `POST page-setting/generate-image` |
 | Invite cards | `GET invite-card/cards/:weddingId`, `PATCH invite-card/:id`, `POST invite-card/generate-invite`, `GET invite-card/:id/generation-status` |
 | Files | `POST general/generate-upload-url`, `POST general/generate-view-url` |
 | RSVP | `GET rsvp/:token` (public), `PUT rsvp/:token` (public), `PUT rsvp/invite/:inviteId` (host) |

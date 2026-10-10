@@ -13,7 +13,6 @@ import {
   deleteWeddingEvent,
   editWeddingEvent,
   getAllWeddingEvents,
-  getWeddingEvent,
 } from "../controllers/event.controller";
 
 const eventRouter = Router();
@@ -30,13 +29,6 @@ eventRouter.post(
   authenticate,
   validate(addNewWeddingEventSchema),
   asyncHandler(addNewWeddingEvent),
-);
-
-eventRouter.get(
-  "/:id",
-  authenticate,
-  validate(getWeddingEventSchema),
-  asyncHandler(getWeddingEvent),
 );
 
 eventRouter.patch(

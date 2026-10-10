@@ -4,7 +4,6 @@ import {
   deleteWeddingEventService,
   editWeddingEventService,
   getAllWeddingEventsService,
-  getWeddingEventService,
 } from "../services/event.service";
 import { getUserWeddingService } from "../services/wedding.service";
 import { sendSuccess } from "../utils/response.util";
@@ -51,17 +50,6 @@ export const addNewWeddingEvent = async (
   });
 
   return sendSuccess(res, "Event created successfully", event, 201);
-};
-
-export const getWeddingEvent = async (
-  req: Request<GetWeddingEventDto>,
-  res: Response,
-): Promise<Response> => {
-  const { user, params } = req;
-
-  const event = await getWeddingEventService(params.id, user.id);
-
-  return sendSuccess(res, "Event fetched successfully", event, 200);
 };
 
 export const editWeddingEvent = async (

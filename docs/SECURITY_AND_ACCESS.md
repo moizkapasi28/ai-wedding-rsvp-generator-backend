@@ -115,7 +115,7 @@ Columns: **Anon** = no credential; **Guest** = holds an invite token; **Owner** 
 | `GET /wedding`, `POST /wedding` | no | no | self | n/a | `user.id` passed to service/`createWedding` |
 | `GET/PATCH/DELETE /wedding/:id`, `GET /:id/dashboard`, `GET /:id/live` | no | no | yes | 404 | `getUserWeddingService` ([wedding.controller.ts:57-118](../src/controllers/wedding.controller.ts#L57-L118)) |
 | `GET /event?weddingId`, `POST /event` | no | no | yes | 404 | `getUserWeddingService` ([event.controller.ts:28](../src/controllers/event.controller.ts#L28), [:47](../src/controllers/event.controller.ts#L47)) |
-| `GET/PATCH/DELETE /event/:id` | no | no | yes | 400 | `verifyWeddingEventOwnershipService` ([event.service.ts:179-239](../src/services/event.service.ts#L179-L239)) |
+| `PATCH/DELETE /event/:id` | no | no | yes | 400 | `verifyWeddingEventOwnershipService` ([event.service.ts](../src/services/event.service.ts)) |
 | `GET /guest`, `GET /guest/export`, `GET /guest/template/download/:id` | no | no | yes | 404 | `getUserWeddingService` ([guest.controller.ts:44](../src/controllers/guest.controller.ts#L44), [:115](../src/controllers/guest.controller.ts#L115), [:137](../src/controllers/guest.controller.ts#L137)) |
 | `POST /guest` | no | no | yes | 400 | every `eventId` via `verifyWeddingEventOwnershipService`, all from one wedding ([guest.service.ts:74-95](../src/services/guest.service.ts#L74-L95)) |
 | `GET/DELETE /guest/:id` | no | no | yes | 403 | `getWeddingGuestService` ([guest.controller.ts:79](../src/controllers/guest.controller.ts#L79), [:101](../src/controllers/guest.controller.ts#L101)) |
@@ -125,7 +125,6 @@ Columns: **Anon** = no credential; **Guest** = holds an invite token; **Owner** 
 | `GET /guest/invites/whatsapp`, `GET /guest/invites/reminders` | no | no | yes | empty list | `event: { wedding: { user_id } }` in the query ([guest.service.ts:1012-1020](../src/services/guest.service.ts#L1012-L1020), [:1073-1079](../src/services/guest.service.ts#L1073-L1079)) |
 | `POST /guest/invites/:inviteId/mark-sent`, `/mark-reminded` | no | no | yes | 404 | `findGuestEventInviteForUser` ([guest.service.ts:1042-1116](../src/services/guest.service.ts#L1042-L1116)) |
 | `GET /page-setting/pages/:weddingId` | no | no | yes | 404 | `getUserWeddingService` ([eventInviteFormat.controller.ts:32](../src/controllers/eventInviteFormat.controller.ts#L32)) |
-| `GET /page-setting/:id`, `GET /page-setting/event/:eventId` | no | no | yes | 404 / 400 | format → event ownership ([eventInviteFormat.service.ts:49-68](../src/services/eventInviteFormat.service.ts#L49-L68), [:115-126](../src/services/eventInviteFormat.service.ts#L115-L126)) |
 | `PATCH /page-setting/:id` | no | no | yes | 400 | ownership + `assertOwnedImageKeys` for `raw_image`/`generated_image` ([eventInviteFormat.service.ts:70-113](../src/services/eventInviteFormat.service.ts#L70-L113)) |
 | `POST /page-setting/generate-image` | no | no | yes (5 credits) | 400 | ownership + `assertOwnedImageKeys(raw_image)` + `spendCredits` ([eventInviteFormat.service.ts:128-186](../src/services/eventInviteFormat.service.ts#L128-L186)) |
 | `GET /invite-card/cards/:weddingId` | no | no | yes | 404 | `getUserWeddingService` ([inviteCard.controller.ts:31](../src/controllers/inviteCard.controller.ts#L31)) |

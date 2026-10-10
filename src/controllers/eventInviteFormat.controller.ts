@@ -1,16 +1,12 @@
 import { type Request, type Response } from "express";
 import {
   generateEventInviteFormatImageService,
-  getEventInviteFormatByEventService,
   getEventInviteFormatsByWeddingService,
-  getEventinviteFormatService,
   updateEventInviteFormatService,
 } from "../services/eventInviteFormat.service";
 import { sendSuccess } from "../utils/response.util";
 import {
   GenerateEventInviteFormatImageDto,
-  GetEventInviteFormatByEventDto,
-  GetEventInviteFormatDto,
   GetEventInviteFormatsByWeddingDto,
   GetEventInviteFormatsByWeddingQueryDto,
   UpdateEventInviteFormatDto,
@@ -42,25 +38,6 @@ export const getEventInviteFormatsByWedding = async (
   );
 };
 
-export const getEventInviteFormatByEvent = async (
-  req: Request<GetEventInviteFormatByEventDto>,
-  res: Response,
-): Promise<Response> => {
-  const { user, params } = req;
-
-  const guestEventInviteFormat = await getEventInviteFormatByEventService(
-    params.eventId,
-    user.id,
-  );
-
-  return sendSuccess(
-    res,
-    "Invite format fetched successfully",
-    guestEventInviteFormat,
-    200,
-  );
-};
-
 export const editEventInviteFormat = async (
   req: Request<
     UpdateEventInviteFormatDto["params"],
@@ -81,22 +58,6 @@ export const editEventInviteFormat = async (
     res,
     "Invite format updated successfully",
     guestEventInviteFormat,
-    200,
-  );
-};
-
-export const geteventInviteFormat = async (
-  req: Request<GetEventInviteFormatDto>,
-  res: Response,
-): Promise<Response> => {
-  const { user, params } = req;
-
-  const eventInviteFormat = await getEventinviteFormatService(params.id, user.id);
-
-  return sendSuccess(
-    res,
-    "Invite format fetched successfully",
-    eventInviteFormat,
     200,
   );
 };

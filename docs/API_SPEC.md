@@ -99,7 +99,6 @@ Auth column: B = Bearer access token required, P = public. Limiter column lists 
 | 19 | DELETE | `/api/wedding/:id` | B | | 200 |
 | 20 | GET | `/api/event` | B | | 200 |
 | 21 | POST | `/api/event` | B | | 201 |
-| 22 | GET | `/api/event/:id` | B | | 200 |
 | 23 | PATCH | `/api/event/:id` | B | | 200 |
 | 24 | DELETE | `/api/event/:id` | B | | 200 |
 | 25 | GET | `/api/guest` | B | | 200 |
@@ -118,8 +117,6 @@ Auth column: B = Bearer access token required, P = public. Limiter column lists 
 | 37 | POST | `/api/guest/invites/:inviteId/mark-reminded` | B | | 200 |
 | 37a | DELETE | `/api/guest/invites/:inviteId/mark-reminded` | B | | 200 |
 | 38 | GET | `/api/page-setting/pages/:weddingId` | B | | 200 |
-| 39 | GET | `/api/page-setting/:id` | B | | 200 |
-| 40 | GET | `/api/page-setting/event/:eventId` | B | | 200 |
 | 41 | PATCH | `/api/page-setting/:id` | B | | 200 |
 | 42 | POST | `/api/page-setting/generate-image` | B | | 200 |
 | 43 | GET | `/api/invite-card/cards/:weddingId` | B | | 200 |
@@ -342,11 +339,10 @@ Router [event.routes.ts](../src/routes/event.routes.ts), controller [event.contr
 | 201 data | Event row. In one transaction also creates the event's `GuestEventInviteFormat` and `EventInviteCard`. |
 |---|---|
 
-### GET /:id · PATCH /:id · DELETE /:id
+### PATCH /:id · DELETE /:id
 
 | Route | Params / body | 200 data | Errors |
 |---|---|---|---|
-| GET | `id` uuid | Event row | 400 `Invalid Event or Event Not Found` (not owned or missing) |
 | PATCH | `id`; body = create fields minus `weddingId`, all optional | Updated event row | 400 as above |
 | DELETE | `id` | `{}`; also deletes guests of the wedding left with no invites | 400 as above |
 
@@ -427,8 +423,6 @@ Router [eventInviteFormat.route.ts](../src/routes/eventInviteFormat.route.ts), c
 | Method, path | Input | 200 data | Errors | Ownership |
 |---|---|---|---|---|
 | `GET /pages/:weddingId` | `weddingId` uuid; query `page` | `{ events, totalCount, totalPages, currentPage }` (5 per page, created_at asc); event = row + `guestEventInviteFormat[]` + `wedding` + `inviteCard[{ generated_invite_image_url }]` + `stats{ total, PENDING, ATTENDING, DECLINED, MAYBE }` | 404 wedding | `getUserWeddingService` |
-| `GET /:id` | `id` uuid (format id) | Format row + `event` | 404 `Event Invite Format Not Found` (missing or not owned) | event ownership |
-| `GET /event/:eventId` | `eventId` uuid | Format row | 400 not owned; 404 missing | event ownership. Code comment: not used by the client. |
 | `PATCH /:id` | `id` uuid; body below | Updated format row | 404 missing; 400 not owned; 400 `Invalid image for <field>` | event ownership + `assertOwnedImageKeys(raw_image, generated_image)` |
 | `POST /generate-image` | body below | `{ key }` — S3 key of the generated illustration under `users/<userId>/generated-images/rsvp-generated-images/` | 400 not owned / bad key; 402 credits; 500 Gemini or unknown style/attire id (credits refunded) | event ownership |
 
@@ -623,6 +617,6 @@ data: {"inviteId":"…","guestName":"…","eventTitle":"…","status":"ATTENDING
 | 7 | Upload limit | multer 5 MB, field `file` | Field `file` documented, size limit not |
 | 8 | Servers | Deployed behind `WEB_APP_URL` CORS | Only `http://localhost:3000` |
 | 9 | `/reference` | Served | Not listed (expected) |
-| 10 | Param descriptions copied from wrong schemas | `template/download/:id` and `template/upload/:id` take a wedding id; `GET /api/event/:id` takes an event id; `page-setting/pages/:weddingId` takes a wedding id | Described as "Guest Id is required", "Wedding ID is required", "Event ID is required" respectively (zod `.describe` text) |
+| 10 | Param descriptions copied from wrong schemas | `template/download/:id` and `template/upload/:id` take a wedding id; `PATCH`/`DELETE /api/event/:id` take an event id; `page-setting/pages/:weddingId` takes a wedding id | Described as "Guest Id is required", "Wedding ID is required", "Event ID is required" respectively (zod `.describe` text) |
 
 Regenerate with `npm run docs:openapi` to fix item 1; items 2–8 need generator changes.

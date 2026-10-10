@@ -369,8 +369,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Decide per endpoint: delete (route, controller, service, validation, OpenAPI row) or keep as part of the documented API. Default: delete, since each one carries its own ownership check to maintain.
 
 **Acceptance criteria**
-- [ ] Every route in `src/routes` is either called by the frontend or intentionally kept with an OpenAPI summary saying why.
-- [ ] `npm run docs:openapi` regenerated; route table and routes still match.
+- [x] Every route in `src/routes` is either called by the frontend or intentionally kept with an OpenAPI summary saying why.
+- [x] `npm run docs:openapi` regenerated; route table and routes still match.
 
 **Notes/risks**
 - Check the self-checks and scripts do not use them.

@@ -5,7 +5,6 @@ import {
   countWeddingEvents,
   createEvent,
   deleteWeddingEventById,
-  findEventById,
   findEventByIdAndUserId,
   getAllWeddingEvents,
   getGuestStatsForEvents,
@@ -172,25 +171,6 @@ export const verifyWeddingEventOwnershipService = async (
   userId: string,
 ): Promise<Event | null> => {
   const event = await findEventByIdAndUserId(eventId, userId);
-
-  return event;
-};
-
-export const getWeddingEventService = async (
-  eventId: string,
-  userId: string,
-): Promise<Event> => {
-  const ownershipEvent = await verifyWeddingEventOwnershipService(
-    eventId,
-    userId,
-  );
-
-  if (!ownershipEvent)
-    throw new ApiError(400, "Invalid Event or Event Not Found");
-
-  const event = await findEventById(eventId);
-
-  if (!event) throw new ApiError(404, "Event not found");
 
   return event;
 };

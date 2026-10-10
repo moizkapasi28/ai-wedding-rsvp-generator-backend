@@ -90,18 +90,6 @@ export const findEventByIdAndUserId = async (
   });
 };
 
-export const findEventById = async (
-  eventId: string,
-  tx?: Prisma.TransactionClient,
-): Promise<Event | null> => {
-  const db = tx || prisma;
-  return db.event.findUnique({
-    where: {
-      id: eventId,
-    },
-  });
-};
-
 export const updateWeddingEventById = async (
   id: string,
   data: Prisma.EventUpdateInput,

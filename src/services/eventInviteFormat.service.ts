@@ -46,27 +46,6 @@ export const getEventInviteFormatsByWeddingService = async (
   return { ...inviteFormatsData, events: eventsWithStats };
 };
 
-export const getEventInviteFormatByEventService = async (
-  eventId: string,
-  userId: string,
-) => {
-  const ownershipEvent = await verifyWeddingEventOwnershipService(
-    eventId,
-    userId,
-  );
-
-  if (!ownershipEvent)
-    throw new ApiError(400, "Invalid Invite Format or Invite Format Not Found");
-
-  const guestEventInviteFormat =
-    await findGuestEventInviteFormatByEventId(eventId);
-
-  if (!guestEventInviteFormat)
-    throw new ApiError(404, "Event Invite Format Not Found");
-
-  return guestEventInviteFormat;
-};
-
 export const updateEventInviteFormatService = async (
   id: string,
   userId: string,
@@ -110,19 +89,6 @@ export const updateEventInviteFormatService = async (
     throw new ApiError(400, "Failed to update event invite format");
 
   return updatedEventInviteFormat;
-};
-
-export const getEventinviteFormatService = async (id: string, userId: string) => {
-  const eventInviteFormat = await findGuestEventInviteFormatById(id);
-
-  // Missing and not-yours look the same, so another wedding's ids aren't confirmed
-  const isOwner =
-    !!eventInviteFormat &&
-    !!(await verifyWeddingEventOwnershipService(eventInviteFormat.event_id, userId));
-
-  if (!isOwner) throw new ApiError(404, "Event Invite Format Not Found");
-
-  return eventInviteFormat;
 };
 
 export const generateEventInviteFormatImageService = async (

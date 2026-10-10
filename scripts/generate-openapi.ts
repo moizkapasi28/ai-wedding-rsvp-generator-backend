@@ -48,7 +48,6 @@ const routes: Route[] = [
 
   { method: "get", path: "/api/event", tag: "Events", summary: "List a wedding's events", schema: event.getAllWeddingEventsSchema },
   { method: "post", path: "/api/event", tag: "Events", summary: "Create an event", schema: event.addNewWeddingEventSchema },
-  { method: "get", path: "/api/event/:id", tag: "Events", summary: "Get an event", schema: event.getWeddingEventSchema },
   { method: "patch", path: "/api/event/:id", tag: "Events", summary: "Update an event", schema: event.editWeddingEventSchema },
   { method: "delete", path: "/api/event/:id", tag: "Events", summary: "Delete an event", schema: event.getWeddingEventSchema },
 
@@ -74,8 +73,6 @@ const routes: Route[] = [
   { method: "put", path: "/api/rsvp/invite/:inviteId", tag: "RSVP", summary: "Set a guest's reply from the host portal (ignores the RSVP deadline)", schema: rsvp.submitGuestRsvpSchema },
 
   { method: "get", path: "/api/page-setting/pages/:weddingId", tag: "RSVP page settings", summary: "Events with their RSVP page settings", schema: inviteFormat.getEventInviteFormatsByWeddingSchema },
-  { method: "get", path: "/api/page-setting/:id", tag: "RSVP page settings", summary: "Get RSVP page settings by id", schema: inviteFormat.getEventInviteFormatSchema },
-  { method: "get", path: "/api/page-setting/event/:eventId", tag: "RSVP page settings", summary: "Get RSVP page settings for an event", schema: inviteFormat.getEventInviteFormatByeventSchema },
   { method: "patch", path: "/api/page-setting/:id", tag: "RSVP page settings", summary: "Update RSVP page settings (the RSVP deadline is copied onto every invite)", schema: inviteFormat.updateEventInviteFormatSchema },
   { method: "post", path: "/api/page-setting/generate-image", tag: "RSVP page settings", summary: "Generate the RSVP page illustration", schema: inviteFormat.generateEventInviteFormatImageSchema },
 
