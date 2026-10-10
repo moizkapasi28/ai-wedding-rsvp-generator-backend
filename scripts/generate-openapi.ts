@@ -32,6 +32,7 @@ const routes: Route[] = [
   { method: "post", path: "/api/auth/resend-verify-email", tag: "Auth", summary: "Resend the verification email (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.resendEmailVerificationSchema, auth: false },
   { method: "post", path: "/api/auth/forgot-password", tag: "Auth", summary: "Send a password reset email (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.forgotPasswordSchema, auth: false },
   { method: "patch", path: "/api/auth/reset-password", tag: "Auth", summary: "Reset a password (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.resetPasswordSchema, auth: false },
+  { method: "patch", path: "/api/auth/change-password", tag: "Auth", summary: "Change my password; ends every session and returns a new token pair (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.changePasswordSchema },
   { method: "post", path: "/api/auth/access-token", tag: "Auth", summary: "Exchange a refresh token for a new access token", schema: auth.refreshTokenSchema, auth: false },
   { method: "post", path: "/api/auth/logout", tag: "Auth", summary: "Sign out", schema: auth.logoutSchema },
   { method: "get", path: "/api/auth/me", tag: "Auth", summary: "Get my profile" },

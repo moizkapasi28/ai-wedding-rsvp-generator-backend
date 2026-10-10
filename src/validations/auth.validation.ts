@@ -98,3 +98,16 @@ export const updateProfileSchema = z.object({
 });
 
 export type UpdateProfileDto = z.infer<typeof updateProfileBodySchema>;
+
+export const changePasswordBodySchema = z.object({
+  currentPassword: z.string(),
+  // The frontend shows the full strength rules; the length is enforced here too because
+  // bcrypt ignores everything past 72 bytes
+  newPassword: z.string().min(8).max(20),
+});
+
+export const changePasswordSchema = z.object({
+  body: changePasswordBodySchema,
+});
+
+export type ChangePasswordDto = z.infer<typeof changePasswordBodySchema>;

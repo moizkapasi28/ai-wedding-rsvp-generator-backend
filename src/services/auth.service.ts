@@ -23,6 +23,7 @@ import {
   USER_FORGOT_PASSWORD_TEMPLATE,
 } from "../utils/constants/email.constant";
 import {
+  ChangePasswordDto,
   ForgotPasswordDto,
   LoginDto,
   LogoutDto,
@@ -253,6 +254,42 @@ export const resetPasswordService = async (
     );
     // Every token, not just this link: whoever held the old password is signed out too
     await deleteTokensByUserIdService(user.id, tx);
+  });
+};
+
+export const changePasswordService = async (
+  userId: string,
+  payload: ChangePasswordDto,
+): Promise<AuthResponseDto["tokens"]> => {
+  const { currentPassword, newPassword } = payload;
+
+  const user = await findUserById(userId);
+  if (!user) throw new ApiError(404, "User not found");
+
+  // 400, not 401: the caller is authenticated, and the frontend treats a 401 as an expired
+  // session to refresh and retry
+  if (!(await bcrypt.compare(currentPassword, user.password)))
+    throw new ApiError(400, "Current password is incorrect");
+
+  if (currentPassword === newPassword)
+    throw new ApiError(
+      400,
+      "New password must be different from your current password",
+    );
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  return prisma.$transaction(async (tx) => {
+    await updateUserById(
+      user.id,
+      { password: hashedPassword, updated_at: new Date() },
+      tx,
+    );
+    // Every session, as a password reset does: whoever held the old password is signed out.
+    // The caller gets a new session back so this device stays signed in.
+    await deleteTokensByUserIdService(user.id, tx);
+
+    return generateAuthTokensService(user, undefined, tx);
   });
 };
 

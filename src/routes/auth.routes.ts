@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   logoutSchema,
@@ -12,6 +13,7 @@ import {
 } from "../validations/auth.validation";
 import validate from "../middlewares/validate.middleware";
 import {
+  changePassword,
   forgotPasswordEmail,
   logout,
   refreshToken,
@@ -59,6 +61,14 @@ authRouter.patch(
   authLimiter,
   validate(resetPasswordSchema),
   asyncHandler(resetPassword),
+);
+
+authRouter.patch(
+  "/change-password",
+  authLimiter,
+  authenticate,
+  validate(changePasswordSchema),
+  asyncHandler(changePassword),
 );
 
 authRouter.post(

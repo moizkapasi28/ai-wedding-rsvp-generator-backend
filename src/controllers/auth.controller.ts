@@ -1,5 +1,6 @@
 import { type Request, type Response } from "express";
 import {
+  ChangePasswordDto,
   ForgotPasswordDto,
   LoginDto,
   LogoutDto,
@@ -11,6 +12,7 @@ import {
   UpdateProfileDto,
 } from "../validations/auth.validation";
 import {
+  changePasswordService,
   forgotPasswordService,
   logoutService,
   refreshTokenService,
@@ -93,6 +95,18 @@ export const resetPassword = async (
   await resetPasswordService(body);
 
   return sendSuccess(res, "Password reset successfully", {}, 200);
+};
+
+export const changePassword = async (
+  req: Request<{}, {}, ChangePasswordDto>,
+  res: Response,
+) => {
+  const { id } = req.user;
+  const { body } = req;
+
+  const tokens = await changePasswordService(id, body);
+
+  return sendSuccess(res, "Password changed successfully", tokens, 200);
 };
 
 export const refreshToken = async (

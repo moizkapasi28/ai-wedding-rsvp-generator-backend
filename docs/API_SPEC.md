@@ -193,6 +193,14 @@ Router [auth.routes.ts](../src/routes/auth.routes.ts), controller [auth.controll
 | 200 data | `{}`; password re-hashed, reset token deleted. Existing sessions are not revoked. |
 | 401 | `Invalid link or link has expired` |
 
+### PATCH /change-password
+
+| Body | `currentPassword` string (req), `newPassword` string (req, 8-20 characters) |
+|---|---|
+| 200 data | `AuthTokens` (a new pair for the caller; every other token of the user is deleted) |
+| 400 | `Current password is incorrect`; new password same as current; `newPassword` length |
+| 401 | Missing or expired access token |
+
 ### POST /access-token (public)
 
 | Body | `refreshToken` string (req) |

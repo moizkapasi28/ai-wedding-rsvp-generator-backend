@@ -7,7 +7,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "tsx --test tests/*.test.ts",
     "dev": "tsx watch src/index.ts",
     "worker": "tsx watch src/workers/index.ts",
     "docs:openapi": "tsx scripts/generate-openapi.ts",
