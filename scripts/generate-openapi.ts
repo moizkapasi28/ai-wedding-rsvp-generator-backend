@@ -35,7 +35,7 @@ const routes: Route[] = [
   { method: "patch", path: "/api/auth/change-password", tag: "Auth", summary: "Change my password; ends every session and returns a new token pair (rate limited: 10 per 15 min per IP, shared by the sign-up, sign-in and email routes)", schema: auth.changePasswordSchema },
   { method: "post", path: "/api/auth/access-token", tag: "Auth", summary: "Exchange a refresh token for a new access token", schema: auth.refreshTokenSchema, auth: false },
   { method: "post", path: "/api/auth/logout", tag: "Auth", summary: "Sign out", schema: auth.logoutSchema },
-  { method: "get", path: "/api/auth/me", tag: "Auth", summary: "Get my profile" },
+  { method: "get", path: "/api/auth/me", tag: "Auth", summary: "Get my profile, AI credit balance and AI credit costs" },
   { method: "patch", path: "/api/auth/me", tag: "Auth", summary: "Update my profile", schema: auth.updateProfileSchema },
 
   { method: "get", path: "/api/wedding", tag: "Weddings", summary: "List my weddings", schema: wedding.getAllUserWeddingsSchema },
@@ -64,8 +64,10 @@ const routes: Route[] = [
 
   { method: "get", path: "/api/guest/invites/whatsapp", tag: "Invites & reminders", summary: "RSVP and WhatsApp links for an event's or a guest's invites", schema: guest.getWhatsAppInvitesSchema },
   { method: "post", path: "/api/guest/invites/:inviteId/mark-sent", tag: "Invites & reminders", summary: "Record that an invite was sent", schema: guest.markInviteSentSchema },
+  { method: "delete", path: "/api/guest/invites/:inviteId/mark-sent", tag: "Invites & reminders", summary: "Undo: mark an invite as not sent", schema: guest.markInviteSentSchema },
   { method: "get", path: "/api/guest/invites/reminders", tag: "Invites & reminders", summary: "Reminders due now for an event", schema: guest.getDueRemindersSchema },
   { method: "post", path: "/api/guest/invites/:inviteId/mark-reminded", tag: "Invites & reminders", summary: "Record that a reminder was sent", schema: guest.markReminderSentSchema },
+  { method: "delete", path: "/api/guest/invites/:inviteId/mark-reminded", tag: "Invites & reminders", summary: "Undo: mark a reminder as not sent", schema: guest.unmarkReminderSentSchema },
 
   { method: "get", path: "/api/rsvp/:token", tag: "RSVP", summary: "Get an invitation by its RSVP link token", schema: rsvp.getRsvpSchema, auth: false },
   { method: "put", path: "/api/rsvp/:token", tag: "RSVP", summary: "Submit a guest's reply by RSVP link token", schema: rsvp.submitRsvpSchema, auth: false },

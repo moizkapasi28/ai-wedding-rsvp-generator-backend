@@ -358,30 +358,34 @@ export const findInvitesToSend = async (
   });
 };
 
+// `sent: false` undoes it: the timestamp goes back to null
 export const markGuestEventInviteSent = async (
   id: string,
+  sent: boolean = true,
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
   const now = new Date();
   return db.guestEventInvite.update({
     where: { id },
-    data: { invite_sent_at: now, updated_at: now },
+    data: { invite_sent_at: sent ? now : null, updated_at: now },
   });
 };
 
 export const markGuestEventInviteReminded = async (
   id: string,
   reminder: "FIRST" | "FINAL",
+  sent: boolean = true,
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
   const now = new Date();
+  const sentAt = sent ? now : null;
   return db.guestEventInvite.update({
     where: { id },
     data:
       reminder === "FIRST"
-        ? { first_reminder_sent_at: now, updated_at: now }
-        : { final_reminder_sent_at: now, updated_at: now },
+        ? { first_reminder_sent_at: sentAt, updated_at: now }
+        : { final_reminder_sent_at: sentAt, updated_at: now },
   });
 };

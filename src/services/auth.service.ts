@@ -33,6 +33,7 @@ import {
   SignUpDto,
   VerifyEmailDto,
 } from "../validations/auth.validation";
+import { AI_CREDIT_COST } from "./credits.service";
 import { sendEmail } from "./email.service";
 import {
   deleteTokensByUserIdService,
@@ -350,7 +351,8 @@ export const userProfileService = async (userId: string) => {
 
   if (!user) throw new ApiError(404, "User not found");
 
-  return user;
+  // The price list travels with the balance, so the frontend never shows a stale cost
+  return { ...user, ai_credit_costs: AI_CREDIT_COST };
 };
 
 export const updateProfileService = async (
@@ -371,6 +373,6 @@ export const updateProfileService = async (
 
   await updateUserById(userId, payload);
 
-  // Re-read with the GET /auth/me field list so the password hash never leaves
-  return findUserProfileById(userId);
+  // The same response as GET /auth/me (its field list keeps the password hash out)
+  return userProfileService(userId);
 };

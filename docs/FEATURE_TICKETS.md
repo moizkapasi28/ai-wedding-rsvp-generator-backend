@@ -545,7 +545,7 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Include `ai_credit_costs` in `GET /api/auth/me` (already fetched for the balance) or a small public config endpoint.
 
 **Acceptance criteria**
-- [ ] `/auth/me` returns the balance and the costs; OpenAPI regenerated.
+- [x] `/auth/me` returns the balance and the costs; OpenAPI regenerated.
 
 **Notes/risks**
 - Keep the frontend constant as a fallback until FE-015 ships.
@@ -599,8 +599,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - `DELETE /api/guest/invites/:inviteId/mark-sent` and `DELETE .../mark-reminded?reminder=FIRST|FINAL` (ownership-checked like the POSTs) clearing the timestamps. Add OpenAPI rows.
 
 **Acceptance criteria**
-- [ ] After undo, the invite appears again in `GET /invites/whatsapp` as unsent and in the `inviteSent=not_sent` guest filter.
-- [ ] Another user's invite id returns 404.
+- [x] After undo, the invite appears again in `GET /invites/whatsapp` as unsent and in the `inviteSent=not_sent` guest filter.
+- [x] Another user's invite id returns 404.
 
 **Notes/risks**
 - None.

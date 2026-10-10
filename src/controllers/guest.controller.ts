@@ -29,6 +29,7 @@ import {
   GetWhatsAppInvitesDto,
   InviteParamsDto,
   MarkReminderSentDto,
+  UnmarkReminderSentDto,
 } from "../validations/guest.validations";
 import { ApiError } from "../utils/apiError.util";
 
@@ -208,6 +209,17 @@ export const markInviteSent = async (
   return sendSuccess(res, "Invite marked as sent", invite, 200);
 };
 
+export const unmarkInviteSent = async (
+  req: Request<InviteParamsDto>,
+  res: Response,
+) => {
+  const { user, params } = req;
+
+  const invite = await markInviteSentService(user.id, params.inviteId, false);
+
+  return sendSuccess(res, "Invite marked as not sent", invite, 200);
+};
+
 export const getDueReminders = async (
   req: Request<{}, {}, {}, GetDueRemindersDto>,
   res: Response,
@@ -232,4 +244,25 @@ export const markReminderSent = async (
   );
 
   return sendSuccess(res, "Reminder marked as sent", invite, 200);
+};
+
+export const unmarkReminderSent = async (
+  req: Request<
+    UnmarkReminderSentDto["params"],
+    {},
+    {},
+    UnmarkReminderSentDto["query"]
+  >,
+  res: Response,
+) => {
+  const { user, params, query } = req;
+
+  const invite = await markReminderSentService(
+    user.id,
+    params.inviteId,
+    query.reminder,
+    false,
+  );
+
+  return sendSuccess(res, "Reminder marked as not sent", invite, 200);
 };

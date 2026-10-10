@@ -489,7 +489,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Get my profile",
+        "summary": "Get my profile, AI credit balance and AI credit costs",
         "security": [
           {
             "bearerAuth": []
@@ -2430,6 +2430,52 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Invites & reminders"
+        ],
+        "summary": "Undo: mark an invite as not sent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "inviteId",
+            "in": "path",
+            "required": true,
+            "description": "Invite Id is required",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Invite Id is required"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "2XX": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/guest/invites/reminders": {
@@ -2528,6 +2574,66 @@
             }
           }
         },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "2XX": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Invites & reminders"
+        ],
+        "summary": "Undo: mark a reminder as not sent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "inviteId",
+            "in": "path",
+            "required": true,
+            "description": "Invite Id is required",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Invite Id is required"
+            }
+          },
+          {
+            "name": "reminder",
+            "in": "query",
+            "required": true,
+            "description": "Which reminder to undo",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FIRST",
+                "FINAL"
+              ],
+              "description": "Which reminder to undo"
+            }
+          }
+        ],
         "responses": {
           "400": {
             "$ref": "#/components/responses/ValidationError"

@@ -229,3 +229,13 @@ export const markReminderSentSchema = z.object({
 });
 
 export type MarkReminderSentDto = z.infer<typeof markReminderSentSchema>;
+
+// The undo is a DELETE, which carries no body, so the reminder kind is a query parameter
+export const unmarkReminderSentSchema = z.object({
+  params: inviteParamsSchema,
+  query: z.object({
+    reminder: z.enum(["FIRST", "FINAL"]).describe("Which reminder to undo"),
+  }),
+});
+
+export type UnmarkReminderSentDto = z.infer<typeof unmarkReminderSentSchema>;

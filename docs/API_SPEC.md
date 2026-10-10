@@ -113,8 +113,10 @@ Auth column: B = Bearer access token required, P = public. Limiter column lists 
 | 33 | GET | `/api/guest/import-status/:jobId` | B | | 200 |
 | 34 | GET | `/api/guest/invites/whatsapp` | B | | 200 |
 | 35 | POST | `/api/guest/invites/:inviteId/mark-sent` | B | | 200 |
+| 35a | DELETE | `/api/guest/invites/:inviteId/mark-sent` | B | | 200 |
 | 36 | GET | `/api/guest/invites/reminders` | B | | 200 |
 | 37 | POST | `/api/guest/invites/:inviteId/mark-reminded` | B | | 200 |
+| 37a | DELETE | `/api/guest/invites/:inviteId/mark-reminded` | B | | 200 |
 | 38 | GET | `/api/page-setting/pages/:weddingId` | B | | 200 |
 | 39 | GET | `/api/page-setting/:id` | B | | 200 |
 | 40 | GET | `/api/page-setting/event/:eventId` | B | | 200 |
@@ -220,7 +222,7 @@ The refresh token's user is not compared with `req.user`.
 
 ### GET /me (Bearer)
 
-| 200 data | `SafeUser` (selected columns, [user.repository.ts](../src/repositories/user.repository.ts) `findUserProfileById`) |
+| 200 data | `SafeUser` (selected columns, [user.repository.ts](../src/repositories/user.repository.ts) `findUserProfileById`) plus `ai_credit_costs`: `{ INVITE_CARD, HEADER_IMAGE }`, the credits each generation costs (`AI_CREDIT_COST` in [credits.service.ts](../src/services/credits.service.ts)) |
 |---|---|
 | 404 | User not found |
 
@@ -231,9 +233,9 @@ The refresh token's user is not compared with `req.user`.
 | `firstName` | string | no | `first_name` |
 | `lastName` | string | no | `last_name` |
 | `mobileNumber` | string | no | `mobile_number` |
-| `profilePicture` | string \| null | no | `profile_picture` (S3 key; not ownership-checked) |
+| `profilePicture` | string \| null | no | `profile_picture` (S3 key; must be under the caller's `users/<id>/` prefix or the value already stored, else 400) |
 
-| 200 data | Full `User` row, **including the `password` hash** |
+| 200 data | The same shape as `GET /me` (no `password`) |
 |---|---|
 
 ## 5. Weddings — `/api/wedding`
@@ -411,8 +413,10 @@ Behaviour: if a guest with the exact same `mobile_number` exists in the wedding,
 |---|---|---|---|---|
 | `GET /invites/whatsapp` | Query: exactly one of `eventId` uuid, `guestId` uuid | `[{ id, guest_id, guest_name, event_id, event_title, status, invite_sent_at, rsvp_url, whatsapp_url \| null }]` sorted by guest name; `whatsapp_url` null when the phone does not normalise | 400 `Provide either eventId or guestId` | `event.wedding.user_id` filter (foreign ids return `[]`) |
 | `POST /invites/:inviteId/mark-sent` | `inviteId` uuid | Updated `GuestEventInvite` row (includes `invite_token`) with `invite_sent_at = now` | 404 `Invite not found` | `findGuestEventInviteForUser` |
+| `DELETE /invites/:inviteId/mark-sent` | `inviteId` uuid | Undo: updated invite row with `invite_sent_at = null` (reminder timestamps untouched). Repeating it is harmless. | 404 `Invite not found` | `findGuestEventInviteForUser` |
 | `GET /invites/reminders` | Query `eventId` uuid (req) | `[{ id, guest_id, guest_name, event_id, event_title, reminder: "FIRST"\|"FINAL", invite_deadline, rsvp_url, whatsapp_url \| null }]` — only PENDING invites with a reminder due now ([reminder.util.ts](../src/utils/reminder.util.ts)) | — | `event.wedding.user_id` filter |
 | `POST /invites/:inviteId/mark-reminded` | `inviteId` uuid; body `reminder`: `FIRST` \| `FINAL` (req) | Updated invite row with `first_reminder_sent_at` or `final_reminder_sent_at = now` | 404 | `findGuestEventInviteForUser` |
+| `DELETE /invites/:inviteId/mark-reminded` | `inviteId` uuid; query `reminder`: `FIRST` | `FINAL` (req) | Undo: updated invite row with that reminder's timestamp set to `null` | 400 (missing or unknown `reminder`), 404 | `findGuestEventInviteForUser` |
 
 `rsvp_url` = `WEB_APP_URL/rsvp/<wedding slug or "invite">/<invite_token>`; `whatsapp_url` = `https://wa.me/<digits>?text=<message>` ([whatsapp.ts](../src/lib/whatsapp.ts)).
 

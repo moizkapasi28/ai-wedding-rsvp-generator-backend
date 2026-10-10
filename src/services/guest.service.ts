@@ -1059,15 +1059,21 @@ export const getWhatsAppInvitesService = async (
   });
 };
 
-// ponytail: marked when the couple opens the link; WhatsApp can't tell us they pressed Send
-export const markInviteSentService = async (userId: string, inviteId: string) => {
+// ponytail: marked when the couple opens the link; WhatsApp can't tell us they pressed Send.
+// `sent: false` is the undo for a mis-tap: the invite counts as unsent again, so it is back
+// in the "not sent" filter and the first reminder is timed from the next real send.
+export const markInviteSentService = async (
+  userId: string,
+  inviteId: string,
+  sent: boolean = true,
+) => {
   const invite = await findGuestEventInviteForUser(inviteId, userId);
 
   if (!invite) {
     throw new ApiError(404, "Invite not found");
   }
 
-  return markGuestEventInviteSent(invite.id);
+  return markGuestEventInviteSent(invite.id, sent);
 };
 
 const formatReminderMessage = (
@@ -1127,6 +1133,7 @@ export const markReminderSentService = async (
   userId: string,
   inviteId: string,
   reminder: ReminderKind,
+  sent: boolean = true,
 ) => {
   const invite = await findGuestEventInviteForUser(inviteId, userId);
 
@@ -1134,5 +1141,5 @@ export const markReminderSentService = async (
     throw new ApiError(404, "Invite not found");
   }
 
-  return markGuestEventInviteReminded(invite.id, reminder);
+  return markGuestEventInviteReminded(invite.id, reminder, sent);
 };

@@ -12,6 +12,7 @@ import {
   getWhatsAppInvitesSchema,
   markInviteSentSchema,
   markReminderSentSchema,
+  unmarkReminderSentSchema,
   uploadGuestTemplateSchema,
 } from "../validations/guest.validations";
 import { asyncHandler } from "../utils/asyncHandler.util";
@@ -30,6 +31,8 @@ import {
   getWhatsAppInvites,
   markInviteSent,
   markReminderSent,
+  unmarkInviteSent,
+  unmarkReminderSent,
 } from "../controllers/guest.controller";
 
 const guestsRouter = Router();
@@ -112,6 +115,14 @@ guestsRouter.post(
   asyncHandler(markInviteSent),
 );
 
+// Undo: opening the WhatsApp link marks an invite sent, and a mis-tap shouldn't be permanent
+guestsRouter.delete(
+  "/invites/:inviteId/mark-sent",
+  authenticate,
+  validate(markInviteSentSchema),
+  asyncHandler(unmarkInviteSent),
+);
+
 guestsRouter.get(
   "/invites/reminders",
   authenticate,
@@ -124,6 +135,13 @@ guestsRouter.post(
   authenticate,
   validate(markReminderSentSchema),
   asyncHandler(markReminderSent),
+);
+
+guestsRouter.delete(
+  "/invites/:inviteId/mark-reminded",
+  authenticate,
+  validate(unmarkReminderSentSchema),
+  asyncHandler(unmarkReminderSent),
 );
 
 export default guestsRouter;
