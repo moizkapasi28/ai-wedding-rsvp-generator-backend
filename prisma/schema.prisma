@@ -93,7 +93,7 @@ model User {
   weddings Wedding[]
   tokens Token[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   
   @@index([email])
 }
@@ -112,7 +112,7 @@ model Wedding {
   city String @db.VarChar(256)
   message String?
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)  
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)  
   events Event[]
   guests Guest[]
 
@@ -131,7 +131,7 @@ model Token{
   session_id String? @db.Uuid
   expires_at DateTime
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([user_id])
   @@index([jti])
@@ -156,7 +156,7 @@ model Event{
   guestEventInviteFormat GuestEventInviteFormat[]
   inviteCard EventInviteCard[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([wedding_id])
   @@index([title])
@@ -177,7 +177,7 @@ model Guest{
   note String? @db.VarChar(256)
   guestEventInvite GuestEventInvite[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([name])
   @@index([mobile_number])
@@ -204,7 +204,7 @@ model GuestEventInvite {
   first_reminder_sent_at DateTime? @db.Timestamptz(6)
   final_reminder_sent_at DateTime? @db.Timestamptz(6)
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([guest_id])
   @@index([event_id])
@@ -231,7 +231,7 @@ model GuestEventInviteFormat {
   rsvp_deadline DateTime? @db.Timestamptz(6)
   guestEventInvite GuestEventInvite[]
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([event_id])
   @@unique([event_id])
@@ -277,7 +277,7 @@ model EventInviteCard {
   generation_completed_at DateTime? @db.Timestamptz(6)
   credits_charged Int @default(0)
   created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([event_id])
   @@unique([event_id])

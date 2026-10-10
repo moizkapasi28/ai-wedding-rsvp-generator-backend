@@ -66,6 +66,6 @@ export const updateAiEventInviteCard = async (
   const db = tx || prisma;
   return db.eventInviteCard.update({
     where: { id },
-    data: { ...payload, updated_at: new Date() },
+    data: payload,
   });
 };

@@ -250,7 +250,7 @@ export const resetPasswordService = async (
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await updateUserById(
       user.id,
-      { password: hashedPassword, updated_at: new Date() },
+      { password: hashedPassword },
       tx,
     );
     // Every token, not just this link: whoever held the old password is signed out too
@@ -283,7 +283,7 @@ export const changePasswordService = async (
   return prisma.$transaction(async (tx) => {
     await updateUserById(
       user.id,
-      { password: hashedPassword, updated_at: new Date() },
+      { password: hashedPassword },
       tx,
     );
     // Every session, as a password reset does: whoever held the old password is signed out.

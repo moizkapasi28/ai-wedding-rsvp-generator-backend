@@ -159,7 +159,7 @@ export const updateWeddingById = async (
   const db = tx || prisma;
   return db.wedding.update({
     where: { id },
-    data: { ...data, updated_at: new Date() },
+    data: data,
   });
 };
 

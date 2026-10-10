@@ -72,7 +72,7 @@ export const updateRsvpInvite = async (
 
   return db.guestEventInvite.update({
     where: { id: inviteId },
-    data: { ...data, updated_at: new Date() },
+    data: data,
     select: inviteReplySelect,
   });
 };

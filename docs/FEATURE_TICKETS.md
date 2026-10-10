@@ -352,8 +352,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Add `@updatedAt` to every `updated_at` field, run `npx prisma migrate dev` (likely an empty/no-op SQL migration; keep the explaining comment) and `npx prisma generate`, then remove the manual `updated_at: new Date()` writes.
 
 **Acceptance criteria**
-- [ ] Updating a profile, guest, event, wedding, page setting and invite card each changes `updated_at`.
-- [ ] `npx tsc --noEmit` passes.
+- [x] Updating a profile, guest, event, wedding, page setting and invite card each changes `updated_at`.
+- [x] `npx tsc --noEmit` passes.
 
 **Notes/risks**
 - `updateMany` also sets `@updatedAt` fields in Prisma; check the credit decrement (`spendCredits`) is fine with that.

@@ -71,7 +71,7 @@ export const updateGuestEventInviteFormat = async (
   const db = tx || prisma;
   return db.guestEventInviteFormat.update({
     where: { id },
-    data: { ...payload, updated_at: new Date() },
+    data: payload,
   });
 };
 

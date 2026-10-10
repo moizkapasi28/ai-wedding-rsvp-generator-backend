@@ -365,10 +365,9 @@ export const markGuestEventInviteSent = async (
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  const now = new Date();
   return db.guestEventInvite.update({
     where: { id },
-    data: { invite_sent_at: sent ? now : null, updated_at: now },
+    data: { invite_sent_at: sent ? new Date() : null },
   });
 };
 
@@ -379,13 +378,12 @@ export const markGuestEventInviteReminded = async (
   tx?: Prisma.TransactionClient,
 ) => {
   const db = tx || prisma;
-  const now = new Date();
-  const sentAt = sent ? now : null;
+  const sentAt = sent ? new Date() : null;
   return db.guestEventInvite.update({
     where: { id },
     data:
       reminder === "FIRST"
-        ? { first_reminder_sent_at: sentAt, updated_at: now }
-        : { final_reminder_sent_at: sentAt, updated_at: now },
+        ? { first_reminder_sent_at: sentAt }
+        : { final_reminder_sent_at: sentAt },
   });
 };
