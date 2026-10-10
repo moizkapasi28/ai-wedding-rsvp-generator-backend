@@ -58,6 +58,26 @@ export const findAiEventInviteCardByEventId = async (
   return db.eventInviteCard.findUnique({ where: { event_id: eventId } });
 };
 
+const IN_FLIGHT_STATUSES = ["QUEUED", "PROCESSING"] as const;
+
+// Every card with a generation under way, with the user it belongs to
+export const findInFlightInviteCards = () =>
+  prisma.eventInviteCard.findMany({
+    where: { generation_status: { in: [...IN_FLIGHT_STATUSES] } },
+    include: { event: { select: { wedding: { select: { user_id: true } } } } },
+  });
+
+// Only touches a card that is still in flight, so a run that finished (or was already
+// failed by someone else) in the meantime is left as it is. `count` says which happened.
+export const updateInFlightInviteCard = (
+  id: string,
+  payload: Prisma.EventInviteCardUpdateManyMutationInput,
+) =>
+  prisma.eventInviteCard.updateMany({
+    where: { id, generation_status: { in: [...IN_FLIGHT_STATUSES] } },
+    data: payload,
+  });
+
 export const updateAiEventInviteCard = async (
   id: string,
   payload: Prisma.EventInviteCardUpdateInput,

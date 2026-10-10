@@ -5,11 +5,16 @@ dotenv.config();
 import "../config/env";
 
 import logger from "../config/logger";
-import { inviteCardWorker } from "./inviteCard.worker";
+import { scheduleInviteCardSweep } from "../queues/inviteCard.queue";
+import { inviteCardSweepWorker, inviteCardWorker } from "./inviteCard.worker";
 import { guestWorker } from "./guest.worker";
 
 // Single entry point for every background queue, so one process covers them all.
-const workers = [guestWorker, inviteCardWorker];
+const workers = [guestWorker, inviteCardWorker, inviteCardSweepWorker];
+
+scheduleInviteCardSweep().catch((error) =>
+  logger.error(error, "Failed to schedule the stale invite card sweep"),
+);
 
 logger.info(
   { queues: workers.map((worker) => worker.name) },

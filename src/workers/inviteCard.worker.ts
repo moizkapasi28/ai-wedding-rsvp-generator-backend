@@ -7,9 +7,13 @@ import { JOB_RETRY_DELAYS_MS } from "../enums/inviteCard.enum";
 import { redisOptions } from "../lib/redis";
 import {
   INVITE_CARD_QUEUE_NAME,
+  INVITE_CARD_SWEEP_QUEUE_NAME,
   InviteCardJobPayload,
 } from "../queues/inviteCard.queue";
-import { runInviteCardGenerationJob } from "../services/inviteCard.service";
+import {
+  retireStaleInviteCardGenerationsService,
+  runInviteCardGenerationJob,
+} from "../services/inviteCard.service";
 
 export const inviteCardWorker = new Worker<InviteCardJobPayload>(
   INVITE_CARD_QUEUE_NAME,
@@ -62,4 +66,20 @@ inviteCardWorker.on("failed", (job, err) => {
 
 inviteCardWorker.on("error", (err) => {
   logger.error(err, "❌ AI invite card worker encountered an error:");
+});
+
+// Fails and refunds generations whose worker stopped writing heartbeats, on the schedule
+// set by scheduleInviteCardSweep, whether or not anyone is polling the card
+export const inviteCardSweepWorker = new Worker(
+  INVITE_CARD_SWEEP_QUEUE_NAME,
+  async () => ({ retired: await retireStaleInviteCardGenerationsService() }),
+  { connection: redisOptions },
+);
+
+inviteCardSweepWorker.on("failed", (_job, err) => {
+  logger.error({ err }, "❌ Stale invite card sweep failed");
+});
+
+inviteCardSweepWorker.on("error", (err) => {
+  logger.error(err, "❌ Stale invite card sweep worker encountered an error:");
 });

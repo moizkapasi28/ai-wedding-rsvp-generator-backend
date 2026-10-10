@@ -454,8 +454,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Register the repeatable job's worker in [`src/workers/index.ts`](../src/workers/index.ts).
 
 **Acceptance criteria**
-- [ ] A card forced into PROCESSING with a heartbeat 11 minutes old becomes FAILED with `TIMEOUT` and refunded within one sweep interval, with nobody polling.
-- [ ] Refund happens once even if the status endpoint and the sweep race (the existing conditional `credits_charged` update covers this; verify).
+- [x] A card forced into PROCESSING with a heartbeat 11 minutes old becomes FAILED with `TIMEOUT` and refunded within one sweep interval, with nobody polling.
+- [x] Refund happens once even if the status endpoint and the sweep race (the existing conditional `credits_charged` update covers this; verify).
 
 **Notes/risks**
 - Use `attempts: 1` for the sweep job.

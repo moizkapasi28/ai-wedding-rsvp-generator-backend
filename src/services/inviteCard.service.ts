@@ -14,8 +14,10 @@ import {
 import {
   findAiEventInviteCardByEventId,
   findAiEventInviteCardById,
+  findInFlightInviteCards,
   getInviteCardsByWedding,
   updateAiEventInviteCard,
+  updateInFlightInviteCard,
 } from "../repositories/inviteCard.repository";
 import { ApiError } from "../utils/apiError.util";
 import {
@@ -50,12 +52,49 @@ const isGenerationStale = (inviteCard: EventInviteCard) => {
   return Date.now() - lastSeen.getTime() > GENERATION_STALE_AFTER_MS;
 };
 
-const isGenerationInFlight = (inviteCard: EventInviteCard) => {
-  const isRunning =
-    inviteCard.generation_status === GENERATION_STATUS.QUEUED ||
-    inviteCard.generation_status === GENERATION_STATUS.PROCESSING;
+const isRunning = (inviteCard: EventInviteCard) =>
+  inviteCard.generation_status === GENERATION_STATUS.QUEUED ||
+  inviteCard.generation_status === GENERATION_STATUS.PROCESSING;
 
-  return isRunning && !isGenerationStale(inviteCard);
+const isGenerationInFlight = (inviteCard: EventInviteCard) =>
+  isRunning(inviteCard) && !isGenerationStale(inviteCard);
+
+// Fails a generation nobody is working on any more and gives the credits back. The one code
+// path for both callers (the status endpoint and the worker's sweep). The update only applies
+// while the card is still in flight, so if the two race, or the run finishes at the last
+// moment, exactly one of them changes the card and only that one refunds.
+const retireStaleGeneration = async (cardId: string, userId: string) => {
+  const { count } = await updateInFlightInviteCard(cardId, {
+    generation_status: GENERATION_STATUS.FAILED,
+    generation_stage: null,
+    generation_error: "Generation timed out. Please try again.",
+    generation_error_code: GENERATION_ERROR_CODE.TIMEOUT,
+    generation_completed_at: new Date(),
+  });
+
+  if (count) await refundInviteCardCredits(cardId, userId);
+
+  return count > 0;
+};
+
+// Run on a schedule in the worker. Without it a stale card is only noticed when its owner
+// polls the status endpoint, so closing the tab left the card "in flight" and the credits
+// charged for good.
+export const retireStaleInviteCardGenerationsService = async () => {
+  const stale = (await findInFlightInviteCards()).filter(isGenerationStale);
+
+  let retired = 0;
+  for (const card of stale) {
+    if (await retireStaleGeneration(card.id, card.event.wedding.user_id)) {
+      retired++;
+      logger.warn(
+        { cardId: card.id, status: card.generation_status },
+        "Retired a stale invite card generation and refunded its credits",
+      );
+    }
+  }
+
+  return retired;
 };
 
 export const getInviteCardsByWeddingService = async (
@@ -197,6 +236,16 @@ export const runInviteCardGenerationJob = async (
   // Nowhere to record the failure, and a retry cannot bring the card back
   if (!inviteCard) throw new UnrecoverableError("AI Invite Card Not Found");
 
+  // The run this job belongs to was already failed and refunded (it went stale while the job
+  // waited, e.g. the worker was down). Generating now would hand out a card for free.
+  if (!isRunning(inviteCard)) {
+    log.warn(
+      { status: inviteCard.generation_status },
+      "generation.skip: the card is no longer in flight",
+    );
+    throw new UnrecoverableError("Generation was already retired");
+  }
+
   const heartbeat = (data: Prisma.EventInviteCardUpdateInput = {}) =>
     updateAiEventInviteCard(inviteCardId, {
       ...data,
@@ -312,21 +361,12 @@ export const getInviteCardGenerationStatusService = async (
   if (!ownershipEvent)
     throw new ApiError(400, "Invalid Invite card or Invite card Not Found");
 
-  // A worker that died mid-run can never write its own failure, so the page would
-  // poll a PROCESSING card forever. Retire it here instead.
-  if (
-    (inviteCard.generation_status === GENERATION_STATUS.QUEUED ||
-      inviteCard.generation_status === GENERATION_STATUS.PROCESSING) &&
-    isGenerationStale(inviteCard)
-  ) {
-    inviteCard = await updateAiEventInviteCard(inviteCard.id, {
-      generation_status: GENERATION_STATUS.FAILED,
-      generation_stage: null,
-      generation_error: "Generation timed out. Please try again.",
-      generation_error_code: GENERATION_ERROR_CODE.TIMEOUT,
-      generation_completed_at: new Date(),
-    });
-    await refundInviteCardCredits(inviteCard.id, userId);
+  // A worker that died mid-run can never write its own failure, so the page would poll a
+  // PROCESSING card forever. The worker's sweep retires these too; doing it here as well
+  // means the person watching doesn't wait for the next sweep.
+  if (isRunning(inviteCard) && isGenerationStale(inviteCard)) {
+    await retireStaleGeneration(inviteCard.id, userId);
+    inviteCard = (await findAiEventInviteCardById(id)) ?? inviteCard;
   }
 
   return {
