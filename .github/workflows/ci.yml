@@ -24,5 +24,7 @@ jobs:
       - run: npm run build
       - name: openapi.json is in step with the routes and schemas
         run: npm run docs:openapi && git diff --exit-code src/openapi.json
-      # No database or secrets needed. credits.check.ts and auth.check.ts need Postgres, so they stay local.
+      # Unit tests: no database or secrets needed
+      - run: npm test
+      # No database or secrets needed. The other *.check.ts scripts and npm run test:e2e need Postgres, so they stay local.
       - run: npx tsx src/utils/inviteCardGeneration.check.ts

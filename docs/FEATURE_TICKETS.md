@@ -691,8 +691,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - `"test": "tsx --test src/**/*.test.ts"` (node:test, no new framework) plus small tests for `getDueReminder` (first/final/deadline passed/toggles off), `buildRsvpUpdate` (deadline enforcement, disabled questions dropped), `normalizePhone`. Wire into BE-030.
 
 **Acceptance criteria**
-- [ ] `npm test` runs and passes locally without a database.
-- [ ] Breaking the 7-day first-reminder rule fails a test.
+- [x] `npm test` runs and passes locally without a database.
+- [x] Breaking the 7-day first-reminder rule fails a test.
 
 **Notes/risks**
 - Keep DB-backed checks (`credits.check.ts`) as a separate script.
