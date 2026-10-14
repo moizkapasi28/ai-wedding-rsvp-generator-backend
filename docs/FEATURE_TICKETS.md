@@ -817,8 +817,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Update both files to match the code (after BE-001 lands, document the auth limiter again).
 
 **Acceptance criteria**
-- [ ] Every file and symbol named in CLAUDE.md exists (`grep` each one).
-- [ ] README mentions SMTP, AI credits, and the check scripts.
+- [x] Every file and symbol named in CLAUDE.md exists (`grep` each one). Checked with a script over every backticked name; what remains unmatched is globs and `Model.field` references, each present in `schema.prisma`.
+- [x] README mentions SMTP, AI credits, and the check scripts.
 
 **Notes/risks**
 - Keep CLAUDE.md terse; it is loaded into every AI session.
