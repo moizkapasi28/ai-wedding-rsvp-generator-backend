@@ -6,7 +6,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 
-import { connectDB } from "./lib/prisma";
+import { connectDB, prisma } from "./lib/prisma";
+import { connection as redisConnection } from "./lib/redis";
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
 import logger from "./config/logger";
@@ -47,9 +48,34 @@ app.use(requestLogger);
 
 import { globalLimiter } from "./middlewares/rateLimiter.middleware";
 
-// Health check endpoint (placed before rate limiter for load balancers)
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+// Fails with a reason after `ms`. Without it a check could hang: with Redis down, the shared
+// connection (maxRetriesPerRequest: null, which BullMQ needs) queues a PING until it is back.
+const within = <T>(check: Promise<T>, ms = 2000) =>
+  Promise.race([
+    check,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("timed out")), ms).unref(),
+    ),
+  ]);
+
+// Health check (before the rate limiter, for load balancers): 503 naming whichever
+// dependency is down, since queues, rate limits and live RSVPs all need Redis too
+app.get("/health", async (req, res) => {
+  const [database, redis] = await Promise.allSettled([
+    within(prisma.$queryRaw`SELECT 1`),
+    within(redisConnection.ping()),
+  ]);
+  const checks = {
+    database: database.status === "fulfilled" ? "ok" : "down",
+    redis: redis.status === "fulfilled" ? "ok" : "down",
+  };
+  const healthy = Object.values(checks).every((state) => state === "ok");
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? "ok" : "unavailable",
+    checks,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use("/api", globalLimiter);

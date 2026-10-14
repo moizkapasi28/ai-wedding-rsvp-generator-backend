@@ -745,7 +745,7 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - `SELECT 1` via Prisma and `PING` via the shared Redis connection with a short timeout; 503 with which dependency failed.
 
 **Acceptance criteria**
-- [ ] Stopping Redis makes `/health` return 503 within a couple of seconds; restarting it returns 200.
+- [x] Stopping Redis makes `/health` return 503 within a couple of seconds; restarting it returns 200.
 
 **Notes/risks**
 - Keep it before the rate limiter, as today.

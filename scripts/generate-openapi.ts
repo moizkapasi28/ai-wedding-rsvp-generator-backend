@@ -138,8 +138,11 @@ const paths: Record<string, Record<string, unknown>> = {
   "/health": {
     get: {
       tags: ["System"],
-      summary: "Health check",
-      responses: { "200": { description: "OK", content: json({ type: "object" }) } },
+      summary: "Health check: PostgreSQL and Redis, each with a 2s timeout",
+      responses: {
+        "200": { description: "Both reachable", content: json({ type: "object" }) },
+        "503": { description: "One is down; checks.database / checks.redis say which", content: json({ type: "object" }) },
+      },
     },
   },
 };

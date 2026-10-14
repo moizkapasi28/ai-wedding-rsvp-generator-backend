@@ -592,7 +592,7 @@ Other fixed configuration: `app.set("trust proxy", 1)` so `req.ip` (rate-limit k
 | Migrations | Not run by the image or `start.sh`; apply `prisma migrate deploy` separately | [dockerfile](../dockerfile), [start.sh](../start.sh) |
 | Build output | `tsc` with `rootDir ./` → `dist/src/...`; templates copied to `dist/src/public` | [package.json](../package.json), [tsconfig.json](../tsconfig.json) |
 | Logging | pino level `info`, multistream: pretty console + `./logs/app.log` (Docker creates `/app/logs`). Request logger logs method, URL, status, duration, IP, UA; `>= 400` at error level. Pipeline logs `generation.start/stage/retry/end` with `cardId`, `jobId`, `attempt`. | [logger.ts](../src/config/logger.ts), [logger.middleware.ts](../src/middlewares/logger.middleware.ts) |
-| Health | `GET /health` → `200 { status:"ok", timestamp }`, before the rate limiter; does not check DB or Redis | [index.ts](../src/index.ts) |
+| Health | `GET /health` → `200` when PostgreSQL (`SELECT 1`) and Redis (`PING`) both answer within 2 s, else `503` naming the one that is down; before the rate limiter | [index.ts](../src/index.ts) |
 | API docs | `/reference` serves Scalar (theme purple) over `src/openapi.json` | [index.ts](../src/index.ts) |
 | OpenAPI generation | `npm run docs:openapi` → [generate-openapi.ts](../scripts/generate-openapi.ts): route table (49 routes) + each route's zod schema (`z.toJSONSchema`, `io: "input"`) + `/health`; writes 50 operations. Adding a route requires adding it to the table. | [generate-openapi.ts](../scripts/generate-openapi.ts) |
 

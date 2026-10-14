@@ -17,10 +17,20 @@
         "tags": [
           "System"
         ],
-        "summary": "Health check",
+        "summary": "Health check: PostgreSQL and Redis, each with a 2s timeout",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Both reachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One is down; checks.database / checks.redis say which",
             "content": {
               "application/json": {
                 "schema": {

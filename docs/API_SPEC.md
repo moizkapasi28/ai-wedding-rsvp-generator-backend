@@ -133,7 +133,7 @@ Auth column: B = Bearer access token required, P = public. Limiter column lists 
 
 | Method, path | Response | Notes |
 |---|---|---|
-| `GET /health` | `200 { status: "ok", timestamp: ISO }` (no envelope) | Registered before the global limiter; no DB/Redis check ([index.ts](../src/index.ts)) |
+| `GET /health` | `200 { status: "ok", checks: { database, redis }, timestamp }` (no envelope); `503` with `status: "unavailable"` and the failing check `"down"` | Registered before the global limiter. Runs `SELECT 1` and a Redis `PING`, each with a 2 s timeout ([index.ts](../src/index.ts)) |
 | `GET /reference` | Scalar API reference UI over [src/openapi.json](../src/openapi.json) | Not in `openapi.json` itself |
 
 ## 4. Auth — `/api/auth`
