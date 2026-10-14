@@ -493,7 +493,7 @@ These are observations from the code on 2026-10-01. They are listed as open ques
 - **Q19.** The header illustration generation is synchronous, not queued, and not covered by `imageGenerationLimiter`, unlike card generation. Should it move to the queue or at least be rate-limited?
 
 ### 9.4 Dead code, drift and housekeeping
-- **Q20.** `backend: src/services/faceSwap.service.ts` is unused (face swapping is now part of the Example pipeline via `photo_placement`). Delete it?
+- **Q20.** Resolved (BE-019): the unused `faceSwap.service.ts` was deleted (face swapping is part of the Example pipeline via `photo_placement`).
 - **Q21.** Resolved (BE-014): `GET /api/page-setting/event/:eventId`, `GET /api/page-setting/:id` and `GET /api/event/:id` were never called by the client and have been removed.
 - **Q22.** `frontend: src/components/DashboardCard.tsx` and `DASHBOARD_CARD_MENU` (Edit/Copy/Delete) in `src/constants/index.ts` are not rendered anywhere.
 - **Q23. Documentation drift.**

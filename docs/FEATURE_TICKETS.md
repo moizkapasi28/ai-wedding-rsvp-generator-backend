@@ -475,8 +475,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Update CLAUDE.md's mention of `faceSwap.service.ts`.
 
 **Acceptance criteria**
-- [ ] `npx tsc --noEmit` and `npm run build` pass.
-- [ ] `npx tsx src/utils/inviteCardGeneration.check.ts` still passes.
+- [x] `npx tsc --noEmit` and `npm run build` pass.
+- [x] `npx tsx src/utils/inviteCardGeneration.check.ts` still passes.
 
 **Notes/risks**
 - None; git history keeps the face swap prompt if it is ever wanted.

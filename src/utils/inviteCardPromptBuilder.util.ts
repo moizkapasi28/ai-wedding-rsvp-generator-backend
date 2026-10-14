@@ -11,6 +11,7 @@ import {
 } from "./eventTextFormat.util";
 import { getAttire, NEUTRAL_DEFAULT_ATTIRE_PROMPT } from "./attireCatelogue.util";
 import { getStyle } from "./styleCatelogue.util";
+import { getDesignPreset, getTextureEmulation, getMetallicAccents, getNegativeSpace, getMonogramStyle, getEdgeStyling, getTextAlignment } from "./manualDesignCatalogue.util";
 import {
   buildIdentityBlock,
   sanitizeCustomNote,
@@ -248,8 +249,6 @@ function buildCouplePhotoBlock(record: EventInviteCard, isExampleMode: boolean =
   ${GLOBAL_POSITIVE_SUFFIX}
     `.trim();
 }
-
-import { getDesignPreset, getTextureEmulation, getMetallicAccents, getNegativeSpace, getMonogramStyle, getEdgeStyling, getTextAlignment } from "./manualDesignCatalogue.util";
 
 export async function buildStage1ManualPrompt(
   record: Partial<EventInviteCard>,
