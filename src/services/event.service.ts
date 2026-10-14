@@ -25,24 +25,24 @@ import { createAiEventInviteCard } from "../repositories/inviteCard.repository";
 export const mapGuestStatsToEvents = (
   events: Event[],
   guestStats: GuestStatQueryGroup[],
-): EventWithStats[] => {
+): Required<EventWithStats>[] => {
   const statsMap = new Map<
     string,
     Omit<EventStats, "completion" | "progressBar">
   >();
 
   for (const stat of guestStats) {
-    if (!statsMap.has(stat.event_id)) {
-      statsMap.set(stat.event_id, {
+    let eventStat = statsMap.get(stat.event_id);
+    if (!eventStat) {
+      eventStat = {
         totalGuests: 0,
         attendingGuests: 0,
         declinedGuests: 0,
         maybeGuests: 0,
         pendingGuests: 0,
-      });
+      };
+      statsMap.set(stat.event_id, eventStat);
     }
-
-    const eventStat = statsMap.get(stat.event_id);
     const count = stat._count.status;
 
     eventStat.totalGuests += count;

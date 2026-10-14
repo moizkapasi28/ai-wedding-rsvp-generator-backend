@@ -74,7 +74,7 @@ export async function pageSettingEditImageWithGemini({
   let generatedImageBuffer: Buffer | null = null;
 
   for (const part of parts) {
-    if (part.inlineData) {
+    if (part.inlineData?.data) {
       generatedImageBuffer = Buffer.from(part.inlineData.data, "base64");
     }
     if (part.text) {

@@ -31,7 +31,8 @@ export class GeminiGenerationError extends Error {
 // prepaid balance mentions credits.
 const BILLING_PATTERN = /credit/i;
 
-const NETWORK_ERROR_CODES = new Set([
+// unknown: has() is called with whatever code an error happens to carry, often none
+const NETWORK_ERROR_CODES = new Set<unknown>([
   "ECONNRESET",
   "ECONNREFUSED",
   "ETIMEDOUT",
@@ -115,7 +116,7 @@ export const extractImageOrThrow = (
     (part) => part.inlineData?.data,
   )?.inlineData;
 
-  if (!image)
+  if (!image?.data)
     throw new GeminiGenerationError(
       GENERATION_ERROR_CODE.NO_IMAGE,
       `No image returned (finishReason: ${finishReason ?? "none"})`,

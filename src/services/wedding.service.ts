@@ -239,6 +239,8 @@ export const getWeddingDashboardService = async (weddingId: string) => {
     count: 0,
   }));
   for (const { responded_at } of recentResponses) {
+    // Never null here (the query filters on it), but Prisma types the column as nullable
+    if (!responded_at) continue;
     const bucket = dailyResponses.find(
       (day) => day.date === toDayKey(responded_at),
     );

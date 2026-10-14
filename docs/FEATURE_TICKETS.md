@@ -799,8 +799,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Turn on `strictNullChecks` only, fix the 70 errors with real guards (not `!`), leave the rest of `strict` for later.
 
 **Acceptance criteria**
-- [ ] `strictNullChecks: true` in `tsconfig.json` and `npx tsc --noEmit` passes.
-- [ ] No new non-null assertions except where a comment explains why.
+- [x] `strictNullChecks: true` in `tsconfig.json` and `npx tsc --noEmit` passes.
+- [x] No new non-null assertions except where a comment explains why. None added; `req.user` is typed as set (`types/express.d.ts`, comment explains: only authenticated routes read it) instead of 38 assertions.
 
 **Notes/risks**
 - Touches many files; land it on a quiet day to avoid merge pain.

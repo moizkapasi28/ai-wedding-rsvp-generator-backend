@@ -116,8 +116,10 @@ export const runInviteCardPipeline = async (
     prompt: stage1Prompt,
     imageKeys: [reference, subject],
   });
-  const designReused =
-    !!card.invite_design_image_url && card.design_fingerprint === fingerprint;
+  // The stored artwork, when it was drawn from this exact prompt and these images
+  const reusableDesign =
+    card.design_fingerprint === fingerprint ? card.invite_design_image_url : null;
+  const designReused = !!reusableDesign;
 
   const geminiOptions = {
     onRetry: (failure: GeminiGenerationError, waitMs: number) => {
@@ -137,10 +139,8 @@ export const runInviteCardPipeline = async (
 
   let artwork: GeneratedImage;
 
-  if (designReused) {
-    const { buffer, contentType } = await deps.loadImage(
-      card.invite_design_image_url,
-    );
+  if (reusableDesign) {
+    const { buffer, contentType } = await deps.loadImage(reusableDesign);
 
     artwork = { data: buffer, mimeType: contentType };
   } else {

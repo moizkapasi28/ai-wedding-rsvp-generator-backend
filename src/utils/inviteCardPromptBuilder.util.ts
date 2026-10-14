@@ -22,10 +22,8 @@ import {
 } from "./promptBuilder.util";
 
 export async function fetchImageAsGeminiPart(
-  s3Key: string | null | undefined,
-): Promise<{ inlineData: { mimeType: string; data: string } } | null> {
-  if (!s3Key) return null;
-
+  s3Key: string,
+): Promise<{ inlineData: { mimeType: string; data: string } }> {
   let buffer: Buffer;
 
   try {

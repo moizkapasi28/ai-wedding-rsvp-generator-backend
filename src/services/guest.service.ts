@@ -112,8 +112,8 @@ export const addNewGuestService = async (
   return prisma.$transaction(async (tx) => {
     // 3. Reuse existing guest if mobile + wedding already on record
     const existingGuest = await findGuestByMobileNumberAndWeddingId(
-      guestPayload.mobile_number,
-      guestPayload.wedding_id,
+      body.mobile_number,
+      wedding_id,
       tx,
     );
 
@@ -301,6 +301,7 @@ export const calculateConfirmationOfGuest = async (weddingId: string) => {
 
 export const downloadGuestListTemplateService = async (weddingId: string) => {
   const wedding = await findWeddingById(weddingId);
+  if (!wedding) throw new ApiError(404, "Wedding not found");
 
   const events = await getAllEventsByWeddingID(weddingId);
 
@@ -869,6 +870,7 @@ export const exportGuestsService = async (
   inviteSent?: "sent" | "not_sent",
 ) => {
   const wedding = await findWeddingById(weddingId);
+  if (!wedding) throw new ApiError(404, "Wedding not found");
   if (!wedding) throw new ApiError(404, "Wedding not found");
 
   const { guests } = await findAllGuests(
