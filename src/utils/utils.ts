@@ -1,11 +1,11 @@
+import { env } from "../config/env";
 interface Data {
   type: string;
   query: string;
 }
 
-// WEB_APP_URL doubles as the CORS origin, so it normally has no trailing slash; tolerate either form
 export const createUrl = (data: Data): string => {
-  return `${process.env.WEB_APP_URL?.replace(/\/$/, "")}/${data.type}?${data.query}`;
+  return `${env.WEB_APP_URL}/${data.type}?${data.query}`;
 };
 
 export const sanitizeSearchTerm = (term: string): string => {

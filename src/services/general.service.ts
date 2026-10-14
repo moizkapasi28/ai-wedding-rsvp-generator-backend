@@ -18,9 +18,9 @@ export const generateS3PresignedUploadUrlService = async (
     : `${prefix}${object_key.replace(/^\/+/, "")}`;
 
   const url = await generatePresignedUrl(
-    process.env.AWS_BUCKET_NAME,
+    env.AWS_BUCKET_NAME,
     key,
-    Number(process.env.AWS_BUCKET_PUT_URL_EXPIRE),
+    env.AWS_BUCKET_PUT_URL_EXPIRE,
     "putObject",
     mime_type,
   );
@@ -48,7 +48,7 @@ export const generateS3PresignedViewUrlService = async (
   const expires_at = new Date(Date.now() + expiresIn * 1000).toISOString();
 
   const url = await generatePresignedUrl(
-    process.env.AWS_BUCKET_NAME,
+    env.AWS_BUCKET_NAME,
     object_key,
     expiresIn,
     "getObject",

@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import * as constants from "../utils/constants/email.constant";
 import fs from "fs";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
@@ -10,31 +11,29 @@ import logger from "../config/logger";
 const publicDir: string = path.join(__dirname, "../public/emailTemplates"); //THIS IS FOR LOCAL
 
 // EMAIL_PROVIDER in .env picks the sender: "ses" (default) or "smtp" (Nodemailer)
-const useSmtp = process.env.EMAIL_PROVIDER === "smtp";
+const useSmtp = env.EMAIL_PROVIDER === "smtp";
 
 // Initialize AWS SES Client
 const sesClient = new SESClient({
-  region: process.env.AWS_SES_REGION,
+  region: env.AWS_SES_REGION,
   credentials: {
-    accessKeyId: process.env.AWS_SES_ACCESS_KEY_ID ?? "",
-    secretAccessKey: process.env.AWS_SES_SECRET_ACCESS_KEY ?? "",
+    accessKeyId: env.AWS_SES_ACCESS_KEY_ID ?? "",
+    secretAccessKey: env.AWS_SES_SECRET_ACCESS_KEY ?? "",
   },
 });
 
 const smtpTransport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT ?? 587),
-  secure: process.env.SMTP_PORT === "465",
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_PORT === 465,
+  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
 });
 
 // Gmail and most SMTP hosts only send "from" the account you log in with
-const senderEmail = useSmtp
-  ? process.env.SMTP_USER
-  : process.env.AWS_SENDER_EMAIL;
+const senderEmail = useSmtp ? env.SMTP_USER : env.AWS_SENDER_EMAIL;
 
 /* istanbul ignore next */
-if (process.env.NODE_ENV !== "test") {
+if (env.NODE_ENV !== "test") {
   logger.info(`🚀 Email service initialized (${useSmtp ? "smtp" : "ses"})`);
 }
 
@@ -58,7 +57,7 @@ const getHTMLandSendEmail = async (
   try {
     const subject: string = "";
     const mailOptions = {
-      from: `"${process.env.PROJECT_NAME}" <${senderEmail}>`,
+      from: `"${env.PROJECT_NAME}" <${senderEmail}>`,
       to: request.email,
       subject,
       html: "",
@@ -152,8 +151,9 @@ export const sendEmail = async (
           type: "verify-email",
           query: `token=${request.token}`,
         });
-        request.expiry_minutes =
-          process.env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES ?? "10";
+        request.expiry_minutes = String(
+          env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES,
+        );
         return await getHTMLandSendEmail(
           `${publicDir}/email-verification.html`,
           request,
@@ -176,8 +176,9 @@ export const sendEmail = async (
           type: "reset-password",
           query: `token=${request.token}`,
         });
-        request.expiry_minutes =
-          process.env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES ?? "10";
+        request.expiry_minutes = String(
+          env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES,
+        );
         return await getHTMLandSendEmail(
           `${publicDir}/forgot-password.html`,
           request,

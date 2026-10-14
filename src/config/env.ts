@@ -3,7 +3,7 @@ import z from "zod";
 
 // Checked once at startup so a missing or malformed variable fails loudly
 // instead of at the first request that needs it.
-// ponytail: validates only; callers still read process.env directly — switch them to `env` if typos become a problem
+// Read config through the exported `env` (typed, numbers coerced, defaults applied), not process.env.
 const envSchema = z
   .object({
     NODE_ENV: z.string().default("development"),
@@ -15,14 +15,15 @@ const envSchema = z
     LOG_FILE: z.string().optional(),
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.string().min(1),
-    // Frontend origin without a trailing slash: CORS origin and base for links in emails and WhatsApp messages
-    WEB_APP_URL: z.url(),
+    // Frontend origin: the CORS origin and the base for links in emails and WhatsApp messages.
+    // Trailing slash stripped, since a CORS origin has none; join paths with an explicit "/"
+    WEB_APP_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
 
     JWT_SECRET: z.string().min(1),
     JWT_ACCESS_EXPIRATION_MINUTES: z.coerce.number().positive(),
     JWT_REFRESH_EXPIRATION_DAYS: z.coerce.number().positive(),
-    JWT_RESET_PASSWORD_EXPIRATION_MINUTES: z.coerce.number().positive().optional(),
-    JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: z.coerce.number().positive().optional(),
+    JWT_RESET_PASSWORD_EXPIRATION_MINUTES: z.coerce.number().positive().default(10),
+    JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: z.coerce.number().positive().default(10),
 
     AWS_ACCESS_KEY_ID: z.string().min(1),
     AWS_SECRET_ACCESS_KEY: z.string().min(1),
@@ -41,7 +42,7 @@ const envSchema = z
     AWS_SES_REGION: z.string().min(1).optional(),
     AWS_SENDER_EMAIL: z.email().optional(),
     SMTP_HOST: z.string().min(1).optional(),
-    SMTP_PORT: z.coerce.number().int().positive().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
     SMTP_USER: z.email().optional(),
     SMTP_PASS: z.string().min(1).optional(),
     PROJECT_NAME: z.string().min(1),
@@ -49,10 +50,11 @@ const envSchema = z
     // AI invite cards fail with a clear error without it, so the rest of the app can run
     GEMINI_API_KEY: z.string().min(1).optional(),
 
-    REDIS_HOST: z.string().min(1).optional(),
-    REDIS_PORT: z.coerce.number().int().positive().optional(),
+    REDIS_HOST: z.string().min(1).default("127.0.0.1"),
+    REDIS_PORT: z.coerce.number().int().positive().default(6379),
     REDIS_PASSWORD: z.string().optional(),
 
+    // Read by lib/whatsapp.ts straight from process.env: that helper stays import-free for its unit test
     WHATSAPP_DEFAULT_COUNTRY_CODE: z
       .string()
       .regex(/^\d{1,4}$/, "digits only, e.g. 91")
@@ -89,7 +91,7 @@ if (!result.success) {
   const problems = result.error.issues
     .map((issue) => `  ${issue.path.join(".") || "(env)"}: ${issue.message}`)
     .join("\n");
-  // console, not the logger: pino's file stream isn't open yet, and exiting before it is throws
+  // console, not the logger: the logger is configured from `env`, so it cannot exist yet
   console.error(`Invalid environment variables:\n${problems}`);
   process.exit(1);
 }

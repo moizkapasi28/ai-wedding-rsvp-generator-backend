@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { type Request } from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
@@ -8,7 +9,7 @@ import { connection as redisClient } from "../lib/redis";
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 10, // Limit each IP to 10 requests per window, shared across those routes
-  skip: () => process.env.NODE_ENV === "local",
+  skip: () => env.NODE_ENV === "local",
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
@@ -26,7 +27,7 @@ export const authLimiter = rateLimit({
 export const imageGenerationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 5, // Limit each IP to 5 requests per window
-  skip: () => process.env.NODE_ENV === "local",
+  skip: () => env.NODE_ENV === "local",
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
@@ -51,7 +52,7 @@ const isLiveStream = (req: Request) =>
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 1000, // Limit each IP to 1000 requests per window
-  skip: (req) => process.env.NODE_ENV === "local" || isLiveStream(req),
+  skip: (req) => env.NODE_ENV === "local" || isLiveStream(req),
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
@@ -69,7 +70,7 @@ export const globalLimiter = rateLimit({
 export const rsvpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 30, // Limit each IP to 30 RSVP submissions per window
-  skip: () => process.env.NODE_ENV === "local",
+  skip: () => env.NODE_ENV === "local",
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({

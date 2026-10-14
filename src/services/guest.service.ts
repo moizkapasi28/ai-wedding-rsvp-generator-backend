@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { Group, Guest, Prisma, Side, Status } from "../../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import {
@@ -1003,8 +1004,7 @@ type InviteToSend = NonNullable<
 // The slug keeps the link readable; the token alone identifies the invite, so a renamed wedding's old links still work.
 // Slugs come from the title with non [a-z0-9] stripped, so e.g. a Hindi title yields "" — same fallback as the RSVP page.
 const buildRsvpUrl = (invite: InviteToSend) =>
-  // WEB_APP_URL doubles as the CORS origin, so it has no trailing slash
-  `${process.env.WEB_APP_URL?.replace(/\/$/, "")}/rsvp/${invite.event.wedding.slug || "invite"}/${invite.invite_token}`;
+  `${env.WEB_APP_URL}/rsvp/${invite.event.wedding.slug || "invite"}/${invite.invite_token}`;
 
 // Event dates are stored as calendar dates, so format in UTC to keep the stored day.
 // ponytail: deadlines are end-of-day in the host's timezone; far-west hosts may see the next day — format in the wedding's timezone if that matters

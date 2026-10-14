@@ -782,8 +782,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Export the parsed `env` object; replace `process.env.X` reads with `env.X` (typed, coerced numbers). Drop `Number(...)` wrappers.
 
 **Acceptance criteria**
-- [ ] `grep -rn "process.env\." src` only matches `config/env.ts` (and `NODE_ENV` checks in the rate limiter if kept).
-- [ ] `npx tsc --noEmit` passes; app starts with the example env.
+- [x] `grep -rn "process.env\." src` only matches `config/env.ts` (and `NODE_ENV` checks in the rate limiter if kept). One deliberate exception: `lib/whatsapp.ts` reads `WHATSAPP_DEFAULT_COUNTRY_CODE` directly so its unit test runs without an env (noted in `env.ts`).
+- [x] `npx tsc --noEmit` passes; app starts with the example env. (Started the API and worker from a filled-in `.env`; the CI self-check gets placeholder values.)
 
 **Notes/risks**
 - Mechanical; do it in one pass to avoid a half-migrated state.

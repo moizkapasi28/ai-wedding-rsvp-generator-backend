@@ -1,11 +1,11 @@
+import { env } from "../config/env";
 import Redis from "ioredis";
-import "dotenv/config";
 import logger from "../config/logger";
 
 export const redisOptions = {
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: parseInt(process.env.REDIS_PORT || "6379", 10),
-  password: process.env.REDIS_PASSWORD || undefined,
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  password: env.REDIS_PASSWORD || undefined,
   maxRetriesPerRequest: null, // Required by BullMQ
 };
 

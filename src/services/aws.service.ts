@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import {
   GetObjectCommand,
   PutObjectCommand,
@@ -18,10 +19,10 @@ interface PresignedUrlOperation {
 
 // Create an S3 client
 const s3Client = new S3Client({
-  region: process.env.AWS_S3_REGION,
+  region: env.AWS_S3_REGION ?? env.AWS_REGION,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
   },
 });
 
@@ -54,7 +55,7 @@ export const getBufferFromS3 = async (
   abortSignal?: AbortSignal,
 ): Promise<S3BufferResponse> => {
   const command = new GetObjectCommand({
-    Bucket: process.env.AWS_BUCKET_NAME,
+    Bucket: env.AWS_BUCKET_NAME,
     Key: s3Key,
   });
   const response = await s3Client.send(command, { abortSignal });
@@ -82,7 +83,7 @@ export const uploadBufferToS3 = async (
   const uniqueKey = `${folder}/${uuidv4()}.${fileExtension}`;
 
   const command = new PutObjectCommand({
-    Bucket: process.env.AWS_BUCKET_NAME,
+    Bucket: env.AWS_BUCKET_NAME,
     Key: uniqueKey,
     Body: fileBuffer,
     ContentType: mime_type,

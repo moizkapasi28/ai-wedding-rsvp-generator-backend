@@ -27,4 +27,20 @@ jobs:
       # Unit tests: no database or secrets needed
       - run: npm test
       # No database or secrets needed. The other *.check.ts scripts and npm run test:e2e need Postgres, so they stay local.
+      # It imports the S3 service, which reads the validated env: placeholders only, nothing connects.
       - run: npx tsx src/utils/inviteCardGeneration.check.ts
+        env:
+          WEB_APP_URL: http://localhost:5173
+          JWT_SECRET: ci
+          JWT_ACCESS_EXPIRATION_MINUTES: 15
+          JWT_REFRESH_EXPIRATION_DAYS: 30
+          AWS_ACCESS_KEY_ID: ci
+          AWS_SECRET_ACCESS_KEY: ci
+          AWS_REGION: us-east-1
+          AWS_BUCKET_NAME: ci
+          AWS_BUCKET_PUT_URL_EXPIRE: 300
+          EMAIL_PROVIDER: smtp
+          SMTP_HOST: localhost
+          SMTP_USER: ci@example.com
+          SMTP_PASS: ci
+          PROJECT_NAME: CI

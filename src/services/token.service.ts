@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import moment from "moment";
 import { Prisma, Token, User } from "../../generated/prisma/client";
 import { v4 as uuidv4 } from "uuid";
@@ -16,7 +17,7 @@ export const generateAuthTokensService = async (
   sessionId: string = uuidv4(),
   tx?: Prisma.TransactionClient,
 ) => {
-  const tokenExpiryTime = process.env.JWT_ACCESS_EXPIRATION_MINUTES;
+  const tokenExpiryTime = env.JWT_ACCESS_EXPIRATION_MINUTES;
   const accessTokenExpires = moment().add(tokenExpiryTime, "minutes");
 
   const accessTokenJti = uuidv4();
@@ -37,7 +38,7 @@ export const generateAuthTokensService = async (
   );
 
   const refreshTokenExpires = moment().add(
-    process.env.JWT_REFRESH_EXPIRATION_DAYS,
+    env.JWT_REFRESH_EXPIRATION_DAYS,
     "days",
   );
 
@@ -77,7 +78,7 @@ export const generateTokenService = (
   userId: string,
   expiresAt: moment.Moment,
   tokenIndentifier: string,
-  secret: string = process.env.JWT_SECRET,
+  secret: string = env.JWT_SECRET,
 ): string => {
   const payload = {
     sub: userId,
@@ -116,7 +117,7 @@ export const generateVerifyEmailTokenService = async (
   userId: string,
   tx?: Prisma.TransactionClient,
 ): Promise<string> => {
-  const tokenExpiryTime = process.env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES || 10;
+  const tokenExpiryTime = env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES;
   const expiresAt = moment().add(tokenExpiryTime, "minutes");
   const jti = uuidv4();
 
@@ -140,10 +141,7 @@ export const verifyTokenService = async (
 ): Promise<Token> => {
   let payload: jwt.JwtPayload;
   try {
-    payload = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string,
-    ) as jwt.JwtPayload;
+    payload = jwt.verify(token, env.JWT_SECRET) as jwt.JwtPayload;
   } catch (error) {
     throw new ApiError(401, "Invalid or expired token");
   }
@@ -165,8 +163,7 @@ export const generateResetPasswordTokenService = async (
   userId: string,
   tx?: Prisma.TransactionClient,
 ): Promise<string> => {
-  const tokenExpiryTime =
-    process.env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES || 10;
+  const tokenExpiryTime = env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES;
   const expiresAt = moment().add(tokenExpiryTime, "minutes");
   const jti = uuidv4();
 

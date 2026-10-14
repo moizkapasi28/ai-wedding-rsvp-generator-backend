@@ -1,6 +1,6 @@
 import "dotenv/config";
-// Must run before anything reads process.env
-import "./config/env";
+// First, so a bad .env exits before anything connects
+import { env } from "./config/env";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -32,11 +32,11 @@ app.use(helmet());
 // This ensures req.ip gets the real client IP instead of the proxy IP
 app.set("trust proxy", 1);
 
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT;
 
 app.use(
   cors({
-    origin: process.env.WEB_APP_URL || "http://localhost:5173",
+    origin: env.WEB_APP_URL,
     credentials: true,
     // Lets the frontend read how long a rate limiter (429) asked it to wait
     exposedHeaders: ["Retry-After"],

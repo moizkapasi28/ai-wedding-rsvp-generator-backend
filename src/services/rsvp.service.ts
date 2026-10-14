@@ -70,7 +70,7 @@ const signForGuest = async (key: string | null | undefined, eventId: string) => 
 
   try {
     return await generatePresignedUrl(
-      process.env.AWS_BUCKET_NAME,
+      env.AWS_BUCKET_NAME,
       key,
       // The same expiry the host-side view URLs use
       env.AWS_BUCKET_GET_URL_EXPIRE,
