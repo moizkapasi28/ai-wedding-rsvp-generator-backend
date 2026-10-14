@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import logger from "../config/logger";
+import { redactUrlForLog } from "../utils/logUrl.util";
 
 export const requestLogger = (
   req: Request,
@@ -12,7 +13,7 @@ export const requestLogger = (
     const duration = Date.now() - start;
     const logData = {
       method: req.method,
-      url: req.originalUrl,
+      url: redactUrlForLog(req.originalUrl),
       status: res.statusCode,
       duration: `${duration}ms`,
       ip: req.ip,

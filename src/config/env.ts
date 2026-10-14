@@ -7,6 +7,12 @@ import z from "zod";
 const envSchema = z
   .object({
     NODE_ENV: z.string().default("development"),
+    // local/development get coloured console lines; anything else (e.g. production) JSON lines
+    LOG_LEVEL: z
+      .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+      .default("info"),
+    // Also write logs to this file (e.g. ./logs/app.log). Off by default: never rotated
+    LOG_FILE: z.string().optional(),
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.string().min(1),
     // Frontend origin without a trailing slash: CORS origin and base for links in emails and WhatsApp messages

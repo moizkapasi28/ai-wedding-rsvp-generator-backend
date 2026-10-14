@@ -710,9 +710,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Redact the token segment of `/api/rsvp/:token` URLs in the request logger.
 
 **Acceptance criteria**
-- [ ] `NODE_ENV=production` logs JSON lines to stdout and writes no file unless configured.
-- [ ] `LOG_LEVEL=debug` works.
-- [ ] RSVP request logs show `/api/rsvp/[token]`.
+- [x] `NODE_ENV=production` logs JSON lines to stdout and writes no file unless configured.
+- [x] `LOG_LEVEL=debug` works.
+- [x] RSVP request logs show `/api/rsvp/[token]`.
 
 **Notes/risks**
 - Update CLAUDE.md's logging line.

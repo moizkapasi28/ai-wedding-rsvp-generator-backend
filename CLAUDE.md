@@ -46,7 +46,7 @@ The frontend is the sibling repo `../ai-wedding-rsvp-generator-frontend`.
 
 **Config** — `src/config/env.ts` validates env vars with zod once at startup (imported first by `src/index.ts` and `src/workers/index.ts`; exits listing every problem). Callers still read `process.env.X` inline; add any new variable to both `env.ts` and `.env.example`. Guest mobile numbers are validated with the same `normalizePhone` rule the WhatsApp links use. `WEB_APP_URL` is both the CORS origin (so it has no trailing slash, e.g. `http://localhost:5173`) and the base for links sent to users — join paths with an explicit `/` (as `createUrl` in `utils/utils.ts` and `buildRsvpUrl` in `guest.service.ts` do). Rate limiters (`middlewares/rateLimiter.middleware.ts`): `globalLimiter` on all `/api`, plus `authLimiter`, `rsvpLimiter`, `imageGenerationLimiter` on specific routes. TypeScript runs with `strict: false`, CommonJS output.
 
-**Logging** — pino (`src/config/logger.ts`) writes to the console and `logs/app.log`.
+**Logging** — pino (`src/config/logger.ts`) at `LOG_LEVEL` (default `info`): coloured lines when `NODE_ENV` is `local`/`development`, JSON lines on stdout otherwise; a file only when `LOG_FILE` is set. Request and error logs pass URLs through `redactUrlForLog` (`utils/logUrl.util.ts`), which hides the public RSVP token.
 
 **Deployment** — a single Docker image (`dockerfile`) builds the app and `start.sh` runs Redis, the worker, and the API together in one container.
 
