@@ -12,6 +12,7 @@ The frontend lives in the sibling repository `ai-wedding-rsvp-generator-frontend
 - **WhatsApp invites and reminders**: `wa.me` click-to-chat links with the message pre-filled, sent from the couple's own WhatsApp. First reminder 7 days after the invite, final reminder in the 3 days before the deadline.
 - **Host RSVP updates**: hosts can set a guest's reply from the portal.
 - **AI invite cards**: two-stage image generation with Google Gemini, run in a background worker, stored in S3.
+- **AI credits**: each account starts with 100; an invite card costs 10 and an RSVP header image 5, refunded if generation fails (`src/services/credits.service.ts`).
 - **Live dashboard**: RSVP stats plus a server-sent events stream of new replies (Redis pub/sub, so it works across processes).
 
 ## Tech stack
@@ -20,7 +21,8 @@ The frontend lives in the sibling repository `ai-wedding-rsvp-generator-frontend
 - PostgreSQL with Prisma 7
 - Redis with BullMQ (job queues), rate limiting and live RSVP pub/sub
 - Zod (request validation, env validation, OpenAPI generation)
-- AWS S3 (files) and SES with Handlebars templates (email)
+- AWS S3 (files)
+- Email through AWS SES or any SMTP server (Nodemailer), with Handlebars templates
 - Google Gemini (AI invite cards)
 - pino (logging)
 
@@ -29,7 +31,8 @@ The frontend lives in the sibling repository `ai-wedding-rsvp-generator-frontend
 - Node.js 22+
 - PostgreSQL
 - Redis 6.2+ (BullMQ warns on older versions)
-- AWS credentials for S3 and SES, and a Gemini API key for AI invite cards
+- AWS credentials for S3; for email either AWS SES credentials or an SMTP account (set `EMAIL_PROVIDER=ses|smtp`)
+- A Gemini API key for AI invite cards (optional; without it only that feature fails)
 
 ## Setup
 
@@ -56,6 +59,16 @@ API reference: http://localhost:3000/reference. The spec (`src/openapi.json`) is
 ```bash
 npm run docs:openapi
 ```
+
+## Tests and checks
+
+```bash
+npm test             # unit tests (src/**/*.test.ts), no database, Redis or .env needed
+npm run test:e2e     # end-to-end tests (tests/*.test.ts) against the running API and its database
+npx tsx src/utils/inviteCardGeneration.check.ts   # AI card error handling and image prep, no database
+```
+
+The other self-checks in `src/utils/*.check.ts` (`auth`, `credits`, `updatedAt`, `inviteCardSweep`) run the same way against your database. CI runs the type check, build, OpenAPI drift check, unit tests and the invite card check.
 
 ## Project structure
 

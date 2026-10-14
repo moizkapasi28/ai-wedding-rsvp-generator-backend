@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/apiError.util";
 
 // One charge per generation, however many Gemini calls and retries it takes.
-// Mirrored in the frontend's src/constants/index.ts.
+// Sent to the frontend as ai_credit_costs on GET /auth/me (its src/constants copy is only a fallback).
 export const AI_CREDIT_COST = {
   INVITE_CARD: 10,
   HEADER_IMAGE: 5,
