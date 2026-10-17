@@ -296,6 +296,8 @@ model EventInviteCard {
   generated_invite_image_url String?
   invite_design_image_url String?
   design_fingerprint String?
+  // PASSED or MISMATCH when the text check ran on the last generation (INVITE_CARD_TEXT_CHECK), else null
+  text_check String?
   generation_status GenerationStatus @default(IDLE)
   generation_stage String?
   generation_job_id String?

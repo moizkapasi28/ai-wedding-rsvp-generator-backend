@@ -7,6 +7,7 @@ import {
   CARD_SOURCE,
   GENERATION_STAGE,
 } from "../enums/inviteCard.enum";
+import { env } from "../config/env";
 import { getGeminiClient } from "../lib/geminiClient";
 import {
   addInviteCardVersion,
@@ -14,6 +15,11 @@ import {
 } from "../repositories/inviteCard.repository";
 import { findWeddingById } from "../repositories/wedding.repository";
 import { computeDesignFingerprint } from "../utils/inviteCardGeneration.util";
+import { formatEventDate } from "../utils/eventTextFormat.util";
+import {
+  ExpectedText,
+  typesetWithTextCheck,
+} from "../utils/textCheck.util";
 import {
   buildGeminiParts,
   buildStage1ExamplePrompt,
@@ -42,13 +48,57 @@ export interface PipelineDeps {
     mimeType: string,
   ) => Promise<string>;
   loadImage: (key: string) => Promise<{ buffer: Buffer; contentType: string }>;
+  // Set when INVITE_CARD_TEXT_CHECK is on: returns the text Gemini reads off the final card
+  readText?: (image: GeneratedImage) => Promise<string>;
 }
 
-export const defaultPipelineDeps = (): PipelineDeps => ({
-  genai: getGeminiClient(),
-  uploadImage: uploadBufferToS3,
-  loadImage: (key) => getBufferFromS3(key),
-});
+const READ_TEXT_PROMPT =
+  "Transcribe every piece of text printed on this invitation card exactly as written, line by line. Output only the text.";
+
+export const defaultPipelineDeps = (): PipelineDeps => {
+  const genai = getGeminiClient();
+  return {
+    genai,
+    uploadImage: uploadBufferToS3,
+    loadImage: (key) => getBufferFromS3(key),
+    readText: env.INVITE_CARD_TEXT_CHECK
+      ? async (image) => {
+          const response = await genai.models.generateContent({
+            model: env.INVITE_CARD_TEXT_CHECK_MODEL,
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: READ_TEXT_PROMPT },
+                  {
+                    inlineData: {
+                      mimeType: image.mimeType,
+                      data: image.data.toString("base64"),
+                    },
+                  },
+                ],
+              },
+            ],
+            config: { abortSignal: AbortSignal.timeout(60_000) },
+          });
+          return response.text ?? "";
+        }
+      : undefined,
+  };
+};
+
+// What the card must say, for the text check: the fields a guest would notice being wrong.
+// The date is the same string the TYPESETTING prompt asks for, so its words should all appear.
+const expectedCardText = (
+  event: Event,
+  wedding: { bride_name: string; groom_name: string },
+): ExpectedText => [
+  { label: "bride name", value: wedding.bride_name },
+  { label: "groom name", value: wedding.groom_name },
+  { label: "event", value: event.title },
+  { label: "date", value: formatEventDate(event.date) },
+  { label: "venue", value: event.venue },
+];
 
 interface PipelineHooks {
   log: Logger;
@@ -170,12 +220,11 @@ export const runInviteCardPipeline = async (
     });
   }
 
-  await hooks.onStage(GENERATION_STAGE.TYPESETTING);
+  const typeset = async () => {
+    // Also refreshes the heartbeat before a text-check retry
+    await hooks.onStage(GENERATION_STAGE.TYPESETTING);
 
-  const finalImage = await timedStage(
-    hooks.log,
-    GENERATION_STAGE.TYPESETTING,
-    async () => {
+    return timedStage(hooks.log, GENERATION_STAGE.TYPESETTING, async () => {
       const parts: Part[] = [
         { text: buildStage2TextPrompt(card, event, wedding, isExample) },
       ];
@@ -201,8 +250,27 @@ export const runInviteCardPipeline = async (
       });
 
       return generateImage(deps.genai, parts, geminiOptions);
-    },
-  );
+    });
+  };
+
+  let finalImage: GeneratedImage;
+  let textCheck: string | null = null;
+
+  if (deps.readText) {
+    const checked = await typesetWithTextCheck({
+      typeset,
+      readText: deps.readText,
+      expected: expectedCardText(event, wedding),
+    });
+    finalImage = checked.image;
+    textCheck = checked.textCheck;
+    hooks.log.info(
+      { text_check: textCheck, missing: checked.missing },
+      "generation.text_check",
+    );
+  } else {
+    finalImage = await typeset();
+  }
 
   const generatedImageKey = await deps.uploadImage(
     finalImage.data,
@@ -212,6 +280,7 @@ export const runInviteCardPipeline = async (
 
   await updateAiEventInviteCard(card.id, {
     generated_invite_image_url: generatedImageKey,
+    text_check: textCheck,
   });
   await addInviteCardVersion(card.id, generatedImageKey, fingerprint);
 

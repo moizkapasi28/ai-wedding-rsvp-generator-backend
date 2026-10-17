@@ -512,9 +512,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Surface the result in the status response.
 
 **Acceptance criteria**
-- [ ] A pure function compares expected vs. read text and is covered by the self-check.
-- [ ] A mismatch triggers at most one extra TYPESETTING call and never redraws DESIGN.
-- [ ] Credits are charged once per generation, as today.
+- [x] A pure function compares expected vs. read text and is covered by the self-check. `findMissingText` and `typesetWithTextCheck` in `utils/textCheck.util.ts`, with unit tests in `npm test` (runs in CI).
+- [x] A mismatch triggers at most one extra TYPESETTING call and never redraws DESIGN. Also run through the real pipeline with a fake Gemini against the local DB: DESIGN, TYPESETTING, TYPESETTING on a first run, and two TYPESETTING calls with the design reused on a second. Off unless `INVITE_CARD_TEXT_CHECK=true`; not yet tried against real Gemini.
+- [x] Credits are charged once per generation, as today. The retry happens inside the same job; charging stays in `generateInviteCardService`.
 
 **Notes/risks**
 - Extra Gemini cost per card; add a feature flag.

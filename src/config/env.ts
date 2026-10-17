@@ -49,6 +49,11 @@ const envSchema = z
 
     // AI invite cards fail with a clear error without it, so the rest of the app can run
     GEMINI_API_KEY: z.string().min(1).optional(),
+    // Read the typeset text back off each invite card and retry TYPESETTING once on a mismatch.
+    // Off by default: one more Gemini call per card, two more on a mismatch.
+    INVITE_CARD_TEXT_CHECK: z.stringbool().default(false),
+    // A Gemini model that reads images and answers in text
+    INVITE_CARD_TEXT_CHECK_MODEL: z.string().min(1).default("gemini-2.5-flash"),
 
     REDIS_HOST: z.string().min(1).default("127.0.0.1"),
     REDIS_PORT: z.coerce.number().int().positive().default(6379),

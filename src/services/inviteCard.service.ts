@@ -229,6 +229,7 @@ export const generateInviteCardService = async (
         generation_started_at: new Date(),
         generation_heartbeat_at: new Date(),
         generation_completed_at: null,
+        text_check: null,
         credits_charged: AI_CREDIT_COST.INVITE_CARD,
       },
       tx,
@@ -426,6 +427,8 @@ export const getInviteCardGenerationStatusService = async (
     max_attempts: MAX_GENERATION_ATTEMPTS,
     job_id: inviteCard.generation_job_id,
     generated_invite_image_url: inviteCard.generated_invite_image_url,
+    // PASSED / MISMATCH when INVITE_CARD_TEXT_CHECK read the card back, else null
+    text_check: inviteCard.text_check,
     started_at: inviteCard.generation_started_at,
     completed_at: inviteCard.generation_completed_at,
   };
