@@ -767,8 +767,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Optional: multi-stage build with `npm ci --omit=dev` in the final image.
 
 **Acceptance criteria**
-- [ ] Redeploying with a job queued does not lose it (external Redis).
-- [ ] A new migration is applied automatically on container start; a failing migration stops the container.
+- [x] Redeploying with a job queued does not lose it (external Redis). Built the image and ran it against a Redis container: no embedded redis-server started, and a job queued before replacing the API container was still queued after. Picking a managed Redis for production is still open.
+- [x] A new migration is applied automatically on container start; a failing migration stops the container. Against an empty database all 56 migrations applied on start; a broken migration mounted into the container made it exit 1 before the API or worker started.
 
 **Notes/risks**
 - BE-018 covers the invite card side of lost jobs regardless.

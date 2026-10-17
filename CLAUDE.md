@@ -49,7 +49,7 @@ The frontend is the sibling repo `../ai-wedding-rsvp-generator-frontend`.
 
 **Logging** — pino (`src/config/logger.ts`) at `LOG_LEVEL` (default `info`): coloured lines when `NODE_ENV` is `local`/`development`, JSON lines on stdout otherwise; a file only when `LOG_FILE` is set. Request and error logs pass URLs through `redactUrlForLog` (`utils/logUrl.util.ts`), which hides the public RSVP token.
 
-**Deployment** — a single Docker image (`dockerfile`) builds the app and `start.sh` runs Redis, the worker, and the API together in one container.
+**Deployment** — a single Docker image (`dockerfile`) builds the app; `start.sh` runs `prisma migrate deploy` (exits on failure), starts an embedded Redis only when `REDIS_HOST` is unset or local, then the worker and the API. `.gitattributes` keeps `*.sh` LF so the script runs in the container.
 
 ## Conventions and quirks
 

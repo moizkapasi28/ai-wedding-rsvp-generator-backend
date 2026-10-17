@@ -85,7 +85,9 @@ The other self-checks in `src/utils/*.check.ts` (`auth`, `credits`, `updatedAt`,
 
 ## Deployment
 
-The Docker image (`dockerfile`) builds the app, and `start.sh` runs Redis, the worker and the API in one container. Set the production environment variables there, including `WEB_APP_URL=https://ai-wedding-rsvp-generator.pages.dev`, and apply migrations with `npx prisma migrate deploy`.
+The Docker image (`dockerfile`) builds the app, and `start.sh` runs it: it applies pending migrations first (`npx prisma migrate deploy`; a failing migration stops the container), then starts the worker and the API. Set the production environment variables there, including `WEB_APP_URL=https://ai-wedding-rsvp-generator.pages.dev`.
+
+Point `REDIS_HOST` (and `REDIS_PORT`/`REDIS_PASSWORD`) at a separate Redis so queued jobs, rate limits and live updates survive redeploys. Without one, the container starts its own Redis with an append-only file in `/var/lib/redis`, which only survives a redeploy if a volume is mounted there.
 
 ## License
 
