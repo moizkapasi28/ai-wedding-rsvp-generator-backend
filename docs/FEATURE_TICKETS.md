@@ -338,6 +338,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 **Notes/risks**
 - Only worth it if exports get slow; measure first.
 
+**Decision (2026-10-17): not built.** Measured the synchronous export on a local API: 2,000 guests across 3 events, 1.2–1.6 s and 265 KB per export (3 runs). A job would add a queue type, an S3 round-trip, polling, and a dependency on the worker being up, for no visible gain. Revisit if exports pass ~10 s.
+
 ## Events and weddings
 
 ### BE-013 Make `updated_at` update automatically (`@updatedAt`)

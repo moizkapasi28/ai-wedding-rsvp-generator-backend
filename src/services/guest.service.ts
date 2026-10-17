@@ -871,7 +871,6 @@ export const exportGuestsService = async (
 ) => {
   const wedding = await findWeddingById(weddingId);
   if (!wedding) throw new ApiError(404, "Wedding not found");
-  if (!wedding) throw new ApiError(404, "Wedding not found");
 
   const { guests } = await findAllGuests(
     weddingId,
