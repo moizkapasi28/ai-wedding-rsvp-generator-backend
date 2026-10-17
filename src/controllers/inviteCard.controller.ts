@@ -4,6 +4,7 @@ import {
   GetInviteCardGenerationStatusParamsDto,
   GetInviteCardsByWeddingParamsDto,
   GetInviteCardsByWeddingQueryDto,
+  RestoreInviteCardVersionParamsDto,
   UpdateInviteCardDto,
 } from "../validations/inviteCard.validation";
 import { getUserWeddingService } from "../services/wedding.service";
@@ -11,6 +12,8 @@ import {
   generateInviteCardService,
   getInviteCardGenerationStatusService,
   getInviteCardsByWeddingService,
+  getInviteCardVersionsService,
+  restoreInviteCardVersionService,
   updateInviteCardService,
 } from "../services/inviteCard.service";
 import { sendSuccess } from "../utils/response.util";
@@ -92,4 +95,28 @@ export const getInviteCardGenerationStatus = async (
   );
 
   return sendSuccess(res, "Generation status fetched successfully", status, 200);
+};
+
+export const getInviteCardVersions = async (
+  req: Request<GetInviteCardGenerationStatusParamsDto>,
+  res: Response,
+) => {
+  const versions = await getInviteCardVersionsService(req.params.id, req.user.id);
+
+  return sendSuccess(res, "Invite card versions fetched successfully", versions, 200);
+};
+
+export const restoreInviteCardVersion = async (
+  req: Request<RestoreInviteCardVersionParamsDto>,
+  res: Response,
+) => {
+  const { user, params } = req;
+
+  const inviteCard = await restoreInviteCardVersionService(
+    params.id,
+    params.versionId,
+    user.id,
+  );
+
+  return sendSuccess(res, "Invite card version restored", inviteCard, 200);
 };

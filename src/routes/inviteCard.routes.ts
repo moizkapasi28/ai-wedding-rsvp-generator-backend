@@ -5,6 +5,8 @@ import {
   generateInviteCardImageSchema,
   getInviteCardGenerationStatusSchema,
   getAiInvitecardsByWeddingSchema,
+  getInviteCardVersionsSchema,
+  restoreInviteCardVersionSchema,
   updateInviteCardSchema,
 } from "../validations/inviteCard.validation";
 import { asyncHandler } from "../utils/asyncHandler.util";
@@ -12,6 +14,8 @@ import {
   generateInviteCardImage,
   getInviteCardGenerationStatus,
   getInviteCardsByWedding,
+  getInviteCardVersions,
+  restoreInviteCardVersion,
   updateInviteCard,
 } from "../controllers/inviteCard.controller";
 
@@ -31,6 +35,20 @@ inviteCardRouter.get(
   authenticate,
   validate(getInviteCardGenerationStatusSchema),
   asyncHandler(getInviteCardGenerationStatus),
+);
+
+inviteCardRouter.get(
+  "/:id/versions",
+  authenticate,
+  validate(getInviteCardVersionsSchema),
+  asyncHandler(getInviteCardVersions),
+);
+
+inviteCardRouter.post(
+  "/:id/versions/:versionId/restore",
+  authenticate,
+  validate(restoreInviteCardVersionSchema),
+  asyncHandler(restoreInviteCardVersion),
 );
 
 inviteCardRouter.patch(

@@ -49,6 +49,23 @@ export const getInviteCardGenerationStatusSchema = z.object({
   params: inviteCardGenerationStatusParamsSchema,
 });
 
+export const getInviteCardVersionsSchema = z.object({
+  params: inviteCardGenerationStatusParamsSchema,
+});
+
+export const restoreInviteCardVersionParamsSchema = z.object({
+  id: z.uuid().describe("AI invite card ID is required"),
+  versionId: z.uuid().describe("Version ID is required"),
+});
+
+export const restoreInviteCardVersionSchema = z.object({
+  params: restoreInviteCardVersionParamsSchema,
+});
+
+export type RestoreInviteCardVersionParamsDto = z.infer<
+  typeof restoreInviteCardVersionParamsSchema
+>;
+
 export type GetInviteCardGenerationStatusParamsDto = z.infer<
   typeof inviteCardGenerationStatusParamsSchema
 >;

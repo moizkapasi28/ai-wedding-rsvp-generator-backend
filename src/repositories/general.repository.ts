@@ -8,7 +8,7 @@ export const isObjectKeyReferencedByUser = async (
 ) => {
   const ownedEvent = { wedding: { user_id: userId } };
 
-  const [profiles, pageSettings, aiCards] = await Promise.all([
+  const [profiles, pageSettings, aiCards, cardVersions] = await Promise.all([
     prisma.user.count({ where: { id: userId, profile_picture: objectKey } }),
     prisma.guestEventInviteFormat.count({
       where: {
@@ -28,7 +28,10 @@ export const isObjectKeyReferencedByUser = async (
         ],
       },
     }),
+    prisma.eventInviteCardVersion.count({
+      where: { image_key: objectKey, card: { event: ownedEvent } },
+    }),
   ]);
 
-  return profiles + pageSettings + aiCards > 0;
+  return profiles + pageSettings + aiCards + cardVersions > 0;
 };

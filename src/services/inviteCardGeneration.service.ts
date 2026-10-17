@@ -8,7 +8,10 @@ import {
   GENERATION_STAGE,
 } from "../enums/inviteCard.enum";
 import { getGeminiClient } from "../lib/geminiClient";
-import { updateAiEventInviteCard } from "../repositories/inviteCard.repository";
+import {
+  addInviteCardVersion,
+  updateAiEventInviteCard,
+} from "../repositories/inviteCard.repository";
 import { findWeddingById } from "../repositories/wedding.repository";
 import { computeDesignFingerprint } from "../utils/inviteCardGeneration.util";
 import {
@@ -210,6 +213,7 @@ export const runInviteCardPipeline = async (
   await updateAiEventInviteCard(card.id, {
     generated_invite_image_url: generatedImageKey,
   });
+  await addInviteCardVersion(card.id, generatedImageKey, fingerprint);
 
   return { generatedImageKey, designReused };
 };

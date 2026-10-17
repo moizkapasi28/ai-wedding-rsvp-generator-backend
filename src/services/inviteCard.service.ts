@@ -12,9 +12,12 @@ import {
   GenerateInviteCardJobPayload,
 } from "../queues/inviteCard.queue";
 import {
+  addInviteCardVersion,
   findAiEventInviteCardByEventId,
   findAiEventInviteCardById,
   findInFlightInviteCards,
+  findInviteCardVersion,
+  findInviteCardVersions,
   getInviteCardsByWedding,
   updateAiEventInviteCard,
   updateInFlightInviteCard,
@@ -136,7 +139,50 @@ export const updateInviteCardService = async (
   if (!updatedInviteCard)
     throw new ApiError(400, "Failed to update invite card");
 
+  // An uploaded card (or any new final image) joins the version history like a generated one
+  const newImage = updatedInviteCard.generated_invite_image_url;
+  if (newImage && newImage !== inviteCard.generated_invite_image_url)
+    await addInviteCardVersion(id, newImage, null);
+
   return updatedInviteCard;
+};
+
+const findOwnedInviteCard = async (id: string, userId: string) => {
+  const inviteCard = await findAiEventInviteCardById(id);
+  // 404 either way, so the endpoint doesn't confirm other users' cards exist
+  if (
+    !inviteCard ||
+    !(await verifyWeddingEventOwnershipService(inviteCard.event_id, userId))
+  )
+    throw new ApiError(404, "AI Invite Card Not Found");
+  return inviteCard;
+};
+
+export const getInviteCardVersionsService = async (id: string, userId: string) => {
+  const inviteCard = await findOwnedInviteCard(id, userId);
+  const versions = await findInviteCardVersions(id);
+
+  return versions.map((version) => ({
+    id: version.id,
+    image_key: version.image_key,
+    created_at: version.created_at,
+    is_current: version.image_key === inviteCard.generated_invite_image_url,
+  }));
+};
+
+// Puts an earlier version back as the card's image; the RSVP page shows it from then on
+export const restoreInviteCardVersionService = async (
+  id: string,
+  versionId: string,
+  userId: string,
+) => {
+  await findOwnedInviteCard(id, userId);
+  const version = await findInviteCardVersion(id, versionId);
+  if (!version) throw new ApiError(404, "Version not found");
+
+  return updateAiEventInviteCard(id, {
+    generated_invite_image_url: version.image_key,
+  });
 };
 
 export const generateInviteCardService = async (

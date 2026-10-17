@@ -78,6 +78,8 @@ const routes: Route[] = [
 
   { method: "get", path: "/api/invite-card/cards/:weddingId", tag: "Invite cards", summary: "Events with their invite cards", schema: inviteCard.getAiInvitecardsByWeddingSchema },
   { method: "get", path: "/api/invite-card/:id/generation-status", tag: "Invite cards", summary: "Generation status of an invite card", schema: inviteCard.getInviteCardGenerationStatusSchema },
+  { method: "get", path: "/api/invite-card/:id/versions", tag: "Invite cards", summary: "Earlier images of an invite card, newest first (last 10)", schema: inviteCard.getInviteCardVersionsSchema },
+  { method: "post", path: "/api/invite-card/:id/versions/:versionId/restore", tag: "Invite cards", summary: "Make an earlier version the card's image", schema: inviteCard.restoreInviteCardVersionSchema },
   { method: "patch", path: "/api/invite-card/:id", tag: "Invite cards", summary: "Update an invite card", schema: inviteCard.updateInviteCardSchema },
   { method: "post", path: "/api/invite-card/generate-invite", tag: "Invite cards", summary: "Queue invite card generation (rate limited)", schema: inviteCard.generateInviteCardImageSchema },
 

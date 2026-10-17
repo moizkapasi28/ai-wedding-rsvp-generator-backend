@@ -280,7 +280,21 @@ model EventInviteCard {
   credits_charged Int @default(0)
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  versions EventInviteCardVersion[]
 
   @@index([event_id])
   @@unique([event_id])
+}
+
+// Every final image a card has had (generated or uploaded), newest 10 kept, so the couple can
+// go back to an earlier one. The card's generated_invite_image_url is the one in use.
+model EventInviteCardVersion {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  card_id String @db.Uuid
+  card EventInviteCard @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  image_key String
+  design_fingerprint String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([card_id, created_at])
 }

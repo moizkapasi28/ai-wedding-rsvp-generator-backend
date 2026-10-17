@@ -530,8 +530,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - New `EventInviteCardVersion` table (card id, image key, design fingerprint, created_at) written when a generation completes; endpoints to list versions and to restore one as the current image. Add the key column to `isObjectKeyReferencedByUser` ([`general.repository.ts`](../src/repositories/general.repository.ts)).
 
 **Acceptance criteria**
-- [ ] Two successful generations leave two versions; restoring the first makes the RSVP page show it.
-- [ ] Only the owner can list or restore; view URLs work for version keys.
+- [x] Two successful generations leave two versions; restoring the first makes the RSVP page show it. Probed with two uploaded images (generations need Gemini; the pipeline records its version at the same point it saves the image): two versions, and after restoring the first the public RSVP response signs `first.png`. The cap keeps the newest 10.
+- [x] Only the owner can list or restore; view URLs work for version keys. Another user gets 404 on list, restore and on a view URL for a version-only key; the owner gets 200.
 
 **Notes/risks**
 - Decide a cap (e.g. last 10) to bound S3 usage.

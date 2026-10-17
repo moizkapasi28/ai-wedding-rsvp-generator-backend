@@ -89,3 +89,41 @@ export const updateAiEventInviteCard = async (
     data: payload,
   });
 };
+
+// ponytail: older rows are dropped but their S3 objects stay (nothing deletes card images today);
+// add an S3 delete here if storage cost matters
+export const MAX_INVITE_CARD_VERSIONS = 10;
+
+// Records a final image the card now shows, keeping only the newest MAX_INVITE_CARD_VERSIONS
+export const addInviteCardVersion = async (
+  cardId: string,
+  imageKey: string,
+  designFingerprint: string | null,
+) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.eventInviteCardVersion.create({
+      data: { card_id: cardId, image_key: imageKey, design_fingerprint: designFingerprint },
+    });
+    const stale = await tx.eventInviteCardVersion.findMany({
+      where: { card_id: cardId },
+      orderBy: { created_at: "desc" },
+      skip: MAX_INVITE_CARD_VERSIONS,
+      select: { id: true },
+    });
+    if (stale.length)
+      await tx.eventInviteCardVersion.deleteMany({
+        where: { id: { in: stale.map((version) => version.id) } },
+      });
+  });
+};
+
+export const findInviteCardVersions = (cardId: string) =>
+  prisma.eventInviteCardVersion.findMany({
+    where: { card_id: cardId },
+    orderBy: { created_at: "desc" },
+  });
+
+export const findInviteCardVersion = (cardId: string, versionId: string) =>
+  prisma.eventInviteCardVersion.findFirst({
+    where: { id: versionId, card_id: cardId },
+  });
