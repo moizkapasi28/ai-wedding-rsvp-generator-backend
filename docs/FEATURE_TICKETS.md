@@ -564,9 +564,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - A script (`scripts/grant-credits.ts <email> <amount> <note>`) for admins.
 
 **Acceptance criteria**
-- [ ] Every spend/refund writes one ledger row; the sum of rows plus the starting 100 equals the balance.
-- [ ] `credits.check.ts` covers the ledger.
-- [ ] The grant script adds credits and a GRANT row.
+- [x] Every spend/refund writes one ledger row; the sum of rows plus the starting 100 equals the balance. Users whose balance had already moved get one `OPENING` row from the migration; on the local database all 4 users satisfy it.
+- [x] `credits.check.ts` covers the ledger. Including that a refused or rolled-back spend leaves no row and a double refund writes one.
+- [x] The grant script adds credits and a GRANT row.
 
 **Notes/risks**
 - Prerequisite for any checkout (BE-025).

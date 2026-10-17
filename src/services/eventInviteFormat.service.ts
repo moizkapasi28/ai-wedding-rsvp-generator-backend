@@ -122,7 +122,7 @@ export const generateEventInviteFormatImageService = async (
 
   const { buffer: rawImageBuffer } = await getBufferFromS3(rawImageKey);
 
-  await spendCredits(userId, AI_CREDIT_COST.HEADER_IMAGE);
+  await spendCredits(userId, "HEADER_IMAGE", eventId);
 
   let generatedImageKey: string;
   try {
@@ -140,7 +140,7 @@ export const generateEventInviteFormatImageService = async (
       generatedImage.mimeType,
     );
   } catch (error) {
-    await refundCredits(userId, AI_CREDIT_COST.HEADER_IMAGE);
+    await refundCredits(userId, AI_CREDIT_COST.HEADER_IMAGE, eventId);
     throw toHeaderImageError(error);
   }
 

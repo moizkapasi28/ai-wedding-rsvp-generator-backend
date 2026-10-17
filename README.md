@@ -12,7 +12,7 @@ The frontend lives in the sibling repository `ai-wedding-rsvp-generator-frontend
 - **WhatsApp invites and reminders**: `wa.me` click-to-chat links with the message pre-filled, sent from the couple's own WhatsApp. First reminder 7 days after the invite, final reminder in the 3 days before the deadline.
 - **Host RSVP updates**: hosts can set a guest's reply from the portal.
 - **AI invite cards**: two-stage image generation with Google Gemini, run in a background worker, stored in S3.
-- **AI credits**: each account starts with 100; an invite card costs 10 and an RSVP header image 5, refunded if generation fails (`src/services/credits.service.ts`).
+- **AI credits**: each account starts with 100; an invite card costs 10 and an RSVP header image 5, refunded if generation fails (`src/services/credits.service.ts`). Every change is recorded in a credit ledger; top a user up with `npx tsx scripts/grant-credits.ts <email> <amount> "<note>"`.
 - **Live dashboard**: RSVP stats plus a server-sent events stream of new replies (Redis pub/sub, so it works across processes).
 
 ## Tech stack

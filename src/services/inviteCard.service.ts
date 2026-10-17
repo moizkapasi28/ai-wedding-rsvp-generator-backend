@@ -216,7 +216,7 @@ export const generateInviteCardService = async (
   // the worker generates from the stored record rather than the request body.
   // Charged up front in the same transaction; a final failure refunds it.
   const savedInviteCard = await prisma.$transaction(async (tx) => {
-    await spendCredits(userId, AI_CREDIT_COST.INVITE_CARD, tx);
+    await spendCredits(userId, "INVITE_CARD", inviteCard.id, tx);
     return updateAiEventInviteCard(
       inviteCard.id,
       {

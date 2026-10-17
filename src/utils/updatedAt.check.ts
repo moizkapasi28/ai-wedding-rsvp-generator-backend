@@ -65,7 +65,7 @@ const main = async () => {
     // updateMany moves it too, so spending credits also counts as a change to the user row
     const beforeSpend = (await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).updated_at;
     await pause();
-    await spendCredits(user.id, 5);
+    await spendCredits(user.id, "HEADER_IMAGE", user.id);
     const afterSpend = (await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).updated_at;
     assert.ok(afterSpend > beforeSpend, "User.updated_at did not move on updateMany");
 
