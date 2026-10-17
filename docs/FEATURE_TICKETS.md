@@ -492,8 +492,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Detect HEIC/HEIF by magic bytes and convert to JPEG with a pure-JS decoder (e.g. `heic-convert`) before sharp, or document that the frontend converts first. Pick the smaller change.
 
 **Acceptance criteria**
-- [ ] An iPhone `.heic` couple photo generates a card instead of failing with `INVALID_INPUT`.
-- [ ] The self-check covers a HEIC fixture (or the decision to reject is documented and the frontend blocks HEIC in the picker).
+- [ ] An iPhone `.heic` couple photo generates a card instead of failing with `INVALID_INPUT`. Not done: the reject path below was taken (no HEVC decoder in sharp, so decoding needs a new dependency).
+- [x] The self-check covers a HEIC fixture (or the decision to reject is documented and the frontend blocks HEIC in the picker). Decision in `imageNormalize.util.ts`; the self-check asserts a HEIC container fails as `INVALID_INPUT`; every frontend uploader runs `imageUploadProblem` and offers only JPEG/PNG/WebP.
 
 **Notes/risks**
 - Adds a dependency and CPU time in the worker; only do it if HEIC failures show up in `generation_error_code` stats.

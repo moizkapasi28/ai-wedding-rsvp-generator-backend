@@ -9,8 +9,10 @@ const MAX_SIDE_PX = 2048;
 
 // Uploads go straight from the browser to S3, so this runs in the worker before an image
 // reaches Gemini: upright (EXIF), bounded size, and a truthful mime type.
-// ponytail: HEIC is not decodable with sharp's prebuilt libvips, so it fails as INVALID_INPUT.
-// iOS Safari converts HEIC to JPEG on file-input upload, so this is rare in practice.
+// HEIC is rejected, not decoded (BE-020): sharp's prebuilt libheif reads AVIF only (no HEVC), so a
+// HEIC source fails here as INVALID_INPUT. The frontend blocks HEIC before upload (lib/imageUpload.ts)
+// and iOS Safari converts HEIC to JPEG on file-input upload anyway.
+// ponytail: add a pure-JS decoder (e.g. heic-convert) if INVALID_INPUT from HEIC shows up in generation_error_code stats
 export const normalizeImageForGemini = async (
   input: Buffer,
 ): Promise<GeneratedImage> => {
