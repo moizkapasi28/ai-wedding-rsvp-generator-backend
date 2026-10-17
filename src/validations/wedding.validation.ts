@@ -1,4 +1,5 @@
 import z from "zod";
+import { isValidTimezone } from "../utils/timezone.util";
 
 export const getAllUserWeddingsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -84,6 +85,12 @@ export const addNewWeddingBodySchema = z.object({
     .max(250, "Message cannot be longer than 250 characters")
     .optional()
     .describe("Example: We can't wait to celebrate with you!"),
+  timezone: z
+    .string()
+    .max(64)
+    .refine(isValidTimezone, "Unknown timezone")
+    .optional()
+    .describe("IANA timezone for deadlines and the dashboard. Example: Asia/Kolkata (the default)"),
 });
 
 export const addNewWeddingSchema = z.object({

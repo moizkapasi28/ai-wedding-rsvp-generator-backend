@@ -775,6 +775,11 @@
                     "description": "Example: We can't wait to celebrate with you!",
                     "type": "string",
                     "maxLength": 250
+                  },
+                  "timezone": {
+                    "description": "IANA timezone for deadlines and the dashboard. Example: Asia/Kolkata (the default)",
+                    "type": "string",
+                    "maxLength": 64
                   }
                 },
                 "required": [
@@ -936,6 +941,11 @@
                     "description": "Example: We can't wait to celebrate with you!",
                     "type": "string",
                     "maxLength": 250
+                  },
+                  "timezone": {
+                    "description": "IANA timezone for deadlines and the dashboard. Example: Asia/Kolkata (the default)",
+                    "type": "string",
+                    "maxLength": 64
                   }
                 }
               }

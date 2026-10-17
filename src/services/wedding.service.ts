@@ -20,6 +20,7 @@ import {
   EditWeddingDto,
 } from "../validations/wedding.validation";
 import { ApiError } from "../utils/apiError.util";
+import { dayKeyIn, lastDaysIn } from "../utils/timezone.util";
 import { Wedding, Prisma } from "../../generated/prisma/client";
 import { calculateConfirmationOfGuest } from "./guest.service";
 
@@ -131,6 +132,7 @@ export const addNewUserWeddingService = async (
     address: data.address,
     city: data.city,
     message: data.message,
+    timezone: data.timezone,
     slug,
   });
 
@@ -192,14 +194,12 @@ export const verfiyWeddingOwnershipService = async (
   return true;
 };
 
-// Local YYYY-MM-DD so response buckets line up with calendar days
-const toDayKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-export const getWeddingDashboardService = async (weddingId: string) => {
-  const now = new Date();
-  // ponytail: 7-day window uses the server's timezone, accept a client tz offset if users span timezones
-  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+// The week and its day buckets are calendar days in the wedding's timezone
+export const getWeddingDashboardService = async (
+  weddingId: string,
+  timeZone: string,
+) => {
+  const { keys, since } = lastDaysIn(timeZone, 7);
 
   const [
     events,
@@ -232,17 +232,12 @@ export const getWeddingDashboardService = async (weddingId: string) => {
     pending += stats.pendingGuests;
   }
 
-  const dailyResponses = Array.from({ length: 7 }, (_, i) => ({
-    date: toDayKey(
-      new Date(since.getFullYear(), since.getMonth(), since.getDate() + i),
-    ),
-    count: 0,
-  }));
+  const dailyResponses = keys.map((date) => ({ date, count: 0 }));
   for (const { responded_at } of recentResponses) {
     // Never null here (the query filters on it), but Prisma types the column as nullable
     if (!responded_at) continue;
     const bucket = dailyResponses.find(
-      (day) => day.date === toDayKey(responded_at),
+      (day) => day.date === dayKeyIn(responded_at, timeZone),
     );
     if (bucket) bucket.count++;
   }

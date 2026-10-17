@@ -1007,14 +1007,15 @@ type InviteToSend = NonNullable<
 const buildRsvpUrl = (invite: InviteToSend) =>
   `${env.WEB_APP_URL}/rsvp/${invite.event.wedding.slug || "invite"}/${invite.invite_token}`;
 
-// Event dates are stored as calendar dates, so format in UTC to keep the stored day.
-// ponytail: deadlines are end-of-day in the host's timezone; far-west hosts may see the next day — format in the wedding's timezone if that matters
-const formatMessageDate = (date: Date) =>
+// Event dates are calendar dates (stored as UTC midnight), so they format in UTC to keep the
+// stored day. Deadlines are instants (end of day where the host set them), so they format in the
+// wedding's timezone.
+const formatMessageDate = (date: Date, timeZone = "UTC") =>
   date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone,
   });
 
 const formatInviteMessage = (invite: InviteToSend, rsvpUrl: string) => {
@@ -1086,7 +1087,7 @@ const formatReminderMessage = (
   const couple = `${event.wedding.bride_name} & ${event.wedding.groom_name}`;
   const eventDate = formatMessageDate(event.date);
   const deadline = invite.invite_deadline
-    ? formatMessageDate(invite.invite_deadline)
+    ? formatMessageDate(invite.invite_deadline, event.wedding.timezone)
     : null;
 
   const ask =

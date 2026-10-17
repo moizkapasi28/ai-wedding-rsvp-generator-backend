@@ -389,8 +389,8 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Use it in `formatMessageDate` and the dashboard `since`/`toDayKey` bucketing.
 
 **Acceptance criteria**
-- [ ] A wedding with `America/Los_Angeles` gets WhatsApp messages and dashboard day buckets in that timezone.
-- [ ] Existing weddings keep today's output (default applied by migration).
+- [x] A wedding with `America/Los_Angeles` gets WhatsApp messages and dashboard day buckets in that timezone. Probed live: a deadline of 23:59 LA time (06:59 UTC the next day) reads "close on 19 October" in the reminder, and an RSVP lands in the LA day bucket; unknown names are a 400.
+- [x] Existing weddings keep today's output (default applied by migration). They get `Asia/Kolkata`: an Indian host's end-of-day deadline formats to the same day as before. Dashboards on a UTC server now bucket by IST days, which is the intended fix.
 
 **Notes/risks**
 - Event dates are `@db.Date`; only formatting and bucketing change. Remove the ponytail comments once done.

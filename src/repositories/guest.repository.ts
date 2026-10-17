@@ -328,7 +328,9 @@ const inviteToSendInclude = {
       date: true,
       time: true,
       venue: true,
-      wedding: { select: { bride_name: true, groom_name: true, slug: true } },
+      wedding: {
+        select: { bride_name: true, groom_name: true, slug: true, timezone: true },
+      },
     },
   },
   invite_format: { select: { first_reminder: true, final_reminder: true } },

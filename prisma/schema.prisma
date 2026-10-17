@@ -111,6 +111,8 @@ model Wedding {
   address String @db.Text
   city String @db.VarChar(256)
   message String?
+  // IANA name; deadlines in messages and the dashboard's days are shown in it
+  timezone String @default("Asia/Kolkata") @db.VarChar(64)
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)  
   events Event[]

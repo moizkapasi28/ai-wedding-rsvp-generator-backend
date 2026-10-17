@@ -96,9 +96,12 @@ export const getWeddingDashboard = async (
 ): Promise<Response> => {
   const { user, params } = req;
 
-  await getUserWeddingService(user.id, params.id);
+  const wedding = await getUserWeddingService(user.id, params.id);
 
-  const dashboard = await getWeddingDashboardService(params.id);
+  const dashboard = await getWeddingDashboardService(
+    wedding.id,
+    wedding.timezone,
+  );
 
   return sendSuccess(
     res,
