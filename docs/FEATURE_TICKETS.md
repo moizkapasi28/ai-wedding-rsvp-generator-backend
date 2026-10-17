@@ -431,10 +431,10 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - Add `imageGenerationLimiter` to the route.
 
 **Acceptance criteria**
-- [ ] A header generation that Gemini safety-blocks returns a 4xx with a readable message and refunds 5 credits.
-- [ ] A rotated phone photo produces an upright result.
-- [ ] Request time is bounded (120 s per call plus in-call retries).
-- [ ] `retry.util.ts` has no remaining imports (delete in BE-019).
+- [x] A header generation that Gemini safety-blocks returns a 4xx with a readable message and refunds 5 credits. 422 "The image service declined this photo…" (self-check with a fake Gemini response); the refund is the existing catch around the call.
+- [x] A rotated phone photo produces an upright result. The source goes through `normalizeImageForGemini`; the self-check asserts an EXIF-rotated photo is sent upright.
+- [x] Request time is bounded (120 s per call plus in-call retries).
+- [x] `retry.util.ts` has no remaining imports (delete in BE-019). Deleted here, with the now-unused `imageValidation.util.ts`.
 
 **Notes/risks**
 - Moving it to the queue is out of scope; keep it synchronous unless timeouts show up in production.

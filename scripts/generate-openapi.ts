@@ -74,7 +74,7 @@ const routes: Route[] = [
 
   { method: "get", path: "/api/page-setting/pages/:weddingId", tag: "RSVP page settings", summary: "Events with their RSVP page settings", schema: inviteFormat.getEventInviteFormatsByWeddingSchema },
   { method: "patch", path: "/api/page-setting/:id", tag: "RSVP page settings", summary: "Update RSVP page settings (the RSVP deadline is copied onto every invite)", schema: inviteFormat.updateEventInviteFormatSchema },
-  { method: "post", path: "/api/page-setting/generate-image", tag: "RSVP page settings", summary: "Generate the RSVP page illustration", schema: inviteFormat.generateEventInviteFormatImageSchema },
+  { method: "post", path: "/api/page-setting/generate-image", tag: "RSVP page settings", summary: "Generate the RSVP page illustration (rate limited; 422/502/503/504 with a readable message when generation fails, credits refunded)", schema: inviteFormat.generateEventInviteFormatImageSchema },
 
   { method: "get", path: "/api/invite-card/cards/:weddingId", tag: "Invite cards", summary: "Events with their invite cards", schema: inviteCard.getAiInvitecardsByWeddingSchema },
   { method: "get", path: "/api/invite-card/:id/generation-status", tag: "Invite cards", summary: "Generation status of an invite card", schema: inviteCard.getInviteCardGenerationStatusSchema },

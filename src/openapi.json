@@ -3086,7 +3086,7 @@
         "tags": [
           "RSVP page settings"
         ],
-        "summary": "Generate the RSVP page illustration",
+        "summary": "Generate the RSVP page illustration (rate limited; 422/502/503/504 with a readable message when generation fails, credits refunded)",
         "security": [
           {
             "bearerAuth": []

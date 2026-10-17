@@ -134,10 +134,14 @@ export const generateImage = async (
   genai: Pick<GoogleGenAI, "models">,
   parts: Part[],
   {
+    model = GEMINI_IMAGE_MODEL,
+    aspectRatio = "9:16",
     timeoutMs = 120_000,
     retryDelaysMs = [2_000, 6_000],
     onRetry,
   }: {
+    model?: string;
+    aspectRatio?: string;
     timeoutMs?: number;
     retryDelaysMs?: number[];
     onRetry?: (failure: GeminiGenerationError, waitMs: number) => unknown;
@@ -146,11 +150,11 @@ export const generateImage = async (
   for (let attempt = 0; ; attempt++) {
     try {
       const response = await genai.models.generateContent({
-        model: GEMINI_IMAGE_MODEL,
+        model,
         contents: [{ role: "user", parts }],
         config: {
           responseModalities: [Modality.TEXT, Modality.IMAGE],
-          imageConfig: { aspectRatio: "9:16" },
+          imageConfig: { aspectRatio },
           // Client-side cancel only: Google can still bill a request that completes
           // after we have given up on it.
           abortSignal: AbortSignal.timeout(timeoutMs),

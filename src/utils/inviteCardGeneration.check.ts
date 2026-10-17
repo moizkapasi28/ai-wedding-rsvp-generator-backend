@@ -20,6 +20,12 @@ import {
   GeminiGenerationError,
 } from "./geminiImage.util";
 import { normalizeImageForGemini } from "./imageNormalize.util";
+import {
+  HEADER_IMAGE_MODEL,
+  pageSettingEditImageWithGemini,
+  toHeaderImageError,
+} from "./geminiImageEditor.util";
+import { ApiError } from "./apiError.util";
 
 const httpError = (status: number, message: string) =>
   Object.assign(new Error(message), { status });
@@ -209,11 +215,67 @@ const checkFingerprint = async () => {
   );
 };
 
+// RSVP header image: same Gemini path as invite cards, failures become readable responses
+const checkHeaderImage = async () => {
+  const sent: any[] = [];
+  const fakeGenai = (response: object) =>
+    ({
+      models: {
+        generateContent: async (request: any) => {
+          sent.push(request);
+          return response;
+        },
+      },
+    }) as any;
+  const sideways = await sharp({
+    create: { width: 40, height: 20, channels: 3, background: "#000000" },
+  })
+    .withMetadata({ orientation: 6 })
+    .jpeg()
+    .toBuffer();
+  const options = {
+    imageBuffer: sideways,
+    promptParams: { imageType: "couple" as const, styleId: "watercolor_fine_art" },
+    aspectRatio: "1:1",
+  };
+
+  const png = (await sharp({ create: { width: 2, height: 2, channels: 3, background: "#fff" } }).png().toBuffer()).toString("base64");
+  const image = await pageSettingEditImageWithGemini({
+    ...options,
+    genai: fakeGenai({ candidates: [{ content: { parts: [{ inlineData: { data: png, mimeType: "image/png" } }] } }] }),
+  });
+  assert.equal(image.mimeType, "image/png");
+  assert.equal(sent[0].model, HEADER_IMAGE_MODEL);
+  assert.equal(sent[0].config.imageConfig.aspectRatio, "1:1");
+  const source = sent[0].contents[0].parts[1].inlineData;
+  const sourceMeta = await sharp(Buffer.from(source.data, "base64")).metadata();
+  assert.deepEqual([source.mimeType, sourceMeta.width, sourceMeta.height], ["image/jpeg", 20, 40], "source sent upright");
+
+  const blocked = await pageSettingEditImageWithGemini({
+    ...options,
+    genai: fakeGenai({ promptFeedback: { blockReason: "SAFETY" } }),
+  }).catch(toHeaderImageError);
+  assert.ok(blocked instanceof ApiError);
+  assert.equal(blocked.statusCode, 422);
+  assert.match(blocked.message, /declined this photo/);
+
+  const unreadable = await pageSettingEditImageWithGemini({
+    ...options,
+    imageBuffer: Buffer.from("not an image"),
+    genai: fakeGenai({}),
+  }).catch(toHeaderImageError);
+  assert.equal((unreadable as ApiError).statusCode, 422);
+
+  const s3Failure = new Error("S3 down");
+  assert.equal(toHeaderImageError(s3Failure), s3Failure, "non-Gemini errors pass through");
+};
+
 const main = async () => {
   checkClassifier();
   checkResponses();
   await checkNormalize();
   await checkFingerprint();
+  await checkHeaderImage();
 };
 
 main().then(

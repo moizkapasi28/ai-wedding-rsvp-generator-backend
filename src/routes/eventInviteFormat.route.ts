@@ -6,6 +6,7 @@ import {
 } from "../controllers/eventInviteFormat.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
+import { imageGenerationLimiter } from "../middlewares/rateLimiter.middleware";
 import { asyncHandler } from "../utils/asyncHandler.util";
 import {
   generateEventInviteFormatImageSchema,
@@ -32,6 +33,8 @@ eventInviteFormatRouter.patch(
 eventInviteFormatRouter.post(
   "/generate-image",
   authenticate,
+  // Shares the invite card limit: both spend AI credits and hold a Gemini call
+  imageGenerationLimiter,
   validate(generateEventInviteFormatImageSchema),
   asyncHandler(generateEventInviteFormatImage),
 );
