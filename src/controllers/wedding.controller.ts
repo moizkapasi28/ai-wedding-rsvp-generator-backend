@@ -8,7 +8,7 @@ import {
   getWeddingDashboardService,
 } from "../services/wedding.service";
 import { sendSuccess } from "../utils/response.util";
-import { onRsvp } from "../lib/rsvpEvents";
+import { onLiveEvent } from "../lib/rsvpEvents";
 import {
   AddNewWeddingDto,
   EditWeddingDto,
@@ -131,8 +131,8 @@ export const streamWeddingLive = async (
   // Cloudflare closes connections that stay idle for 100s
   const heartbeat = setInterval(() => res.write(": ping\n\n"), 25_000);
 
-  const unsubscribe = onRsvp(params.id, (rsvp) => {
-    res.write(`event: rsvp\ndata: ${JSON.stringify(rsvp)}\n\n`);
+  const unsubscribe = onLiveEvent(params.id, ({ type, data }) => {
+    res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
   });
 
   // Unsubscribing on close guarantees nothing is written after the client leaves

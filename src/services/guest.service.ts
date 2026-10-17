@@ -16,9 +16,12 @@ import {
   markGuestEventInviteReminded,
   markGuestEventInviteSent,
   updateGuest,
+  findInviteByTokenForUser,
+  markInviteCheckedIn,
 } from "../repositories/guest.repository";
 import { getDueReminder, type ReminderKind } from "../utils/reminder.util";
 import { buildWhatsAppLink, normalizePhone } from "../lib/whatsapp";
+import { emitCheckIn } from "../lib/rsvpEvents";
 import { v4 as uuidv4 } from "uuid";
 import { verfiyWeddingOwnershipService } from "./wedding.service";
 import { ApiError } from "../utils/apiError.util";
@@ -1144,4 +1147,32 @@ export const markReminderSentService = async (
   }
 
   return markGuestEventInviteReminded(invite.id, reminder, sent);
+};
+
+// A guest arriving: the host scans the QR on the guest's RSVP page, which holds their invite
+// token. Idempotent, so a second scan reports the first check-in instead of moving it.
+export const checkInGuestService = async (userId: string, token: string) => {
+  const invite = await findInviteByTokenForUser(token, userId);
+  if (!invite) throw new ApiError(404, "This code isn't an invite to one of your events");
+
+  const now = new Date();
+  const { count } = await markInviteCheckedIn(invite.id, now);
+  const checkedInAt = count ? now : (invite.checked_in_at ?? now);
+
+  if (count)
+    emitCheckIn(invite.event.wedding_id, {
+      inviteId: invite.id,
+      guestName: invite.guest.name,
+      eventTitle: invite.event.title,
+      checkedInAt: checkedInAt.toISOString(),
+    });
+
+  return {
+    invite_id: invite.id,
+    guest_name: invite.guest.name,
+    event_id: invite.event.id,
+    event_title: invite.event.title,
+    checked_in_at: checkedInAt,
+    already_checked_in: !count,
+  };
 };

@@ -655,9 +655,9 @@ Totals: 40 tickets. P0: 3 · P1: 9 · P2: 28.
 - `checked_in_at` (and optionally `checked_in_count`) on `GuestEventInvite`; `POST /api/guest/invites/check-in` taking the token (authenticated host, ownership-checked, idempotent); dashboard counts of arrivals per event; emit a live event like RSVPs.
 
 **Acceptance criteria**
-- [ ] Checking in the same token twice is idempotent and returns the guest name and event.
-- [ ] A token from another user's wedding returns 404.
-- [ ] Dashboard per-event stats include arrivals.
+- [x] Checking in the same token twice is idempotent and returns the guest name and event. The second scan returns `already_checked_in: true` with the first time, and only the first is broadcast.
+- [x] A token from another user's wedding returns 404.
+- [x] Dashboard per-event stats include arrivals. `arrivedGuests` on the dashboard and on `GET /event?stats=true`; a `check-in` SSE event goes out on the live stream.
 
 **Notes/risks**
 - The QR must not be the public RSVP URL alone if check-in should require the host; the endpoint is authenticated, so a plain token is fine.

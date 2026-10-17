@@ -62,6 +62,7 @@ const routes: Route[] = [
   { method: "get", path: "/api/guest/import-status/:jobId", tag: "Guests", summary: "Status of a background guest job", schema: guest.getJobStatusSchema },
 
   { method: "get", path: "/api/guest/invites/whatsapp", tag: "Invites & reminders", summary: "RSVP and WhatsApp links for an event's or a guest's invites", schema: guest.getWhatsAppInvitesSchema },
+  { method: "post", path: "/api/guest/invites/check-in", tag: "Invites & reminders", summary: "Check a guest in by the invite token in their QR (idempotent; 404 outside your weddings)", schema: guest.checkInGuestSchema },
   { method: "post", path: "/api/guest/invites/:inviteId/mark-sent", tag: "Invites & reminders", summary: "Record that an invite was sent", schema: guest.markInviteSentSchema },
   { method: "delete", path: "/api/guest/invites/:inviteId/mark-sent", tag: "Invites & reminders", summary: "Undo: mark an invite as not sent", schema: guest.markInviteSentSchema },
   { method: "get", path: "/api/guest/invites/reminders", tag: "Invites & reminders", summary: "Reminders due now for an event", schema: guest.getDueRemindersSchema },

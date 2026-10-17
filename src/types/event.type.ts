@@ -6,6 +6,8 @@ export interface EventStats {
   declinedGuests: number;
   maybeGuests: number;
   pendingGuests: number;
+  // Checked in at the venue (QR scan)
+  arrivedGuests: number;
   completion: number;
   progressBar: {
     confirmed: number;

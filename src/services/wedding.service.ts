@@ -12,6 +12,7 @@ import {
 import { toLiveRsvp } from "../lib/rsvpEvents";
 import {
   getAllEventsByWeddingID,
+  getArrivalsForEvents,
   getGuestStatsForEvents,
 } from "../repositories/event.repository";
 import { mapGuestStatsToEvents } from "./event.service";
@@ -221,6 +222,7 @@ export const getWeddingDashboardService = async (
   const eventsWithStats = mapGuestStatsToEvents(
     events,
     await getGuestStatsForEvents(events.map((event) => event.id)),
+    await getArrivalsForEvents(events.map((event) => event.id)),
   );
 
   let totalInvites = 0;

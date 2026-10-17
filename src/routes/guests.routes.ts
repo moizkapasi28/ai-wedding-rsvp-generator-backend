@@ -11,6 +11,7 @@ import {
   getDueRemindersSchema,
   getWhatsAppInvitesSchema,
   markInviteSentSchema,
+  checkInGuestSchema,
   markReminderSentSchema,
   unmarkReminderSentSchema,
   uploadGuestTemplateSchema,
@@ -30,6 +31,7 @@ import {
   getDueReminders,
   getWhatsAppInvites,
   markInviteSent,
+  checkInGuest,
   markReminderSent,
   unmarkInviteSent,
   unmarkReminderSent,
@@ -106,6 +108,14 @@ guestsRouter.get(
   authenticate,
   validate(getWhatsAppInvitesSchema),
   asyncHandler(getWhatsAppInvites),
+);
+
+// The host scans a guest's QR at the venue; idempotent, so a second scan is harmless
+guestsRouter.post(
+  "/invites/check-in",
+  authenticate,
+  validate(checkInGuestSchema),
+  asyncHandler(checkInGuest),
 );
 
 guestsRouter.post(

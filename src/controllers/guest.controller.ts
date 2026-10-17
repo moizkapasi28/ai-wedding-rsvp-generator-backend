@@ -13,6 +13,7 @@ import {
   getWhatsAppInvitesService,
   markInviteSentService,
   markReminderSentService,
+  checkInGuestService,
 } from "../services/guest.service";
 import { guestImportQueue } from "../queues/guest.queue";
 import { getUserWeddingService } from "../services/wedding.service";
@@ -28,6 +29,7 @@ import {
   GetDueRemindersDto,
   GetWhatsAppInvitesDto,
   InviteParamsDto,
+  CheckInGuestDto,
   MarkReminderSentDto,
   UnmarkReminderSentDto,
 } from "../validations/guest.validations";
@@ -265,4 +267,18 @@ export const unmarkReminderSent = async (
   );
 
   return sendSuccess(res, "Reminder marked as not sent", invite, 200);
+};
+
+export const checkInGuest = async (
+  req: Request<{}, {}, CheckInGuestDto>,
+  res: Response,
+) => {
+  const result = await checkInGuestService(req.user.id, req.body.token);
+
+  return sendSuccess(
+    res,
+    result.already_checked_in ? "Guest was already checked in" : "Guest checked in",
+    result,
+    200,
+  );
 };

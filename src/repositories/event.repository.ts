@@ -136,3 +136,11 @@ export const getAllEventsByWeddingID = async (
     orderBy: { date: "asc" },
   });
 };
+
+// How many guests have checked in at each event
+export const getArrivalsForEvents = (eventIds: string[]) =>
+  prisma.guestEventInvite.groupBy({
+    by: ["event_id"],
+    where: { event_id: { in: eventIds }, checked_in_at: { not: null } },
+    _count: { _all: true },
+  });

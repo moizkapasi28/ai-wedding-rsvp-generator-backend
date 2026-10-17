@@ -7,6 +7,7 @@ import {
   deleteWeddingEventById,
   findEventByIdAndUserId,
   getAllWeddingEvents,
+  getArrivalsForEvents,
   getGuestStatsForEvents,
   updateWeddingEventById,
   type EventFilters,
@@ -25,10 +26,15 @@ import { createAiEventInviteCard } from "../repositories/inviteCard.repository";
 export const mapGuestStatsToEvents = (
   events: Event[],
   guestStats: GuestStatQueryGroup[],
+  arrivals: { event_id: string; _count: { _all: number } }[] = [],
 ): Required<EventWithStats>[] => {
+  const arrivedByEvent = new Map(
+    arrivals.map((row) => [row.event_id, row._count._all]),
+  );
+
   const statsMap = new Map<
     string,
-    Omit<EventStats, "completion" | "progressBar">
+    Omit<EventStats, "completion" | "progressBar" | "arrivedGuests">
   >();
 
   for (const stat of guestStats) {
@@ -73,6 +79,7 @@ export const mapGuestStatsToEvents = (
 
     const stats = {
       ...rawStats,
+      arrivedGuests: arrivedByEvent.get(event.id) ?? 0,
       completion,
       progressBar: {
         confirmed: getPercentage(rawStats.attendingGuests),
@@ -112,6 +119,7 @@ export const getAllWeddingEventsService = async (
     ? mapGuestStatsToEvents(
         data,
         await getGuestStatsForEvents(data.map((e) => e.id)),
+        await getArrivalsForEvents(data.map((e) => e.id)),
       )
     : data;
 

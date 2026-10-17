@@ -196,6 +196,18 @@ export const markInviteSentSchema = z.object({
 
 export type InviteParamsDto = z.infer<typeof inviteParamsSchema>;
 
+export const checkInGuestBodySchema = z.object({
+  token: z
+    .uuid("That isn't an invite code")
+    .describe("The invite token in the guest's QR code"),
+});
+
+export const checkInGuestSchema = z.object({
+  body: checkInGuestBodySchema,
+});
+
+export type CheckInGuestDto = z.infer<typeof checkInGuestBodySchema>;
+
 export const getWhatsAppInvitesQuerySchema = z
   .object({
     eventId: z.uuid().optional().describe("All invites for this event"),

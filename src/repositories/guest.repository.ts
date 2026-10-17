@@ -389,3 +389,22 @@ export const markGuestEventInviteReminded = async (
         : { final_reminder_sent_at: sentAt },
   });
 };
+
+// The invite behind a scanned QR, only within the host's own weddings
+export const findInviteByTokenForUser = (token: string, userId: string) =>
+  prisma.guestEventInvite.findFirst({
+    where: { invite_token: token, event: { wedding: { user_id: userId } } },
+    select: {
+      id: true,
+      checked_in_at: true,
+      guest: { select: { name: true } },
+      event: { select: { id: true, title: true, wedding_id: true } },
+    },
+  });
+
+// Only the first scan records the time; `count` says whether this one did
+export const markInviteCheckedIn = (inviteId: string, at: Date) =>
+  prisma.guestEventInvite.updateMany({
+    where: { id: inviteId, checked_in_at: null },
+    data: { checked_in_at: at },
+  });

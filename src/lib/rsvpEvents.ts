@@ -12,7 +12,19 @@ export type LiveRsvp = {
   respondedAt: string;
 };
 
-type LiveRsvpMessage = { weddingId: string; rsvp: LiveRsvp };
+export type LiveCheckIn = {
+  inviteId: string;
+  guestName: string;
+  eventTitle: string;
+  checkedInAt: string;
+};
+
+// The SSE event name and its data
+export type LiveEvent =
+  | { type: "rsvp"; data: LiveRsvp }
+  | { type: "check-in"; data: LiveCheckIn };
+
+type LiveMessage = { weddingId: string; event: LiveEvent };
 
 const CHANNEL = "live-rsvp";
 
@@ -33,7 +45,7 @@ const ensureSubscribed = () => {
     logger.error(error, "Live RSVP subscriber error");
   });
   subscriber.on("message", (_channel, raw) => {
-    let message: LiveRsvpMessage;
+    let message: LiveMessage;
     try {
       message = JSON.parse(raw);
     } catch {
@@ -43,7 +55,7 @@ const ensureSubscribed = () => {
     // Call listeners one by one so a broken dashboard stream can't affect the others
     for (const listener of localBus.listeners(message.weddingId)) {
       try {
-        (listener as (rsvp: LiveRsvp) => void)(message.rsvp);
+        (listener as (event: LiveEvent) => void)(message.event);
       } catch (error) {
         logger.error(error, "Live RSVP listener failed");
       }
@@ -54,18 +66,24 @@ const ensureSubscribed = () => {
   });
 };
 
-export const emitRsvp = (weddingId: string, rsvp: LiveRsvp) => {
-  const message: LiveRsvpMessage = { weddingId, rsvp };
+const publish = (weddingId: string, event: LiveEvent) => {
+  const message: LiveMessage = { weddingId, event };
 
-  // Fire-and-forget: the reply is already saved, so a Redis problem must never fail the RSVP
+  // Fire-and-forget: the change is already saved, so a Redis problem must never fail it
   connection.publish(CHANNEL, JSON.stringify(message)).catch((error) => {
     logger.error(error, "Live RSVP publish failed");
   });
 };
 
-export const onRsvp = (
+export const emitRsvp = (weddingId: string, rsvp: LiveRsvp) =>
+  publish(weddingId, { type: "rsvp", data: rsvp });
+
+export const emitCheckIn = (weddingId: string, checkIn: LiveCheckIn) =>
+  publish(weddingId, { type: "check-in", data: checkIn });
+
+export const onLiveEvent = (
   weddingId: string,
-  listener: (rsvp: LiveRsvp) => void,
+  listener: (event: LiveEvent) => void,
 ) => {
   ensureSubscribed();
   localBus.on(weddingId, listener);
